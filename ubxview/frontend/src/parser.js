@@ -47,8 +47,9 @@ export function extractGpsPointsFromText(text) {
             const undulation = parseFloat(undulationStr);
 
             // Apply undulation correction if undulation is a valid number
+            // Apply undulation correction (ellipsoidal height = MSL + undulation)
             if (!isNaN(undulation)) {
-                alt = undulation < 0 ? alt + undulation : alt - undulation;
+                alt += undulation;
             }
 
             if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt)) {
