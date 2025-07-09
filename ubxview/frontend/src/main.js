@@ -11,29 +11,27 @@ import { setupCameraControls } from "./cameraControls.js";
 import { createGrid } from "./gridSetup.js";
 import { createCompassLabels, updateCompass } from "./compassRose.js";
 
-// --- Global Three.js variables ---
-let scene, camera, renderer, labelRenderer, controls;
-const dataGroup = new THREE.Group(); // Group to hold all data-related objects for easy clearing
-
-// --- Variables for live updates and shared coordinate system ---
 let currentFile = null;
 let readOffset = 0;
 let fileWatcherInterval = null;
-const POLLING_RATE_MS = 1000; // Check for new data every 1 second
+const POLLING_RATE_MS = 1; // Check for new data every 1 second
+
+// --- Global Three.js variables ---
+let scene, camera, renderer, labelRenderer, controls;
+const dataGroup = new THREE.Group(); // Group to hold all data-related objects
 
 let center = null; // To store the center of the dataset
-let bounds = null; // To store the data bounds (min/max lat, lon, alt)
+let bounds = null; // To store the data bounds
 let gpsToCartesian = null; // To store the coordinate conversion function
 
 /**
  * Initializes the entire Three.js scene, controls, and grid.
- * This runs once on page load.
  */
 function initializeScene() {
     // --- Basic Scene Setup ---
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050505);
-    scene.add(dataGroup); // Add the data container to the scene
+    scene.add(dataGroup);
 
     // --- Camera ---
     camera = new THREE.PerspectiveCamera(
@@ -44,7 +42,9 @@ function initializeScene() {
     );
 
     // --- Renderers ---
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({
+        antialias: true
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -59,25 +59,20 @@ function initializeScene() {
     controls = setupCameraControls(camera);
     controls.updateCameraPosition(); // Set initial camera position
 
-    // --- Lights and Grid ---
+    // --- Lights, Grid, Axes, Compass ---
     scene.add(new THREE.AmbientLight(0x404040, 1.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(100, 100, 50);
     scene.add(directionalLight);
-
-    createGrid(scene); // Create the initial ground grid
-
-    // --- Axis Helper & Initial Compass ---
+    createGrid(scene);
     const axesHelper = new THREE.AxesHelper(100);
-    axesHelper.rotation.y = Math.PI / 2; // Rotate 90 degrees around Y-axis
-    scene.add(axesHelper); // Visible before data is loaded
-
+    axesHelper.rotation.y = Math.PI / 2;
+    scene.add(axesHelper);
     createCompassLabels(scene);
 
     // --- Event Listeners & Animation ---
     window.addEventListener("resize", onWindowResize);
     animate();
-
     console.log("Stage initialized. Waiting for data file.");
 }
 
@@ -115,9 +110,9 @@ function plotData(points, append = false) {
         });
         
         // Get old geometry data
-        const oldGeometry = pointsObject.geometry;
-        const oldPositions = oldGeometry.attributes.position.array;
-        const oldColors = oldGeometry.attributes.color.array;
+        const geometry = pointsObject.geometry; // Use a shorter variable name
+        const oldPositions = geometry.attributes.position.array;
+        const oldColors = geometry.attributes.color.array;
 
         // Create new, larger buffers and combine the old and new data
         const combinedPositions = new Float32Array(oldPositions.length + newPositions.length);
@@ -129,17 +124,24 @@ function plotData(points, append = false) {
         combinedColors.set(newColors, oldColors.length);
         
         // Update the geometry attributes with the new, combined data
-        oldGeometry.setAttribute('position', new THREE.Float32BufferAttribute(combinedPositions, 3));
-        oldGeometry.setAttribute('color', new THREE.Float32BufferAttribute(combinedColors, 3));
-        oldGeometry.attributes.position.needsUpdate = true;
-        oldGeometry.attributes.color.needsUpdate = true;
-        oldGeometry.computeBoundingSphere(); // Important for visibility
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(combinedPositions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(combinedColors, 3));
+
+        // ✨ --- KEY FIX: NOTIFY RENDERER OF CHANGES --- ✨
+        // Tell Three.js to re-upload the buffer data to the GPU
+        geometry.attributes.position.needsUpdate = true;
+        geometry.attributes.color.needsUpdate = true;
+
+        // Also update the bounding volumes for visibility and culling
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+
 
         console.log(`Appended ${points.length} points.`);
 
     } else {
-        // --- FULL RE-PLOT LOGIC ---
-        // 1. Clear previous data
+        // --- FULL RE-PLOT LOGIC (No changes needed here) ---
+        // ... (rest of the function is the same)
         while (dataGroup.children.length > 0) {
             const object = dataGroup.children[0];
             if (object.geometry) object.geometry.dispose();
@@ -251,64 +253,68 @@ function onWindowResize() {
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// --- File Input Setup ---
-
-/**
- * Checks for new content in the file and triggers an append operation.
- */
 async function watchFileForChanges() {
-    if (!currentFile || currentFile.size <= readOffset) {
-        return; // No file or file has not grown
-    }
+    if (!fileHandle) return;
 
-    const fileSlice = currentFile.slice(readOffset);
+    const latestFile = await fileHandle.getFile();
+    if (latestFile.size <= readOffset) return;
+
+    const fileSlice = latestFile.slice(readOffset);
     const newText = await fileSlice.text();
-    readOffset = currentFile.size; // Update offset immediately
+    readOffset = latestFile.size;
 
     if (newText.length > 0) {
         const newPoints = extractGpsPointsFromText(newText);
         if (newPoints && newPoints.length > 0) {
-            plotData(newPoints, true); // Call plotData in append mode
+            plotData(newPoints, true);
         }
     }
 }
 
-document
-    .getElementById("fileInput")
-    .addEventListener("change", async (event) => {
-        // Stop any previous file watcher
-        if (fileWatcherInterval) {
-            clearInterval(fileWatcherInterval);
-        }
-        
-        const file = event.target.files[0];
-        if (!file) {
-            currentFile = null;
-            return;
-        }
+let fileHandle = null;
 
+document.getElementById("fileInputLabel").addEventListener("click", async () => {
+    try {
+        // Prompt user to select a file
+        [fileHandle] = await window.showOpenFilePicker({
+            types: [{
+                description: 'GPS Logs',
+                accept: {
+                    'text/plain': ['.txt', '.log'],
+                    'application/octet-stream': ['.ubx']
+                }
+            }],
+            multiple: false
+        });
+
+        if (!fileHandle) return;
+
+        const file = await fileHandle.getFile();
         currentFile = file;
-        readOffset = 0; // Reset for new file
+        readOffset = 0;
 
         const fileLabel = document.getElementById("fileLabel");
-        fileLabel.innerHTML = file.name;
+        fileLabel.innerHTML = `${file.name} <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512"><path fill="#ffffff" d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z"/></svg>`;
 
-        // Perform the initial, full plot
         const initialText = await file.text();
-        readOffset = currentFile.size;
         const initialPoints = extractGpsPointsFromText(initialText);
-        
+        readOffset = file.size;
+
         if (!initialPoints || initialPoints.length === 0) {
             alert("No valid GPS points found in the file.");
-            plotData([]); // Clear the scene
+            plotData([]);
             return;
         }
 
-        plotData(initialPoints, false); // Run a full plot
+        plotData(initialPoints, false);
 
-        // Start polling for live updates
+        if (fileWatcherInterval) clearInterval(fileWatcherInterval);
         fileWatcherInterval = setInterval(watchFileForChanges, POLLING_RATE_MS);
-    });
+    } catch (err) {
+        console.error("File selection cancelled or failed:", err);
+    }
+});
+
 
 // --- Start the application ---
 initializeScene();
