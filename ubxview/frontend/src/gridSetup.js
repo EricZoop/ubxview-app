@@ -58,6 +58,7 @@ export function createGrid(scene, options = {}) {
   gridPlane.rotation.x = -Math.PI / 2;
 
   // Add the grid to the scene
+  gridPlane.position.y = 0;
   scene.add(gridPlane);
 
   return gridPlane;

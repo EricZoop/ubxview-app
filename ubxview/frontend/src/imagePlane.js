@@ -15,7 +15,7 @@ export function addImagePlane(topLeft, bottomRight, imageUrl, gpsToCartesian, sc
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: .75,
+            opacity: .5,
 
             // --- Add these three lines ---
 
@@ -25,7 +25,7 @@ export function addImagePlane(topLeft, bottomRight, imageUrl, gpsToCartesian, sc
         const centerX = (topLeftVec.x + bottomRightVec.x) / 2;
         const centerZ = (topLeftVec.z + bottomRightVec.z) / 2;
 
-        plane.position.set(centerX, 25.0, centerZ);
+        plane.position.set(centerX, 10.0, centerZ);
         plane.rotation.x = -Math.PI / 2;
         scene.add(plane);
     });
