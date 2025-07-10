@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import imageUrl from "./SenecaMeadows.png";
-
 import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 // --- MODIFICATION: Import both functions from the parser ---
@@ -11,10 +9,15 @@ import { setupCameraControls } from "./cameraControls.js";
 import { createGrid } from "./gridSetup.js";
 import { createCompassLabels, updateCompass } from "./compassRose.js";
 
+// --- NEW: Import plane definitions from the new module ---
+import { planeDefinitions } from "./planeData.js";
+
 let currentFile = null;
 let readOffset = 0;
 let fileWatcherInterval = null;
-let POLLING_RATE_MS = 200;
+let POLLING_RATE_MS = 2000;
+
+let imagePlaneCount = 0; // Add missing variable
 
 // --- Global Three.js variables ---
 let scene, camera, renderer, labelRenderer, controls;
@@ -25,6 +28,7 @@ let masterGpsPoints = []; // This will hold ALL points from the file.
 let center = null; // To store the center of the dataset
 let bounds = null; // To store the data bounds
 let gpsToCartesian = null; // To store the coordinate conversion function
+let baselineAltitude = null; // NEW: Store the first point's altitude as baseline
 
 function initializeScene() {
   // --- Basic Scene Setup ---
@@ -47,6 +51,7 @@ function initializeScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
   labelRenderer.domElement.style.position = "absolute";
@@ -67,7 +72,7 @@ function initializeScene() {
 
   const axesHelper = new THREE.AxesHelper(100);
   axesHelper.rotation.y = Math.PI / 2;
-  axesHelper.position.y = 2; // Move it up by 100 units
+  axesHelper.position.y = 2; // Move it up by 2 units
   scene.add(axesHelper);
 
   createCompassLabels(scene);
@@ -76,6 +81,51 @@ function initializeScene() {
   window.addEventListener("resize", onWindowResize);
   animate();
   console.log("Stage initialized. Waiting for data file.");
+}
+
+const imagePlanes = [];
+
+// --- REFACTORED: This function now uses the imported planeDefinitions ---
+async function addImagePlanes() {
+  if (!gpsToCartesian) return;
+
+  // Clear existing planes
+  imagePlanes.forEach(plane => {
+    if (plane && plane.parent) {
+      plane.parent.remove(plane);
+      if (plane.geometry) plane.geometry.dispose();
+      if (plane.material) {
+        if (plane.material.map) plane.material.map.dispose();
+        plane.material.dispose();
+      }
+    }
+  });
+  imagePlanes.length = 0;
+
+  // Get current opacity value
+  const opacitySlider = document.getElementById("opacitySlider");
+  const currentOpacity = opacitySlider ? parseFloat(opacitySlider.value) : 1.0;
+
+  // Create promises by mapping over the imported definitions array
+  const planePromises = planeDefinitions.map((def, index) => {
+    return addImagePlane(
+      def.coords.topLeft,
+      def.coords.bottomRight,
+      def.imageUrl,
+      gpsToCartesian,
+      dataGroup,
+      index, // Use the map index for the plane ID
+      currentOpacity
+    );
+  });
+
+  try {
+    const planes = await Promise.all(planePromises);
+    imagePlanes.push(...planes);
+    console.log(`Added ${planes.length} image planes with opacity ${currentOpacity}`);
+  } catch (error) {
+    console.error("Error adding image planes:", error);
+  }
 }
 
 /**
@@ -195,13 +245,17 @@ function plotData(points, append = false) {
       alt: (bounds.minAlt + bounds.maxAlt) / 2,
     };
 
-    // 3. Coordinate Conversion (assigning to global var)
+    // NEW: Set the baseline altitude to the first point's altitude
+    baselineAltitude = points[0].alt;
+
+    // 3. MODIFIED: Coordinate Conversion using first point as Y=0 baseline
     gpsToCartesian = (lat, lon, alt) => {
       const centerLatRad = (center.lat * Math.PI) / 180;
       const scaleFactor = 10.0;
       const x =
         (lon - center.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
-      const y = (alt - center.alt) * 5;
+      // NEW: Use baselineAltitude instead of center.alt to make first point y=0
+      const y = (alt - baselineAltitude) * 5;
       const z = (lat - center.lat) * 111320 * scaleFactor;
       return new THREE.Vector3(x, y, -z);
     };
@@ -241,27 +295,16 @@ function plotData(points, append = false) {
     );
     dataGroup.add(pointsObject, lineObject);
 
-    addImagePlane(
-      {
-        lat: 39.19765,
-        lon: -77.26297,
-      },
-      {
-        lat: 39.19313,
-        lon: -77.25269,
-      },
-      imageUrl,
-      gpsToCartesian,
-      dataGroup
-    );
+    // Add image planes after coordinate system is established
+    addImagePlanes();
 
-    // 5. MODIFIED: Update Camera to First Data Point Instead of Center
+    // 5. Update Camera to First Data Point (which is now at y=0)
     const dataSpan = Math.max(
       (bounds.maxLat - bounds.minLat) * 111320,
       (bounds.maxLon - bounds.minLon) * 111320
     );
-    
-    // Convert first data point to 3D coordinates
+
+    // Convert first data point to 3D coordinates (now at y=0)
     const firstPoint = points[0];
     const firstPointVec = gpsToCartesian(firstPoint.lat, firstPoint.lon, firstPoint.alt);
 
@@ -270,7 +313,7 @@ function plotData(points, append = false) {
     // Use reset() instead of adjustForNewData() to completely reset camera state
     controls.reset(dataSpan, firstPointVec);
 
-    console.log(`Successfully plotted ${points.length} points. Camera positioned at first data point.`);
+    console.log(`Successfully plotted ${points.length} points. First data point positioned at y=0. Camera positioned at first data point.`);
   }
 }
 
@@ -285,6 +328,8 @@ function animate() {
   // 2. RENDER THE SCENE
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
+  renderer.sortObjects = true; // Enable object sorting
+
 }
 
 // --- Window Resize Handler ---
@@ -367,6 +412,7 @@ document
       currentFile = file;
       readOffset = 0;
       masterGpsPoints = []; // Clear previous data
+      baselineAltitude = null; // Clear previous baseline
 
       const fileLabel = document.getElementById("fileLabel");
       fileLabel.innerHTML = `${file.name}`;
@@ -401,3 +447,16 @@ document
 
 // --- Start the application ---
 initializeScene();
+
+// --- FIXED: Opacity slider event listener ---
+document.getElementById("opacitySlider").addEventListener("input", (e) => {
+  const value = parseFloat(e.target.value);
+  console.log(`Setting opacity to ${value} for ${imagePlanes.length} planes`);
+  
+  imagePlanes.forEach((plane) => {
+    if (plane && plane.material) {
+      plane.material.opacity = value;
+      plane.material.needsUpdate = true; // Force material update
+    }
+  });
+});

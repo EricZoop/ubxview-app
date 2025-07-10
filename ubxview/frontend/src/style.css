@@ -1,225 +1,307 @@
 body {
-margin: 0;
-font-family: mono-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-background-color: #050505;
-color: #eee;
-overflow: hidden; /* Prevent scrollbars on the page itself */
+    margin: 0;
+    font-family: mono-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #050505;
+    color: #eee;
+    overflow: hidden;
+    /* Prevent scrollbars on the page itself */
 }
 
 #info,
 #stats {
-position: absolute;
-padding: 12px 18px;
-background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(48, 48, 48, 0.6));
-border: 1px solid rgba(179, 179, 179, 0.08);
-border-radius: 3px;
-font-size: .85rem;
-color: white;
-backdrop-filter: blur(12px);
--webkit-backdrop-filter: blur(12px);
-box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-pointer-events: auto;
-transition: all 0.2s ease-in-out;
-z-index: 5000;
+    position: absolute;
+    padding: 12px 18px;
+    background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(48, 48, 48, 0.6));
+    border: 1px solid rgba(179, 179, 179, 0.08);
+    border-radius: 3px;
+    font-size: .85rem;
+    color: white;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    transition: all 0.2s ease-in-out;
+    z-index: 5000;
 }
 
 h1 {
-margin: 0;
-padding: 0;
-text-align: left;
+    margin: 0;
+    padding: 0;
+    text-align: left;
 }
 
-h2,h3 {
-margin: 0.3em 0 0.3em 0;
-padding: 0;
-text-align: left;
+h2,
+h3 {
+    margin: 0.3em 0 0.3em 0;
+    padding: 0;
+    text-align: left;
 }
 
 .logo-title {
-margin: 0em 0 0.5em 0;
-display: flex;
-align-items: center;
-gap: 0.25em;
-justify-content: baseline;
+    margin: 0em 0 0.5em 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+    justify-content: baseline;
 }
 
 .logo {
-width: 24px;
-height: 24px;
-margin: 0em 0 0.3em 0;
+    width: 24px;
+    height: 24px;
+    margin: 0em 0 0.3em 0;
 }
 
 .logo-title h2 {
-margin: 0;
-font-size: 1.2em;
+    margin: 0;
+    font-size: 1.2em;
 }
 
 .version {
-margin-left: auto;
-margin-bottom: 0;
-font-size: 1em;
-opacity: 0.7;
-justify-content: baseline;
+    margin-left: auto;
+    margin-bottom: 0;
+    font-size: 1em;
+    opacity: 0.7;
+    justify-content: baseline;
 }
 
 a {
-color: #f1f1f1;
-text-decoration: none;
+    color: #f1f1f1;
+    text-decoration: none;
 }
 
 a:hover {
-text-decoration: underline;
-color: #ffffff;
+    text-decoration: underline;
+    color: #ffffff;
 }
 
 #info {
 
-padding-bottom: 1rem;
-width: 200px;
-top: 20px;
-left: 20px;
+    padding-bottom: 1rem;
+    width: 200px;
+    top: 20px;
+    left: 20px;
 }
+
 /* New container to wrap and align the controls */
 
 .controls-container {
-width: auto;
-display: flex;
-gap: 0.25em;
-align-items: stretch;
-flex-direction: column;
-flex-wrap: wrap;
-align-content: center;
-justify-content: center;
+    width: auto;
+    display: flex;
+    gap: 0.25em;
+    align-items: stretch;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
 }
 
 
 /* Make both direct children take up equal width */
-.controls-container > * {
-flex: 1;
+.controls-container>* {
+    flex: 1;
 }
 
 /* --- Modified Original Styles --- */
 
 /* The polling-rate-container itself is now a flex item */
 .polling-rate-container {
-/* The original margins are now on .controls-container */
-margin: 0;
-font-family: system-ui, sans-serif;
-display: flex; /* Added to allow child to fill height */
+    /* The original margins are now on .controls-container */
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    /* Added to allow child to fill height */
 }
 
 /* The container for the input and button */
 .polling-rate-controls {
-display: flex;
-align-items: stretch; /* Make input/button same height */
-gap: 0; /* Remove gap to join input and button */
-width: 100%; /* Fill the parent container */
+    display: flex;
+    align-items: stretch;
+    /* Make input/button same height */
+    gap: 0;
+    /* Remove gap to join input and button */
+    width: 100%;
+    /* Fill the parent container */
 }
 
 /* Style for the number input */
 .polling-input {
-flex-grow: 1; /* Allow input to take available space */
-width: 100%; /* Fallback */
-font-size: 0.85em;
-border: 1px solid #333;
-background-color: #1a1a1a;
-color: #eee;
-transition: border 0.2s ease;
-/* Unify vertical padding with other buttons for consistent height */
-padding: 0.6em .8em;
-/* Join with the button by removing the right border and radius */
-border-right: none;
-border-radius: 2px 0 0 2px;
+    flex-grow: 1;
+    /* Allow input to take available space */
+    width: 100%;
+    /* Fallback */
+    font-size: 0.85em;
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    color: #eee;
+    transition: border 0.2s ease;
+    /* Unify vertical padding with other buttons for consistent height */
+    padding: 0.6em .8em;
+    /* Join with the button by removing the right border and radius */
+    border-right: none;
+    border-radius: 2px 0 0 2px;
 }
 
 .polling-input:focus {
-outline: none;
-border-color: #555;
-background-color: #2a2a2a;
+    outline: none;
+    border-color: #555;
+    background-color: #2a2a2a;
 }
 
 /* Shared styles for the file chooser and the set button */
 .custom-file,
 .polling-button {
-display: inline-flex;
-align-items: center;
-gap: 0.5rem;
-background-color: #1a1a1a;
-border: 1px solid #333;
-color: #eee;
-padding: 0.6em .8em;
-cursor: pointer;
-border-radius: 2px;
-transition: all 0.2s ease;
-font-family: inherit;
-font-size: 0.85em;
-text-align: left;
-/* Center content since the button is now larger */
-justify-content: flex-start
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    color: #eee;
+    padding: 0.6em .8em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.85em;
+    text-align: left;
+    /* Center content since the button is now larger */
+    justify-content: flex-start
 }
 
 /* Specific style for the set button to join it with the input */
 .polling-button {
-border-radius: 0 2px 2px 0;
+    border-radius: 0 2px 2px 0;
 }
 
 .custom-file:hover,
 .polling-button:hover {
-background-color: #2a2a2a;
-border-color: #444;
-color: #fff;
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #fff;
 }
 
 .custom-file:active,
 .polling-button:active {
-background-color: #0a0a0a;
-border-color: #555;
-transform: translateY(1px);
+    background-color: #0a0a0a;
+    border-color: #555;
+    transform: translateY(1px);
 }
 
 .custom-file svg {
-vertical-align: middle;
-margin-left: 5.85rem;
-margin-bottom: .05rem;
-display: inline-block;
+    vertical-align: middle;
+    margin-left: 5.85rem;
+    margin-bottom: .05rem;
+    display: inline-block;
 
 }
 
 /* Generic input styling from original CSS, with problematic height removed */
 input,
 textarea {
-display: block;
-padding: 8px;
-width: 100%;
-/* height: 8px; <-- This was problematic and has been removed */
-background-color: #171717;
-border: 1px solid #363636;
-color: #fafafa;
+    display: block;
+    padding: 8px;
+    width: 200pxpx;
+    /* height: 8px; <-- This was problematic and has been removed */
+    background-color: #171717;
+    border: 1px solid #363636;
+    color: #fafafa;
+}
+
+/* --- Consistent Slider CSS --- */
+
+/* Remove default padding and styles from the slider container */
+#opacitySlider {
+    width: 190px;
+    /* Match other inputs */
+    padding: 0.5rem;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    height: 16px;
+    /* Give it vertical space consistent with other controls */
+    transform: translateX(-5px);
+}
+
+/* Style the track to match other inputs */
+#opacitySlider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: #1a1a1a;
+    /* Match input background */
+    border: 1px solid #333;
+    /* Match input border */
+    border-radius: 3px;
+    /* Consistent border-radius */
+    cursor: pointer;
+}
+
+#opacitySlider::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* Style the thumb (moving dial) */
+#opacitySlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 3px;
+    background: #eee;
+    /* Match icon and text color */
+    cursor: pointer;
+    border: 1px solid #444;
+    /* Subtle border for definition */
+    margin-top: -6px;
+    /* Vertically center the thumb on the track */
+    transition: background-color 0.2s ease;
+    transform: translateX(-1px);
+}
+
+#opacitySlider::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 0%;
+    background: #eee;
+    cursor: pointer;
+    border: 1px solid #444;
+}
+
+/* Add a subtle hover effect to the thumb */
+#opacitySlider::-webkit-slider-thumb:hover {
+    background: #ffffff;
+}
+
+#opacitySlider::-moz-range-thumb:hover {
+    background: #ffffff;
 }
 
 /* Other original styles (unused in this example but kept for context) */
 #stats {
-top: 20px;
-right: 20px;
+    top: 20px;
+    right: 20px;
 }
 
 .compass-label {
-color: #aaaaaa;
-font-family: sans-serif;
-padding: 2px;
-font-size: 24px;
-font-weight: bold;
-text-shadow: -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505, 1px 1px 0 #050505;
+    color: #aaaaaa;
+    font-family: sans-serif;
+    padding: 2px;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: -1px -1px 0 #050505, 1px -1px 0 #050505, -1px 1px 0 #050505, 1px 1px 0 #050505;
 }
 
 .polling-rate-display {
-margin-top: 0.4em;
-font-size: 0.85em;
-color: #666;
+    margin-top: 0.4em;
+    font-size: 0.85em;
+    color: #666;
 }
 
 .polling-input::placeholder {
-color: gray;
+    color: gray;
 }
 
 /* --- New Elegant Controls List Styles --- */
@@ -230,7 +312,8 @@ color: gray;
     padding: 1.5em;
     border-radius: 8px;
     border: 1px solid #333;
-    max-width: 350px; /* Constrain width for a neat look */
+    max-width: 350px;
+    /* Constrain width for a neat look */
     margin-left: auto;
     margin-right: auto;
 }
@@ -253,23 +336,25 @@ color: gray;
 }
 
 .control-row:last-child {
-    margin-bottom: 0;
+    margin-bottom: 0em;
 }
 
 .keys {
     display: flex;
-    gap: 0.4em; /* Space between keys */
+    gap: 0.4em;
+    /* Space between keys */
 }
 
 .key {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 16px;
-    height: 16px;
+    min-width: 15px;
+    height: 20px;
     background-color: #333;
     border: 1px solid #444;
-    border-bottom: 3px solid #222; /* 3D effect */
+    border-bottom: 3px solid #222;
+    /* 3D effect */
     border-radius: 5px;
     padding: 0 0.4em;
     font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
@@ -281,6 +366,7 @@ color: gray;
 
 .action {
     font-size: 0.95em;
-    padding-left: 1.5em; /* Space between keys and action text */
+    padding-left: 1.5em;
+    /* Space between keys and action text */
     text-align: right;
 }
