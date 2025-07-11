@@ -27,19 +27,10 @@ const createCompassElement = (scene, className, { text, svg }) => {
     if (svg) {
         content += svg;
     }
-    // Wrap text in a span to allow separate styling from the SVG
     if (text) {
         content += `<span class="compass-text">${text}</span>`;
     }
     div.innerHTML = content;
-
-    // If the element has both an SVG and text, apply a flex layout to prevent overlap.
-    if (svg && text) {
-        div.style.display = 'flex';
-        div.style.flexDirection = 'column';
-        div.style.alignItems = 'center';
-        div.style.gap = '2px'; // Adds a small vertical space between the tick and the number
-    }
 
     const label = new CSS2DObject(div);
     scene.add(label);
@@ -67,7 +58,7 @@ export function createCompassLabels(scene) {
 
     // Create degree markings
     const horizonDistance = 40000; // Must match the distance in updateCompass
-    for (let angle = 0; angle < 360; angle += 10) {
+    for (let angle = 0; angle < 360; angle += 5) {
         if (angle % 90 === 0) continue; // Skip cardinal directions
 
         let options;
@@ -75,7 +66,7 @@ export function createCompassLabels(scene) {
 
         if (angle % 45 === 0) {
             className = "compass-tick-large";
-            options = { svg: SVG_TICK_LARGE, text: `${angle}°` };
+            options = { svg: SVG_TICK_LARGE }; // No text
         } else if (angle % 15 === 0) {
             className = "compass-tick-medium";
             options = { svg: SVG_TICK_MEDIUM };

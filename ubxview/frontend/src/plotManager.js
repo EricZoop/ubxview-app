@@ -3,6 +3,8 @@
 import * as THREE from "three";
 import { initializeTrailControls, getCurrentTrailColors, getLineVisibility } from "./trailControls.js";
 
+const MAX_RENDER_POINTS = 1000; // The new limit
+
 // Module state
 let dataGroup = null;
 let gpsToCartesian = null;
@@ -12,6 +14,7 @@ let baselineAltitude = null;
 let pointsObject = null;
 let lineObject = null;
 let masterGpsPoints = [];
+let droneObjects = []; // Array to hold individual drone visualization objects
 
 /**
  * Initialize the plot manager
@@ -92,6 +95,7 @@ export function clearPlotData() {
     // Reset references
     pointsObject = null;
     lineObject = null;
+    droneObjects = [];
     masterGpsPoints = [];
     gpsToCartesian = null;
     center = null;
@@ -104,6 +108,8 @@ export function clearPlotData() {
  * @param {Array} points - Array of GPS points
  */
 function calculateBoundsAndCenter(points) {
+    if (!points || points.length === 0) return;
+
     bounds = points.reduce(
         (acc, p) => ({
             minLat: Math.min(acc.minLat, p.lat),
@@ -148,9 +154,10 @@ function createCoordinateConverter() {
 /**
  * Create geometry from GPS points
  * @param {Array} points - Array of GPS points
+ * @param {string} droneColor - Optional color for this drone's trail
  * @returns {Object} Object containing positions and colors arrays
  */
-function createGeometryFromPoints(points) {
+function createGeometryFromPoints(points, droneColor = null) {
     const colors = getCurrentTrailColors();
     const positions = [];
     const colorArray = [];
@@ -159,8 +166,15 @@ function createGeometryFromPoints(points) {
         const pos = gpsToCartesian(p.lat, p.lon, p.alt);
         positions.push(pos.x, pos.y, pos.z);
         
-        const altRatio = (p.alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) || 0;
-        const color = new THREE.Color().lerpColors(colors.head, colors.tail, altRatio);
+        let color;
+        if (droneColor) {
+            // Use drone-specific color
+            color = new THREE.Color(droneColor);
+        } else {
+            // Use altitude-based gradient
+            const altRatio = (p.alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) || 0;
+            color = new THREE.Color().lerpColors(colors.head, colors.tail, altRatio);
+        }
         colorArray.push(color.r, color.g, color.b);
     });
 
@@ -170,8 +184,10 @@ function createGeometryFromPoints(points) {
 /**
  * Create Three.js objects from geometry data
  * @param {Object} geometryData - Object containing positions and colors
+ * @param {string} droneColor - Optional color for drone-specific line
+ * @param {number} droneId - Optional drone ID for object naming
  */
-function createThreeJsObjects(geometryData) {
+function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
         "position",
@@ -182,7 +198,7 @@ function createThreeJsObjects(geometryData) {
         new THREE.Float32BufferAttribute(geometryData.colors, 3)
     );
 
-    pointsObject = new THREE.Points(
+    const pointsObj = new THREE.Points(
         geometry,
         new THREE.PointsMaterial({
             size: 4,
@@ -192,26 +208,83 @@ function createThreeJsObjects(geometryData) {
     );
 
     const colors = getCurrentTrailColors();
-    lineObject = new THREE.Line(
+    const lineColor = droneColor || colors.line;
+    const lineObj = new THREE.Line(
         geometry,
         new THREE.LineBasicMaterial({
-            color: colors.line,
+            color: lineColor,
         })
     );
 
     // Set line visibility based on current toggle state
-    lineObject.visible = getLineVisibility();
+    lineObj.visible = getLineVisibility();
 
-    dataGroup.add(pointsObject, lineObject);
+    // Add names for identification
+    if (droneId !== null) {
+        pointsObj.name = `drone_${droneId}_points`;
+        lineObj.name = `drone_${droneId}_line`;
+    }
+
+    dataGroup.add(pointsObj, lineObj);
+    
+    return { points: pointsObj, line: lineObj };
+}
+
+/**
+ * Create drone-specific visualization objects
+ * @param {Array} droneStreams - Array of drone stream objects
+ */
+function createDroneObjects(droneStreams) {
+    droneObjects = [];
+    
+    droneStreams.forEach((stream) => {
+        if (stream.points && stream.points.length > 0) {
+            const geometryData = createGeometryFromPoints(stream.points, stream.color);
+            const objects = createThreeJsObjects(geometryData, stream.color, stream.id);
+            
+            droneObjects.push({
+                id: stream.id,
+                color: stream.color,
+                points: objects.points,
+                line: objects.line,
+                pointCount: stream.points.length
+            });
+        }
+    });
+    
+    console.log(`Created ${droneObjects.length} drone visualization objects`);
 }
 
 /**
  * Plot GPS data - can create new plot or append to existing
- * @param {Array} points - Array of GPS points
+ * @param {Array|Object} data - Array of GPS points OR parse result object with {allPoints, droneStreams}
  * @param {boolean} append - Whether to append to existing data
  * @returns {Object} Object containing plot metadata
  */
-export function plotGpsData(points, append = false) {
+export function plotGpsData(data, append = false) {
+    // Handle both old format (array) and new format (object)
+    const allPoints = getMasterGpsPoints();
+    if (!allPoints || allPoints.length === 0) {
+        clearPlotData();
+        return null;
+    }
+
+
+    let points, droneStreams;
+    
+    if (Array.isArray(data)) {
+        // Old format - just an array of points
+        points = data;
+        droneStreams = [];
+    } else if (data && typeof data === 'object') {
+        // New format - object with allPoints and droneStreams
+        points = data.allPoints || [];
+        droneStreams = data.droneStreams || [];
+    } else {
+        points = [];
+        droneStreams = [];
+    }
+
     if (!points || points.length === 0) {
         if (!append) clearPlotData();
         return null;
@@ -282,13 +355,26 @@ export function plotGpsData(points, append = false) {
         // Create coordinate converter
         createCoordinateConverter();
         
-        // Create geometry from points
-        const geometryData = createGeometryFromPoints(points);
-        
-        // Create Three.js objects
-        createThreeJsObjects(geometryData);
-        
-        console.log(`Successfully plotted ${points.length} points.`);
+        if (droneStreams.length > 0) {
+            // Multi-drone mode - create separate objects for each drone
+            createDroneObjects(droneStreams);
+            
+            // Also create a combined view for backwards compatibility
+            const geometryData = createGeometryFromPoints(points);
+            const objects = createThreeJsObjects(geometryData);
+            pointsObject = objects.points;
+            lineObject = objects.line;
+            
+            console.log(`Successfully plotted ${points.length} points across ${droneStreams.length} drones.`);
+        } else {
+            // Single drone mode - create geometry from all points
+            const geometryData = createGeometryFromPoints(points);
+            const objects = createThreeJsObjects(geometryData);
+            pointsObject = objects.points;
+            lineObject = objects.line;
+            
+            console.log(`Successfully plotted ${points.length} points.`);
+        }
     }
 
     // Initialize trail controls with current objects
@@ -303,6 +389,33 @@ export function plotGpsData(points, append = false) {
         firstPoint: points[0],
         firstPointVec: gpsToCartesian(points[0].lat, points[0].lon, points[0].alt),
         center,
-        bounds
+        bounds,
+        droneCount: droneStreams.length
     };
+}
+
+/**
+ * Get information about current drone objects
+ * @returns {Array} Array of drone object information
+ */
+export function getDroneObjects() {
+    return droneObjects.map(drone => ({
+        id: drone.id,
+        color: drone.color,
+        pointCount: drone.pointCount,
+        visible: drone.points.visible
+    }));
+}
+
+/**
+ * Toggle visibility of a specific drone
+ * @param {number} droneId - ID of the drone to toggle
+ * @param {boolean} visible - Visibility state
+ */
+export function setDroneVisibility(droneId, visible) {
+    const drone = droneObjects.find(d => d.id === droneId);
+    if (drone) {
+        drone.points.visible = visible;
+        drone.line.visible = visible && getLineVisibility();
+    }
 }
