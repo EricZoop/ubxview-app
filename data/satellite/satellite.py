@@ -1,7 +1,7 @@
 import math
-import xyzservices.providers as xyz
-import requests
-from PIL import Image
+import xyzservices.providers as xyz # type: ignore
+import requests # type: ignore
+from PIL import Image # type: ignore
 from io import BytesIO
 
 # Function to calculate bbox (top-left and bottom-right) around a point (lat, lon)

@@ -8,7 +8,7 @@ Open ubxview.exe
 
 On ucenter start capture file
 
-In UBXView application, select the same capture file as made by ucenter
+In UBXView application, select the same capture file as made by u-center
 
 Watch
 
