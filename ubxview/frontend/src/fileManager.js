@@ -96,8 +96,7 @@ export async function openFile(onPlotComplete) {
             types: [
                 {
                     accept: {
-                        "text/plain": [".txt", ".log"],
-                        "application/octet-stream": [".ubx"],
+                        "text/plain": [".txt", ".log", ".csv", ".ubx"],
                     },
                 },
             ],

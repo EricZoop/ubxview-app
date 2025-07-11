@@ -1,9 +1,8 @@
 // GPS DATA Plotting and Management
 
 import * as THREE from "three";
-import { initializeTrailControls, getCurrentTrailColors, getLineVisibility } from "./trailControls.js";
-
-const MAX_RENDER_POINTS = 1000; // The new limit
+// Import the master color update function from trailControls.js
+import { initializeTrailControls, getCurrentTrailColors, getLineVisibility, updatePointColors } from "./trailControls.js";
 
 // Module state
 let dataGroup = null;
@@ -78,7 +77,6 @@ export function addToMasterGpsPoints(points) {
 export function clearPlotData() {
     if (!dataGroup) return;
 
-    // Dispose of all objects in the data group
     while (dataGroup.children.length > 0) {
         const object = dataGroup.children[0];
         if (object.geometry) object.geometry.dispose();
@@ -92,7 +90,6 @@ export function clearPlotData() {
         dataGroup.remove(object);
     }
 
-    // Reset references
     pointsObject = null;
     lineObject = null;
     droneObjects = [];
@@ -152,38 +149,24 @@ function createCoordinateConverter() {
 }
 
 /**
- * Create geometry from GPS points
+ * Create geometry from GPS points (POSITIONS ONLY)
  * @param {Array} points - Array of GPS points
- * @param {string} droneColor - Optional color for this drone's trail
- * @returns {Object} Object containing positions and colors arrays
+ * @returns {Object} Object containing positions array
  */
-function createGeometryFromPoints(points, droneColor = null) {
-    const colors = getCurrentTrailColors();
+function createGeometryFromPoints(points) {
     const positions = [];
-    const colorArray = [];
-
     points.forEach((p) => {
         const pos = gpsToCartesian(p.lat, p.lon, p.alt);
         positions.push(pos.x, pos.y, pos.z);
-        
-        let color;
-        if (droneColor) {
-            // Use drone-specific color
-            color = new THREE.Color(droneColor);
-        } else {
-            // Use altitude-based gradient
-            const altRatio = (p.alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) || 0;
-            color = new THREE.Color().lerpColors(colors.head, colors.tail, altRatio);
-        }
-        colorArray.push(color.r, color.g, color.b);
     });
 
-    return { positions, colors: colorArray };
+    // Color calculation is REMOVED from this function.
+    return { positions };
 }
 
 /**
  * Create Three.js objects from geometry data
- * @param {Object} geometryData - Object containing positions and colors
+ * @param {Object} geometryData - Object containing positions
  * @param {string} droneColor - Optional color for drone-specific line
  * @param {number} droneId - Optional drone ID for object naming
  */
@@ -193,9 +176,12 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
         "position",
         new THREE.Float32BufferAttribute(geometryData.positions, 3)
     );
+
+    // Create an empty color attribute to be populated by updatePointColors.
+    const colorArray = new Float32Array(geometryData.positions.length);
     geometry.setAttribute(
-        "color", 
-        new THREE.Float32BufferAttribute(geometryData.colors, 3)
+        "color",
+        new THREE.Float32BufferAttribute(colorArray, 3)
     );
 
     const pointsObj = new THREE.Points(
@@ -216,17 +202,15 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
         })
     );
 
-    // Set line visibility based on current toggle state
     lineObj.visible = getLineVisibility();
 
-    // Add names for identification
     if (droneId !== null) {
         pointsObj.name = `drone_${droneId}_points`;
         lineObj.name = `drone_${droneId}_line`;
     }
 
     dataGroup.add(pointsObj, lineObj);
-    
+
     return { points: pointsObj, line: lineObj };
 }
 
@@ -236,12 +220,12 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
  */
 function createDroneObjects(droneStreams) {
     droneObjects = [];
-    
+
     droneStreams.forEach((stream) => {
         if (stream.points && stream.points.length > 0) {
             const geometryData = createGeometryFromPoints(stream.points, stream.color);
             const objects = createThreeJsObjects(geometryData, stream.color, stream.id);
-            
+
             droneObjects.push({
                 id: stream.id,
                 color: stream.color,
@@ -251,7 +235,7 @@ function createDroneObjects(droneStreams) {
             });
         }
     });
-    
+
     console.log(`Created ${droneObjects.length} drone visualization objects`);
 }
 
@@ -262,22 +246,18 @@ function createDroneObjects(droneStreams) {
  * @returns {Object} Object containing plot metadata
  */
 export function plotGpsData(data, append = false) {
-    // Handle both old format (array) and new format (object)
     const allPoints = getMasterGpsPoints();
     if (!allPoints || allPoints.length === 0) {
         clearPlotData();
         return null;
     }
 
-
     let points, droneStreams;
-    
+
     if (Array.isArray(data)) {
-        // Old format - just an array of points
         points = data;
         droneStreams = [];
     } else if (data && typeof data === 'object') {
-        // New format - object with allPoints and droneStreams
         points = data.allPoints || [];
         droneStreams = data.droneStreams || [];
     } else {
@@ -290,97 +270,70 @@ export function plotGpsData(data, append = false) {
         return null;
     }
 
-    const colors = getCurrentTrailColors();
-
     if (append && pointsObject && gpsToCartesian) {
-        // --- APPEND LOGIC ---
-        // Update bounds with new data
-        points.forEach((p) => {
-            bounds.minAlt = Math.min(bounds.minAlt, p.alt);
-            bounds.maxAlt = Math.max(bounds.maxAlt, p.alt);
-        });
-
-        // Convert new points using existing coordinate system
+        // --- REVISED APPEND LOGIC ---
         const newPositions = [];
-        const newColors = [];
         points.forEach((p) => {
             const pos = gpsToCartesian(p.lat, p.lon, p.alt);
             newPositions.push(pos.x, pos.y, pos.z);
-            const altRatio = (p.alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) || 0;
-            const color = new THREE.Color().lerpColors(colors.head, colors.tail, altRatio);
-            newColors.push(color.r, color.g, color.b);
         });
 
-        // Get existing geometry data
         const geometry = pointsObject.geometry;
         const oldPositions = geometry.attributes.position.array;
-        const oldColors = geometry.attributes.color.array;
 
-        // Combine old and new data
         const combinedPositions = new Float32Array(oldPositions.length + newPositions.length);
         combinedPositions.set(oldPositions);
         combinedPositions.set(newPositions, oldPositions.length);
 
-        const combinedColors = new Float32Array(oldColors.length + newColors.length);
-        combinedColors.set(oldColors);
-        combinedColors.set(newColors, oldColors.length);
+        // Resize the color buffer as well, but don't calculate colors here.
+        const combinedColors = new Float32Array(combinedPositions.length);
 
-        // Update geometry attributes
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(combinedPositions, 3));
         geometry.setAttribute("color", new THREE.Float32BufferAttribute(combinedColors, 3));
+
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.color.needsUpdate = true;
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
 
-        // Update line geometry
         if (lineObject) {
-            lineObject.geometry.setAttribute("position", new THREE.Float32BufferAttribute(combinedPositions, 3));
-            lineObject.geometry.attributes.position.needsUpdate = true;
-            lineObject.geometry.computeBoundingBox();
-            lineObject.geometry.computeBoundingSphere();
+            lineObject.geometry.dispose();
+            lineObject.geometry = pointsObject.geometry;
         }
 
         console.log(`Appended ${points.length} points.`);
+
     } else {
         // --- FULL PLOT LOGIC ---
         clearPlotData();
-        
-        // Store the points
         masterGpsPoints = [...points];
-        
-        // Calculate bounds and center
         calculateBoundsAndCenter(points);
-        
-        // Create coordinate converter
         createCoordinateConverter();
-        
+
         if (droneStreams.length > 0) {
-            // Multi-drone mode - create separate objects for each drone
             createDroneObjects(droneStreams);
-            
-            // Also create a combined view for backwards compatibility
             const geometryData = createGeometryFromPoints(points);
             const objects = createThreeJsObjects(geometryData);
             pointsObject = objects.points;
             lineObject = objects.line;
-            
             console.log(`Successfully plotted ${points.length} points across ${droneStreams.length} drones.`);
         } else {
-            // Single drone mode - create geometry from all points
             const geometryData = createGeometryFromPoints(points);
             const objects = createThreeJsObjects(geometryData);
             pointsObject = objects.points;
             lineObject = objects.line;
-            
             console.log(`Successfully plotted ${points.length} points.`);
         }
+
+        initializeTrailControls(pointsObject, lineObject, masterGpsPoints, bounds);
     }
 
-    // Initialize trail controls with current objects
-    initializeTrailControls(pointsObject, lineObject, masterGpsPoints, bounds);
+    // *** CRITICAL FIX ***
+    // After any plot or append operation, call the master color update function.
+    if (pointsObject) {
+        updatePointColors();
+    }
 
-    // Return metadata for camera positioning
     return {
         dataSpan: Math.max(
             (bounds.maxLat - bounds.minLat) * 111320,

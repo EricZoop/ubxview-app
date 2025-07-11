@@ -17,9 +17,24 @@ export function extractGpsPointsFromText(text) {
 
     if (!matches) return points;
 
+    const MAX_ALT_DIFF = 100;         // meters
+    const MAX_SPEED = 100;            // meters per second (360 km/h)
+    const MAX_LATLON_JUMP = 0.02;     // degrees (≈ 2.2 km)
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = deg => deg * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
     for (const sentence of matches) {
         const parts = sentence.split(',');
-        if (parts.length < 12) continue;
+        if (parts.length < 15) continue;
 
         try {
             const UTCstr = parts[1];
@@ -27,36 +42,71 @@ export function extractGpsPointsFromText(text) {
             const latDir = parts[3];
             const lonStr = parts[4];
             const lonDir = parts[5];
+            const fixQuality = parseInt(parts[6]);
+            const numSatellites = parseInt(parts[7]);
             const altStr = parts[9];
+            const altUnits = parts[10];
 
-            if (!latStr || !latDir || !lonStr || !lonDir || !altStr) continue;
+            if (
+                !latStr || !lonStr || !latDir || !lonDir || !altStr ||
+                latStr.length < 4 || lonStr.length < 5 ||
+                altUnits !== 'M' ||
+                isNaN(fixQuality) || fixQuality === 0 ||
+                isNaN(numSatellites) || numSatellites < 3
+            ) continue;
 
             const latDeg = parseFloat(latStr.substring(0, 2));
             const latMin = parseFloat(latStr.substring(2));
+            if (isNaN(latDeg) || isNaN(latMin)) continue;
             let lat = latDeg + latMin / 60;
             if (latDir === 'S') lat = -lat;
 
             const lonDeg = parseFloat(lonStr.substring(0, 3));
             const lonMin = parseFloat(lonStr.substring(3));
+            if (isNaN(lonDeg) || isNaN(lonMin)) continue;
             let lon = lonDeg + lonMin / 60;
             if (lonDir === 'W') lon = -lon;
 
-            let alt = parseFloat(altStr);
+            const alt = parseFloat(altStr);
+            if (isNaN(alt)) continue;
 
             const h = parseInt(UTCstr.slice(0, 2)) || 0;
             const m = parseInt(UTCstr.slice(2, 4)) || 0;
             const s = parseFloat(UTCstr.slice(4)) || 0;
             const time = h * 3600 + m * 60 + s;
 
-            if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)) {
+            if (!isNaN(lat) && !isNaN(lon) && !isNaN(time)) {
+                // --- Outlier rejection ---
+                const prev = points[points.length - 1];
+                if (prev) {
+                    const dt = time - prev.time;
+                    const dAlt = Math.abs(alt - prev.alt);
+                    const dLat = Math.abs(lat - prev.lat);
+                    const dLon = Math.abs(lon - prev.lon);
+                    const distance = haversine(prev.lat, prev.lon, lat, lon);
+                    const speed = dt > 0 ? distance / dt : 0;
+
+                    if (
+                        dAlt > MAX_ALT_DIFF ||
+                        speed > MAX_SPEED ||
+                        dLat > MAX_LATLON_JUMP ||
+                        dLon > MAX_LATLON_JUMP
+                    ) {
+                        continue; // Skip this outlier
+                    }
+                }
+
                 points.push({ lat, lon, alt, time });
             }
         } catch {
             continue;
         }
     }
+
     return points;
 }
+
+
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.

@@ -57,7 +57,7 @@ export function createCompassLabels(scene) {
     compassLabels.w = createCompassElement(scene, "compass-cardinal", { text: "W" });
 
     // Create degree markings
-    const horizonDistance = 40000; // Must match the distance in updateCompass
+    const horizonDistance = 100000; // Must match the distance in updateCompass
     for (let angle = 0; angle < 360; angle += 5) {
         if (angle % 90 === 0) continue; // Skip cardinal directions
 
@@ -99,7 +99,7 @@ export function updateCompass(camera) {
         return;
     }
 
-    const horizonDistance = 40000;
+    const horizonDistance = 100000;
     const cameraGroundPos = new THREE.Vector3(camera.position.x, 0, camera.position.z);
 
     // Update cardinal label positions

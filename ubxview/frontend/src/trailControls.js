@@ -34,19 +34,41 @@ export function updatePointColors() {
     const geometry = pointsObject.geometry;
     const colors = geometry.attributes.color.array;
 
-    // Update colors for all points
+    const totalPoints = masterGpsPoints.length;
+    const gradientPoints = 20;
+    
+    // This value is recalculated on every update, correctly finding the new start of the gradient.
+    const gradientStartIndex = Math.max(0, totalPoints - gradientPoints);
+
+    // --- KEY FIX FOR LIVE UPDATES ---
+    // This loop iterates over ALL points, from index 0 to the very end, on every single call.
     masterGpsPoints.forEach((point, index) => {
-        const altRatio = (point.alt - bounds.minAlt) / (bounds.maxAlt - bounds.minAlt) || 0;
-        const color = new THREE.Color().lerpColors(trailHeadColor, trailTailColor, altRatio);
-        
+        let color;
+
+        // This condition re-evaluates every point. A point that was previously in the gradient
+        // (e.g., at index totalPoints - 21) will now meet this condition.
+        // This explicitly RESETS its color to the solid tail color, preventing the "stagger" effect.
+        if (index < gradientStartIndex) {
+            color = trailTailColor.clone();
+        } else {
+            // Only the newest 20 points will enter this block and get a fresh gradient color.
+            const progressInGradient = index - gradientStartIndex;
+            const ratio = progressInGradient / (gradientPoints > 1 ? gradientPoints - 1 : 1);
+            color = new THREE.Color().lerpColors(trailTailColor, trailHeadColor, ratio);
+        }
+
+        // The color for EVERY vertex is updated in the buffer array on each run.
         const colorIndex = index * 3;
         colors[colorIndex] = color.r;
         colors[colorIndex + 1] = color.g;
         colors[colorIndex + 2] = color.b;
     });
 
+    // This flag tells Three.js to re-read the ENTIRE color buffer, applying all our changes.
     geometry.attributes.color.needsUpdate = true;
 }
+
+
 
 /**
  * Update line color live based on current color picker value
