@@ -40,7 +40,7 @@
             <div>Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
-                    <input type="number" id="pollRateInput" placeholder="2000" min="10" step="10" value="2000"
+                    <input type="number" id="pollRateInput" placeholder="200" min="10" step="10" value="200"
                         class="polling-input" />
                     <button id="updatePollRateBtn" class="polling-button">Set</button>
                 </div>
@@ -48,9 +48,12 @@
 
         </div>
 
-        <h2>Layers</h2>
-        <label for="opacitySlider">Map Opacity:</label>
-        <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="1" />
+        <h2>Visuals</h2>
+        <label for="opacitySlider">Map Opacity</label>
+        <div class="slider-wrapper">
+        <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
+        <div id="sliderTooltip" class="slider-tooltip">0.5</div>
+        </div>
 
 
 
@@ -73,17 +76,17 @@
         </div>
         <div class="control-row">
             <div class="keys">
-                <span class="key">Q</span>
-                <span class="key">E</span>
-            </div>
-            <div class="action">Down/Up</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
                 <span class="key">A</span>
                 <span class="key">D</span>
             </div>
             <div class="action">Left/Right</div>
+        </div>
+                <div class="control-row">
+            <div class="keys">
+                <span class="key">Q</span>
+                <span class="key">E</span>
+            </div>
+            <div class="action">Down/Up</div>
         </div>
 
 
@@ -108,6 +111,31 @@
     </div>
 
     <script type="module" src="/src/main.js"></script>
+
+    <script>
+        const slider = document.getElementById('opacitySlider');
+        const tooltip = document.getElementById('sliderTooltip');
+
+        function updateTooltip() {
+            const value = parseFloat(slider.value).toFixed(1);
+            tooltip.textContent = value;
+            const thumbWidth = 15; 
+            const sliderWidth = slider.offsetWidth;
+            const percent = (slider.value - slider.min) / (slider.max - slider.min);
+            const travelDistance = sliderWidth - thumbWidth;
+            const thumbCenter = (percent * travelDistance) + (thumbWidth / 2);
+            tooltip.style.left = `${thumbCenter}px`;
+        }
+
+        // Update position/value on input and on hover for a responsive feel
+        slider.addEventListener('input', updateTooltip);
+        slider.addEventListener('mousemove', updateTooltip);
+
+        // Use a slight delay on load to ensure correct initial width calculation
+        document.addEventListener('DOMContentLoaded', () => {
+             setTimeout(updateTooltip, 50);
+        });
+    </script>
 
 </body>
 

@@ -15,7 +15,7 @@ import { planeDefinitions } from "./planeData.js";
 let currentFile = null;
 let readOffset = 0;
 let fileWatcherInterval = null;
-let POLLING_RATE_MS = 2000;
+let POLLING_RATE_MS = 200;
 
 let imagePlaneCount = 0; // Add missing variable
 
@@ -38,7 +38,7 @@ function initializeScene() {
 
   // --- Camera ---
   camera = new THREE.PerspectiveCamera(
-    80,
+    70,
     window.innerWidth / window.innerHeight,
     0.1,
     100000

@@ -4,44 +4,43 @@
  * Each object in the array represents a single map tile.
  */
 
-
-import imageUrl5 from "./maps/4km-comp.png";
+import imageUrl1 from "./maps/SenecaMeadows1.png";
+import imageUrl2 from "./maps/SenecaMeadows2.png";
+import imageUrl3 from "./maps/SenecaMeadows3.png";
+import imageUrl4 from "./maps/SenecaMeadows4.png";
 
 export const planeDefinitions = [
+
+  // SENECA MEADOWS
   {
     coords: {
-      topLeft: { lat: 39.21416730751236, lon: -77.28195190429688 },
-      bottomRight: { lat: 39.17691709496078, lon: -77.23388671875 },
+      topLeft: { lat: 39.218423, lon: -77.287445 },
+      bottomRight: { lat: 39.196077, lon: -77.258606 },
     },
-    imageUrl: imageUrl5,
+    imageUrl: imageUrl1,
+  },
+    {
+    coords: {
+      topLeft: { lat: 39.218423, lon: -77.258606 },
+      bottomRight: { lat: 39.196077, lon: -77.228394 },
+    },
+    imageUrl: imageUrl2,
+  },
+    {
+    coords: {
+      topLeft: { lat: 39.196077, lon: -77.287445 },
+      bottomRight: { lat: 39.172659, lon: -77.258606 },
+    },
+    imageUrl: imageUrl3,
+  },
+    {
+    coords: {
+      topLeft: { lat: 39.196077, lon: -77.258606 },
+      bottomRight: { lat: 39.172659, lon: -77.228394 },
+    },
+    imageUrl: imageUrl4,
   }
+
 ];
 
 
-
-
-// Export an array of plane definitions.
-// Each definition includes the GPS coordinates for the corners and the associated image.
-// export const planeDefinitions = [
-//   {
-//     coords: {
-//       topLeft: { lat: 39.19765, lon: -77.26297 },
-//       bottomRight: { lat: 39.19313, lon: -77.25269 },
-//     },
-//     imageUrl: imageUrl1,
-//   },
-//   {
-//     coords: {
-//       topLeft: { lat: 39.19825189762832, lon: -77.27116912290145 },
-//       bottomRight: { lat: 39.1949975309911, lon: -77.26156991187386 },
-//     },
-//     imageUrl: imageUrl2,
-//   },
-//   {
-//     coords: {
-//       topLeft: { lat: 39.20061851042063, lon: -77.26379585174547 },
-//       bottomRight: { lat: 39.197566501086925, lon: -77.25418979124188 },
-//     },
-//     imageUrl: imageUrl3,
-//   },
-// ];

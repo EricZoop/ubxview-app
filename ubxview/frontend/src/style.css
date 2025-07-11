@@ -198,9 +198,8 @@ a:hover {
 input,
 textarea {
     display: block;
-    padding: 8px;
+
     width: 200pxpx;
-    /* height: 8px; <-- This was problematic and has been removed */
     background-color: #171717;
     border: 1px solid #363636;
     color: #fafafa;
@@ -212,19 +211,21 @@ textarea {
 #opacitySlider {
     width: 190px;
     /* Match other inputs */
-    padding: 0.5rem;
+    margin: .55em 0 0 0;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
     background: transparent;
     -webkit-appearance: none;
     appearance: none;
     border: none;
     height: 16px;
     /* Give it vertical space consistent with other controls */
-    transform: translateX(-5px);
+
 }
 
 /* Style the track to match other inputs */
 #opacitySlider::-webkit-slider-runnable-track {
-    width: 100%;
+    width: 90%;
     height: 6px;
     background: #1a1a1a;
     /* Match input background */
@@ -258,7 +259,7 @@ textarea {
     margin-top: -6px;
     /* Vertically center the thumb on the track */
     transition: background-color 0.2s ease;
-    transform: translateX(-1px);
+
 }
 
 #opacitySlider::-moz-range-thumb {
@@ -277,6 +278,29 @@ textarea {
 
 #opacitySlider::-moz-range-thumb:hover {
     background: #ffffff;
+}
+
+.slider-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.slider-tooltip {
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 6px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    top: 24px; /* Adjusted for better vertical alignment */
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    transform: translateX(-50%); /* Center the tooltip horizontally */
+}
+
+.slider-wrapper:hover .slider-tooltip {
+    opacity: 1;
 }
 
 /* Other original styles (unused in this example but kept for context) */

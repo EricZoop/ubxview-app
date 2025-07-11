@@ -84,11 +84,11 @@ export function setupCameraControls(camera) {
             }
 
             // --- Camera Look (Arrow Keys) ---
-            if (keyState['ArrowRight']) {
+            if (keyState['ArrowLeft']) {
                 this.angleY -= this.lookSpeed;
                 moved = true;
             }
-            if (keyState['ArrowLeft']) {
+            if (keyState['ArrowRight']) {
                 this.angleY += this.lookSpeed;
                 moved = true;
             }
