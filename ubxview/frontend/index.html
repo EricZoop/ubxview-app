@@ -51,11 +51,30 @@
         <h2>Visuals</h2>
         <label for="opacitySlider">Map Opacity</label>
         <div class="slider-wrapper">
-        <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
-        <div id="sliderTooltip" class="slider-tooltip">0.5</div>
+            <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="1" />
+            <div id="sliderTooltip" class="slider-tooltip">0.5</div>
         </div>
 
 
+        <label for="trail-colors">Plot Colors</label>
+        <div class="control-row" style="margin-top: 10px;">
+            <span>
+                <label for="trail-head-color">Head</label>
+                <input type="color" id="trail-head-color" name="trail-head-color" value="#faeb43"/>
+            </span>
+            <span>
+                <label for="trail-tail-color">Tail</label>
+                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#ff7b00" />
+            </span>
+            <span>
+                <label for="trail-line-color">Line</label>
+                <input type="color" id="trail-line-color" name="trail-line-color" value="#757575" />
+            </span>
+            <span>
+                <label for="show-lines-toggle" ></label>
+                <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked style="margin-top: 20px;"/>
+            </span>
+        </div>
 
         <h2>Controls</h2>
         <div class="control-row">
@@ -125,7 +144,7 @@
         function updateTooltip() {
             const value = parseFloat(slider.value).toFixed(1);
             tooltip.textContent = value;
-            const thumbWidth = 15; 
+            const thumbWidth = 15;
             const sliderWidth = slider.offsetWidth;
             const percent = (slider.value - slider.min) / (slider.max - slider.min);
             const travelDistance = sliderWidth - thumbWidth;
@@ -139,7 +158,7 @@
 
         // Use a slight delay on load to ensure correct initial width calculation
         document.addEventListener('DOMContentLoaded', () => {
-             setTimeout(updateTooltip, 50);
+            setTimeout(updateTooltip, 50);
         });
     </script>
 
