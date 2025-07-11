@@ -285,11 +285,15 @@ def create_layered_satellite_images(center_lat, center_lon, zoom, area_size_m, l
     
     return saved_files
 
+# DRS RADA | 39.195572582706525, -77.2581730114447
+# BUTLERS ORCHARD | 39.22146543679169, -77.2231572767802
+# PEACH FARM | 39.27238759440129, -77.32603711238248
+
 if __name__ == "__main__":
-    center_lat, center_lon = 39.22146543679169, -77.2231572767802
-    zoom = 18
-    area_size_m = 1000
-    grid_size = 2  # You can now use even sizes like 2 or 4
+    center_lat, center_lon = 39.195572582706525, -77.2581730114447
+    zoom = 15
+    area_size_m = 15000
+    grid_size = 1  # You can now use even sizes like 2 or 4
 
     saved_files = create_grid_satellite_images(center_lat, center_lon, zoom, area_size_m, grid_size)
 

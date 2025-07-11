@@ -120,6 +120,7 @@ a:hover {
 }
 
 .polling-input {
+    margin: 0;
     flex-grow: 1;
     width: 100%;
     font-size: 0.85em;
@@ -131,6 +132,14 @@ a:hover {
     border-right: none;
     border-radius: 2px 0 0 2px;
 }
+
+.polling-input::-webkit-outer-spin-button,
+.polling-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
 
 .polling-input:focus {
     outline: none;
@@ -177,7 +186,7 @@ a:hover {
 
 .custom-file svg {
     vertical-align: middle;
-    margin-left: 5.85rem;
+    margin-left: 4.25rem;
     margin-bottom: .05rem;
     display: inline-block;
 
@@ -295,8 +304,8 @@ textarea {
 }
 
 .compass-label {
-    color: #aaaaaa;
-    font-family: sans-serif;
+    color: #eeeeee;
+    font-family: monospace;
     padding: 2px;
     font-size: 24px;
     font-weight: bold;

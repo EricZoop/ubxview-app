@@ -14,7 +14,7 @@
 
             <img src="/assets/dot.ico" alt="Logo" class="logo" />
             <h1>UBXView</h1>
-            <p class="version">v1.0.2</p>
+            <p class="version">v0.0.3</p>
         </div>
 
 
@@ -28,7 +28,7 @@
             <div>Choose File</div>
             <label id="fileInputLabel" class="custom-file">
                 <span id="fileLabel">
-                    .ubx, .txt, .log
+                    .ubx, .txt, .csv, .log
                     <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
                         <path fill="#eee"
                             d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
@@ -51,7 +51,7 @@
         <h2>Visuals</h2>
         <label for="opacitySlider">Map Opacity</label>
         <div class="slider-wrapper">
-            <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="1" />
+            <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />
             <div id="sliderTooltip" class="slider-tooltip">0.5</div>
         </div>
 
@@ -59,15 +59,15 @@
         <label for="trail-colors">Plot Pallette</label>
         <div class="control-row" style="margin-top: 10px;">
             <span>
-                <label for="trail-head-color">Head</label>
-                <input type="color" id="trail-head-color" name="trail-head-color" value="#faeb43"/>
+                <label for="trail-head-color">&nbsp;&nbsp;&nbsp;Head</label>
+                <input type="color" id="trail-head-color" name="trail-head-color" value="#FFFFFF"/>
             </span>
             <span>
-                <label for="trail-tail-color">Tail</label>
-                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#ff7b00" />
+                <label for="trail-tail-color">&nbsp;&nbsp;&nbsp;Tail</label>
+                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#0000FF" />
             </span>
             <span>
-                <label for="trail-line-color">Line</label>
+                <label for="trail-line-color">&nbsp;&nbsp;&nbsp;Line</label>
                 <input type="color" id="trail-line-color" name="trail-line-color" value="#757575" />
             </span>
             <span>
@@ -125,14 +125,14 @@
         <h2>Track Stats</h2>
         <div>Points: <span id="points-stat">0</span></div>
         <div>Total Duration: <span id="duration-stat">0.0</span>s</div>
-        <!--<div>2D Distance: <span id="twod-stat">0.0</span>m</div>-->
-        <!--<div>3D Distance: <span id="threed-stat">0.0</span>m</div>-->
+        <div>2D Distance: <span id="twod-stat">0.0</span>m</div>
+        <div>3D Distance: <span id="threed-stat">0.0</span>m</div>
 
         <h2>Motion</h2>
         <div>Speed: <span id="speed-stat">0.00</span>m/s</div>
         <div><span style="color: rgb(116, 237, 100);">Alt: </span><span id="altitude-stat">0.00</span> MSL</div>
-        <div><span style="color: cornflowerblue;">Lat: </span><span id="lat-stat">0.00</span>&#176;</div>
-        <div><span style="color: rgb(237, 100, 100);">Lon: </span><span id="long-stat">0.00</span>&#176;</div>
+        <div><span style="color: cornflowerblue;">Lat: </span><span id="lat-stat">0.000000</span>&#176;</div>
+        <div><span style="color: rgb(237, 100, 100);">Lon: </span><span id="long-stat">0.000000</span>&#176;</div>
     </div>
 
     <script type="module" src="/src/main.js"></script>
