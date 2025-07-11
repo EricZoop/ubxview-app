@@ -7,9 +7,13 @@ import * as THREE from "three";
  */
 export function setupCameraControls(camera) {
 
+    // --- State variables for caching data context for reset ---
+    let cachedDataSpan = null;
+    let cachedCenterVec = null;
+
     // --- State variables for mouse control ---
     let isMouseDown = false;
-    let isPanning = false; // <<< RE-INTRODUCED: Tracks if the current action is panning.
+    let isPanning = false; 
     let mouseX = 0;
     let mouseY = 0;
 
@@ -57,33 +61,33 @@ export function setupCameraControls(camera) {
 
             let moved = false;
 
-            // --- Camera Movement (WASDQE) ---
-            if (keyState['w'] || keyState['W']) {
+            // --- MODIFIED: Camera Movement checks now use event.code ---
+            if (keyState['KeyW']) {
                 this.panOffset.add(cameraDir.clone().multiplyScalar(dynamicMoveSpeed));
                 moved = true;
             }
-            if (keyState['s'] || keyState['S']) {
+            if (keyState['KeyS']) {
                 this.panOffset.add(cameraDir.clone().multiplyScalar(-dynamicMoveSpeed));
                 moved = true;
             }
-            if (keyState['d'] || keyState['D']) {
+            if (keyState['KeyD']) {
                 this.panOffset.add(cameraRight.clone().multiplyScalar(-dynamicMoveSpeed));
                 moved = true;
             }
-            if (keyState['a'] || keyState['A']) {
+            if (keyState['KeyA']) {
                 this.panOffset.add(cameraRight.clone().multiplyScalar(dynamicMoveSpeed));
                 moved = true;
             }
-            if (keyState['e'] || keyState['E']) { // Up
+            if (keyState['KeyE']) { // Up
                 this.panOffset.add(cameraUp.clone().multiplyScalar(dynamicMoveSpeed));
                 moved = true;
             }
-            if (keyState['q'] || keyState['Q']) { // Down
+            if (keyState['KeyQ']) { // Down
                 this.panOffset.add(cameraUp.clone().multiplyScalar(-dynamicMoveSpeed));
                 moved = true;
             }
 
-            // --- Camera Look (Arrow Keys) ---
+            // --- MODIFIED: Camera Look checks now use event.code for consistency ---
             if (keyState['ArrowLeft']) {
                 this.angleY -= this.lookSpeed;
                 moved = true;
@@ -110,6 +114,8 @@ export function setupCameraControls(camera) {
 
         // --- Utility functions ---
         adjustForNewData: function (dataSpan, centerVec) {
+            cachedDataSpan = dataSpan;
+            cachedCenterVec = centerVec;
             const newDistance = Math.max(dataSpan * 1.5, 200);
             if (Math.abs(this.distance - newDistance) > this.distance * 0.5 || this.distance === 2000) {
                 this.distance = newDistance;
@@ -119,6 +125,8 @@ export function setupCameraControls(camera) {
         },
 
         reset: function (dataSpan, centerVec) {
+            cachedDataSpan = dataSpan;
+            cachedCenterVec = centerVec;
             this.distance = Math.max(dataSpan * 1.5, 200);
             this.panOffset.copy(centerVec);
             this.angleX = Math.PI / 6;
@@ -127,28 +135,42 @@ export function setupCameraControls(camera) {
         },
     };
 
-    // --- Event Listeners ---
-    document.addEventListener("keydown", (e) => { keyState[e.key] = true; });
-    document.addEventListener("keyup", (e) => { keyState[e.key] = false; });
+    // --- MODIFIED: Event Listeners now use event.code ---
+    document.addEventListener("keydown", (e) => {
+        // Check for the physical 'R' key
+        if (e.code === 'KeyR') {
+            if (cachedDataSpan !== null && cachedCenterVec !== null) {
+                controls.reset(cachedDataSpan, cachedCenterVec);
+            }
+            return; 
+        }
+        keyState[e.code] = true;
+    });
+    
+    document.addEventListener("keyup", (e) => { 
+        keyState[e.code] = false; 
+    });
 
-    // --- Mouse Listeners (MODIFIED) ---
+    // --- Sticky key fix for window focus loss ---
+    window.addEventListener("blur", () => {
+        for (const key in keyState) {
+            keyState[key] = false;
+        }
+    });
+
+    // --- Mouse Listeners ---
     document.addEventListener("mousedown", (e) => {
         if (e.target.closest("#info")) return;
         isMouseDown = true;
-        
-        // <<< MODIFIED: Check for Shift key OR middle mouse button (button === 1)
         isPanning = e.shiftKey || e.button === 1;
-
         mouseX = e.clientX;
         mouseY = e.clientY;
-
-        // Prevent default browser action (like autoscroll) for middle mouse
         if (e.button === 1) e.preventDefault();
     });
 
     document.addEventListener("mouseup", () => {
         isMouseDown = false;
-        isPanning = false; // <<< MODIFIED: Reset panning state on mouse up
+        isPanning = false; 
     });
 
     document.addEventListener("mousemove", (e) => {
@@ -156,7 +178,6 @@ export function setupCameraControls(camera) {
         const deltaX = e.clientX - mouseX;
         const deltaY = e.clientY - mouseY;
 
-        // <<< MODIFIED: Check the "isPanning" state variable instead of e.shiftKey
         if (isPanning) {
             const panSpeed = controls.distance * 0.001;
             const cameraDir = new THREE.Vector3();

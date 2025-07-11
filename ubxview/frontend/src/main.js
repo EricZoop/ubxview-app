@@ -65,8 +65,8 @@ function initializeScene() {
 
   // --- Lights, Grid, Axes, Compass ---
   scene.add(new THREE.AmbientLight(0x404040, 1.5));
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(100, 100, 50);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(0, 100, 50);
   scene.add(directionalLight);
   createGrid(scene);
 

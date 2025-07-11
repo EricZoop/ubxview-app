@@ -78,8 +78,8 @@ a:hover {
 
     padding-bottom: 1rem;
     width: 200px;
-    top: 20px;
-    left: 20px;
+    top: 10px;
+    left: 10px;
 }
 
 /* New container to wrap and align the controls */
@@ -109,34 +109,25 @@ a:hover {
     margin: 0;
     font-family: system-ui, sans-serif;
     display: flex;
-    /* Added to allow child to fill height */
 }
 
 /* The container for the input and button */
 .polling-rate-controls {
     display: flex;
     align-items: stretch;
-    /* Make input/button same height */
     gap: 0;
-    /* Remove gap to join input and button */
     width: 100%;
-    /* Fill the parent container */
 }
 
-/* Style for the number input */
 .polling-input {
     flex-grow: 1;
-    /* Allow input to take available space */
     width: 100%;
-    /* Fallback */
     font-size: 0.85em;
     border: 1px solid #333;
     background-color: #1a1a1a;
     color: #eee;
     transition: border 0.2s ease;
-    /* Unify vertical padding with other buttons for consistent height */
     padding: 0.6em .8em;
-    /* Join with the button by removing the right border and radius */
     border-right: none;
     border-radius: 2px 0 0 2px;
 }
@@ -147,7 +138,6 @@ a:hover {
     background-color: #2a2a2a;
 }
 
-/* Shared styles for the file chooser and the set button */
 .custom-file,
 .polling-button {
     display: inline-flex;
@@ -163,11 +153,10 @@ a:hover {
     font-family: inherit;
     font-size: 0.85em;
     text-align: left;
-    /* Center content since the button is now larger */
     justify-content: flex-start
 }
 
-/* Specific style for the set button to join it with the input */
+
 .polling-button {
     border-radius: 0 2px 2px 0;
 }
@@ -194,7 +183,6 @@ a:hover {
 
 }
 
-/* Generic input styling from original CSS, with problematic height removed */
 input,
 textarea {
     display: block;
@@ -205,11 +193,9 @@ textarea {
     color: #fafafa;
 }
 
-/* --- Consistent Slider CSS --- */
 
-/* Remove default padding and styles from the slider container */
 #opacitySlider {
-    width: 190px;
+    width: 200px;
     /* Match other inputs */
     margin: .55em 0 0 0;
     padding-top: 0.5rem;
@@ -225,7 +211,7 @@ textarea {
 
 /* Style the track to match other inputs */
 #opacitySlider::-webkit-slider-runnable-track {
-    width: 90%;
+    width: 100%;
     height: 6px;
     background: #1a1a1a;
     /* Match input background */
@@ -292,7 +278,6 @@ textarea {
     padding: 6px 6px;
     border-radius: 4px;
     font-size: 12px;
-    top: 24px; /* Adjusted for better vertical alignment */
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -305,8 +290,8 @@ textarea {
 
 /* Other original styles (unused in this example but kept for context) */
 #stats {
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
 }
 
 .compass-label {
