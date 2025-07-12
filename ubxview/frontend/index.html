@@ -5,6 +5,10 @@
     <title>UBXView</title>
     <link rel="stylesheet" href="/src/style.css">
     <link rel="icon" href="/assets/dot.ico" type="image/x-icon" />
+
+
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/ui.js"></script>
 </head>
 
 <body>
@@ -49,31 +53,91 @@
         </div>
 
         <h2>Visuals</h2>
+
         <label for="opacitySlider">Map Opacity</label>
         <div class="slider-wrapper">
             <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />
             <div id="sliderTooltip" class="slider-tooltip">0.5</div>
         </div>
 
-        <label for="trail-colors">Plot Pallette</label>
-        <div class="control-row" style="margin-top: 10px;">
-            <span>
-                <label for="trail-head-color">&nbsp;&nbsp;&nbsp;Head</label>
-                <input type="color" id="trail-head-color" name="trail-head-color" value="#FFFF00"/>
+<label for="trail-colors" style="display: block;">Plot Palette</label>
+        <div style="margin-top: 10px;">
+            <select id="trail-preset">
+
+                <option value="fire">Phoenix</option>
+                <option value="neon">Neon</option>
+                <option value="invincible">Invincible</option>
+
+            </select>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span style="text-align: left;">
+                <label for="trail-head-color" style="font-size: .8em; color: #bbb; display: block; transform: translateX(2px);">Head</label>
+                <input type="color" id="trail-head-color" name="trail-head-color" value="#FFFF00" style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
             </span>
-            <span>
-                <label for="trail-tail-color">&nbsp;&nbsp;&nbsp;Tail</label>
-                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#0000ff" />
+            <span style="text-align: left;">
+                <label for="trail-tail-color" style="font-size: .8em; color: #bbb; display: block; transform: translateX(2px);">Tail</label>
+                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#FF0000" style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
             </span>
-            <span>
-                <label for="trail-line-color">&nbsp;&nbsp;&nbsp;Line</label>
-                <input type="color" id="trail-line-color" name="trail-line-color" value="#757575" />
-            </span>
-            <span>
-                <label for="show-lines-toggle" ></label>
-                <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked style="margin-top: 20px;"/>
+            <span style="text-align: center;">
+                <label for="trail-line-color" style="font-size: .8em; color: #bbb; display: block; transform: translateX(-22px);">Line</label>
+                <div style="display: flex; align-items: center; justify-content: center; margin-top: 0px;">
+                    <input type="color" id="trail-line-color" name="trail-line-color" value="#FF8C00" style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
+                    <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked style="margin-left: 5px; transform: scale(1.25);">
+                </div>
             </span>
         </div>
+
+        <script type="module">
+            // Import the trail control functions
+            import { updatePointColors, updateLineColor, toggleLineVisibility } from './src/trailControls.js';
+
+            const presets = {
+                fire: {
+                    head: '#FFFF00', // Yellow
+                    tail: '#FF0000', // Red
+                    line: '#FF8C00', // Orange
+                    showLines: true 
+                },
+                invincible: {
+                    head: '#ffe556', // White
+                    tail: '#00bcf0', // Light Blue
+                    line: '#303539', // Blue
+                    showLines: false  // Show lines for ice preset
+                },
+                forest: {
+                    head: '#00FF00', // Green
+                    tail: '#808000', // Olive
+                    line: '#8B4513', // Brown
+                    showLines: false // Hide lines for forest preset (points only)
+                },
+                neon: {
+                    head: '#FF00FF', // Magenta
+                    tail: '#00FFFF', // Cyan
+                    line: '#00FF00', // Lime
+                    showLines: true  // Show lines for neon preset
+                }
+            };
+
+            document.getElementById('trail-preset').addEventListener('change', function () {
+                const preset = presets[this.value];
+                if (preset) {
+                    // Update the color picker values
+                    document.getElementById('trail-head-color').value = preset.head;
+                    document.getElementById('trail-tail-color').value = preset.tail;
+                    document.getElementById('trail-line-color').value = preset.line;
+                    
+                    // Update the lines toggle
+                    document.getElementById('show-lines-toggle').checked = preset.showLines;
+                    
+                    // Trigger the actual updates
+                    updatePointColors(); // This updates both head and tail colors
+                    updateLineColor();   // This updates the line color
+                    toggleLineVisibility(); // This updates the line visibility
+                }
+            });
+        </script>
 
         <h2>Controls</h2>
         <div class="control-row">
@@ -168,6 +232,10 @@
                     <td>Start Time:</td>
                     <td><span id="start-stat">UTC-00:00</span></td>
                 </tr>
+                <tr>
+                    <td>End Time:</td>
+                    <td><span id="end-stat">UTC-00:00</span></td>
+                </tr>
 
 
             </tbody>
@@ -176,7 +244,6 @@
 
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/ui.js"></script>
-
 
 
 </body>

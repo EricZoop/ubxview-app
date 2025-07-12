@@ -16,9 +16,9 @@ export function createGrid(scene, options = {}) {
     size = 100000,
     gridSize = 100.0,
     lineWidth = 0.5,
-    color = 0x555555,
+    color = 0x666666,
     renderOrder = 0,
-    opacity = 0.8, // Default opacity for grid
+    opacity = 0.9, // Default opacity for grid
   } = options;
 
   const gridMaterial = new THREE.ShaderMaterial({

@@ -20,3 +20,4 @@ slider.addEventListener('mousemove', updateTooltip);
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateTooltip, 50);
 });
+

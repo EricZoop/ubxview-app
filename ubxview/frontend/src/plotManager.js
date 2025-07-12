@@ -214,30 +214,7 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
     return { points: pointsObj, line: lineObj };
 }
 
-/**
- * Create drone-specific visualization objects
- * @param {Array} droneStreams - Array of drone stream objects
- */
-function createDroneObjects(droneStreams) {
-    droneObjects = [];
 
-    droneStreams.forEach((stream) => {
-        if (stream.points && stream.points.length > 0) {
-            const geometryData = createGeometryFromPoints(stream.points, stream.color);
-            const objects = createThreeJsObjects(geometryData, stream.color, stream.id);
-
-            droneObjects.push({
-                id: stream.id,
-                color: stream.color,
-                points: objects.points,
-                line: objects.line,
-                pointCount: stream.points.length
-            });
-        }
-    });
-
-    console.log(`Created ${droneObjects.length} drone visualization objects`);
-}
 
 /**
  * Plot GPS data - can create new plot or append to existing
@@ -345,30 +322,4 @@ export function plotGpsData(data, append = false) {
         bounds,
         droneCount: droneStreams.length
     };
-}
-
-/**
- * Get information about current drone objects
- * @returns {Array} Array of drone object information
- */
-export function getDroneObjects() {
-    return droneObjects.map(drone => ({
-        id: drone.id,
-        color: drone.color,
-        pointCount: drone.pointCount,
-        visible: drone.points.visible
-    }));
-}
-
-/**
- * Toggle visibility of a specific drone
- * @param {number} droneId - ID of the drone to toggle
- * @param {boolean} visible - Visibility state
- */
-export function setDroneVisibility(droneId, visible) {
-    const drone = droneObjects.find(d => d.id === droneId);
-    if (drone) {
-        drone.points.visible = visible;
-        drone.line.visible = visible && getLineVisibility();
-    }
 }

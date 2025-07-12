@@ -5,14 +5,14 @@
 
 *Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.* 
 
-### Dependencies
+## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
 > [Node.js](https://nodejs.org/) - three.js render engine, I/O<br>
 > [Vite](https://vite.dev/) - Frontend <br>
 > [xyzservices](https://pypi.org/project/xyzservices/) - Satellite images <br>
 > [u-center](https://www.u-blox.com/en/product/u-center) - GPS utility<br>
 
-### Get Running
+## Get Running
 
 ```ps1
 git clone https://github.com/EricZoop/ubxview-app.git
@@ -31,7 +31,7 @@ npm run tauri build
 ```
 
 ### Directory Structure
-```cmd
+```txt
 ubxview-app/
     ├── README.md
     ├── data/

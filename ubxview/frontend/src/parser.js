@@ -150,6 +150,8 @@ export function updateStats(points) {
     const longEl = document.getElementById('long-stat');
     const satellitesEl = document.getElementById('satellites-stat');
     const startEl = document.getElementById('start-stat');
+    // Get the end time element
+    const endEl = document.getElementById('end-stat');
 
     // Handle the case where there are no points by resetting the stats
     if (!points || points.length === 0) {
@@ -164,6 +166,8 @@ export function updateStats(points) {
         if (longEl) longEl.textContent = '0.000000';
         if (satellitesEl) satellitesEl.textContent = '0';
         if (startEl) startEl.textContent = 'HH:mm:ss';
+        // Reset the end time stat
+        if (endEl) endEl.textContent = 'HH:mm:ss';
         return;
     }
 
@@ -187,6 +191,14 @@ export function updateStats(points) {
     const startMinutes = Math.floor((startTime % 3600) / 60);
     const startSeconds = Math.floor(startTime % 60);
     const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:${startSeconds.toString().padStart(2, '0')}`;
+    
+    // Format end time as HH:mm:ss
+    const endTime = lastPoint.time;
+    const endHours = Math.floor(endTime / 3600);
+    const endMinutes = Math.floor((endTime % 3600) / 60);
+    const endSeconds = Math.floor(endTime % 60);
+    const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:${endSeconds.toString().padStart(2, '0')}`;
+
 
     // Speed (based on last 2 points' 2D distance)
     let latestSpeed = 0;
@@ -234,4 +246,6 @@ export function updateStats(points) {
     if (longEl) longEl.textContent = currentLon.toFixed(6);
     if (satellitesEl) satellitesEl.textContent = currentSatellites;
     if (startEl) startEl.textContent = startTimeFormatted;
+    // Update the end time stat
+    if (endEl) endEl.textContent = endTimeFormatted;
 }
