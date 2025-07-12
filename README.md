@@ -1,21 +1,11 @@
-# Steps
+<h1 style="display: flex; align-items: center; gap: 10px;">
+  <img src="ubxview/frontend/public/assets/dot.png" alt="Logo" height="32">
+  UBXView
+</h1>
 
-Launch C2
+*Model and stream real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.* 
+<hr>
 
-Install ubxview.exe
-
-Open ubxview.exe
-
-On ucenter start capture file
-
-In UBXView application, select the same capture file as made by u-center
-
-Watch
-
-# Tauri + Vanilla
-
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+> [Rust](https://www.rust-lang.org/) — Tauri Application Compiler
+> [Node.js](https://nodejs.org/) — three.js, I/O
+> [u-center](https://www.u-blox.com/en/product/u-center) — GPS utility
