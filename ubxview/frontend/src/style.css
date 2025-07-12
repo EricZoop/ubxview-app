@@ -11,7 +11,7 @@ body {
 #stats {
     position: absolute;
     padding: 12px 18px;
-    background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(48, 48, 48, 0.6));
+    background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29,31,33,0.4));
     border: 1px solid rgba(179, 179, 179, 0.08);
     border-radius: 3px;
     font-size: .85rem;
