@@ -31,11 +31,12 @@ npm run tauri build
 ```
 
 ### Directory Structure
-```
+```cmd
 ubxview-app/
     ├── README.md
     ├── data/
     │   ├── drone/
+    │   │   ├── dronerun123.ubx
     │   │   ├── output.ubx
     │   │   ├── $NMEA.py
     │   │   ├── simulate.py
