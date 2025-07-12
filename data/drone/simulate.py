@@ -1,6 +1,28 @@
 import time
 import argparse
 import os
+import threading
+import msvcrt
+import sys
+
+pause_event = threading.Event()
+pause_event.set()  # Not paused by default
+
+def monitor_keyboard():
+    """Thread function to monitor for pause/resume keyboard input (Windows)."""
+    print("Press 'p' to pause, 'r' to resume, 'q' to quit.")
+    while True:
+        if msvcrt.kbhit():
+            key = msvcrt.getch().decode("utf-8").lower()
+            if key == 'p':
+                pause_event.clear()
+                print("\nPaused.")
+            elif key == 'r':
+                pause_event.set()
+                print("\nResumed.")
+            elif key == 'q':
+                print("\nQuitting.")
+                os._exit(0)
 
 def simulate_writing_binary(input_path, output_path, delay=1.0):
     """Simulate writing to a binary file chunk by chunk with a delay, showing progress."""
@@ -13,6 +35,9 @@ def simulate_writing_binary(input_path, output_path, delay=1.0):
                 line = infile.readline()
                 if not line:
                     break
+
+                pause_event.wait()  # Wait here if paused
+
                 outfile.write(line)
                 outfile.flush()
                 written_size += len(line)
@@ -36,4 +61,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    threading.Thread(target=monitor_keyboard, daemon=True).start()
     simulate_writing_binary(args.input_file, args.output_file, args.delay)

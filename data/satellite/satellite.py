@@ -292,8 +292,8 @@ def create_layered_satellite_images(center_lat, center_lon, zoom, area_size_m, l
 
 if __name__ == "__main__":
     center_lat, center_lon = 39.195572582706525, -77.2581730114447
-    zoom = 15
-    area_size_m = 15000
+    zoom = 17
+    area_size_m = 10000
     grid_size = 1  # You can now use even sizes like 2 or 4
 
     saved_files = create_grid_satellite_images(center_lat, center_lon, zoom, area_size_m, grid_size)
