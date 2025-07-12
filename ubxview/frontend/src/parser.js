@@ -2,7 +2,7 @@
  * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
- * @returns {Array<{lat: number, lon: number, alt: number, time: number}>} An array of GPS points.
+ * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
  */
 export function extractGpsPointsFromText(text) {
     const points = [];
@@ -46,6 +46,7 @@ export function extractGpsPointsFromText(text) {
             const numSatellites = parseInt(parts[7]);
             const altStr = parts[9];
             const altUnits = parts[10];
+            const undulationStr = parts[11];
 
             if (
                 !latStr || !lonStr || !latDir || !lonDir || !altStr ||
@@ -69,6 +70,9 @@ export function extractGpsPointsFromText(text) {
 
             const alt = parseFloat(altStr);
             if (isNaN(alt)) continue;
+
+            // Parse undulation (geoid height)
+            const undulation = parseFloat(undulationStr) || 0;
 
             const h = parseInt(UTCstr.slice(0, 2)) || 0;
             const m = parseInt(UTCstr.slice(2, 4)) || 0;
@@ -96,7 +100,14 @@ export function extractGpsPointsFromText(text) {
                     }
                 }
 
-                points.push({ lat, lon, alt, time });
+                points.push({ 
+                    lat, 
+                    lon, 
+                    alt, 
+                    time, 
+                    satellites: numSatellites, 
+                    undulation 
+                });
             }
         } catch {
             continue;
@@ -107,10 +118,24 @@ export function extractGpsPointsFromText(text) {
 }
 
 
+/**
+ * Calculates distance between two lat/lon points using Haversine formula.
+ * @returns {number} Distance in meters.
+ */
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = deg => deg * (Math.PI / 180);
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.
- * @param {Array<{lat: number, lon: number, alt: number, time: number}>} points The complete array of GPS points.
+ * @param {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} points The complete array of GPS points.
  */
 export function updateStats(points) {
     // Get all DOM elements by their ID
@@ -120,8 +145,11 @@ export function updateStats(points) {
     const threeDEl = document.getElementById('threed-stat');
     const speedEl = document.getElementById('speed-stat');
     const altitudeEl = document.getElementById('altitude-stat');
+    const altWsg84El = document.getElementById('altwsg84-stat');
     const latEl = document.getElementById('lat-stat');
     const longEl = document.getElementById('long-stat');
+    const satellitesEl = document.getElementById('satellites-stat');
+    const startEl = document.getElementById('start-stat');
 
     // Handle the case where there are no points by resetting the stats
     if (!points || points.length === 0) {
@@ -131,28 +159,41 @@ export function updateStats(points) {
         if (threeDEl) threeDEl.textContent = '0.0';
         if (speedEl) speedEl.textContent = '0.00';
         if (altitudeEl) altitudeEl.textContent = '0.00';
+        if (altWsg84El) altWsg84El.textContent = '0.00';
         if (latEl) latEl.textContent = '0.000000';
         if (longEl) longEl.textContent = '0.000000';
+        if (satellitesEl) satellitesEl.textContent = '0';
+        if (startEl) startEl.textContent = 'HH:mm:ss';
         return;
     }
 
     // --- STATISTIC CALCULATIONS ---
 
     const lastPoint = points[points.length - 1];
+    const firstPoint = points[0];
 
     // Basic stats from the last point or array length
     const totalPoints = points.length;
-    const totalDuration = lastPoint.time - points[0].time;
+    const totalDuration = lastPoint.time - firstPoint.time;
     const currentAltitude = lastPoint.alt;
+    const currentAltWsg84 = lastPoint.alt + (lastPoint.undulation || 0);
     const currentLat = lastPoint.lat;
     const currentLon = lastPoint.lon;
+    const currentSatellites = lastPoint.satellites || 0;
+
+    // Format start time as HH:mm:ss
+    const startTime = firstPoint.time;
+    const startHours = Math.floor(startTime / 3600);
+    const startMinutes = Math.floor((startTime % 3600) / 60);
+    const startSeconds = Math.floor(startTime % 60);
+    const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:${startSeconds.toString().padStart(2, '0')}`;
 
     // Speed (based on last 2 points' 2D distance)
     let latestSpeed = 0;
     if (points.length >= 2) {
         const p1 = points[points.length - 2];
         const p2 = lastPoint;
-        const distance2D = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+        const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
         const timeDelta = p2.time - p1.time;
         if (timeDelta > 0) {
             latestSpeed = distance2D / timeDelta;
@@ -169,7 +210,7 @@ export function updateStats(points) {
         const p2 = points[i];
 
         // Calculate 2D distance for this segment
-        const segment2DDistance = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+        const segment2DDistance = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
         total2DDistance += segment2DDistance;
 
         // Calculate altitude change for this segment
@@ -188,21 +229,9 @@ export function updateStats(points) {
     if (threeDEl) threeDEl.textContent = total3DDistance.toFixed(1);
     if (speedEl) speedEl.textContent = latestSpeed.toFixed(2);
     if (altitudeEl) altitudeEl.textContent = currentAltitude.toFixed(2);
+    if (altWsg84El) altWsg84El.textContent = currentAltWsg84.toFixed(2);
     if (latEl) latEl.textContent = currentLat.toFixed(6); // More precision for lat/lon
     if (longEl) longEl.textContent = currentLon.toFixed(6);
-}
-
-/**
- * Calculates distance between two lat/lon points using Haversine formula.
- * @returns {number} Distance in meters.
- */
-function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Earth radius in meters
-    const toRad = deg => deg * (Math.PI / 180);
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-              Math.sin(dLon / 2) ** 2;
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    if (satellitesEl) satellitesEl.textContent = currentSatellites;
+    if (startEl) startEl.textContent = startTimeFormatted;
 }

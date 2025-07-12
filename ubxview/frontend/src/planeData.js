@@ -10,13 +10,7 @@ import imageUrl2 from "./maps/BUTLERS_2x2km.png";
 import imageUrl3 from "./maps/PEACH_2x2km.png";
 
 export const planeDefinitions = [
-  {
-    coords: {
-      topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
-      bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
-    },
-    imageUrl: imageUrl0,
-  },
+
   {
     coords: {
       topLeft: { lat: 39.20459056764484, lon: -77.27096557617188 },
@@ -37,5 +31,12 @@ export const planeDefinitions = [
       bottomRight: { lat: 39.263094691154286, lon: -77.31353759765625 },
     },
     imageUrl: imageUrl3,
+  },
+    {
+    coords: {
+      topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
+      bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
+    },
+    imageUrl: imageUrl0,
   },
 ];
