@@ -42,7 +42,7 @@ export function addImagePlane(topLeft, bottomRight, imageUrl, gpsToCartesian, sc
             const plane = new THREE.Mesh(geometry, material);
             const centerX = (topLeftVec.x + bottomRightVec.x) / 2;
             const centerZ = (topLeftVec.z + bottomRightVec.z) / 2;
-            plane.position.set(centerX, 10 + stackIndex * 0.3, centerZ);
+            plane.position.set(centerX, 20 + stackIndex * 0.1, centerZ); 
             plane.rotation.x = -Math.PI / 2;
             
             // Store bounds for overlap detection

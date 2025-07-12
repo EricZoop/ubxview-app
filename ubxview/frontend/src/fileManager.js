@@ -7,7 +7,7 @@ import { plotGpsData, setMasterGpsPoints, addToMasterGpsPoints, getMasterGpsPoin
 let currentFile = null;
 let readOffset = 0;
 let fileWatcherInterval = null;
-let POLLING_RATE_MS = 200;
+let POLLING_RATE_MS = 10;
 let fileHandle = null;
 
 /**

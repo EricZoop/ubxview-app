@@ -12,9 +12,9 @@
     <div id="info">
         <div class="logo-title">
 
-            <img src="/assets/dot.ico" alt="Logo" class="logo" />
+            <img src="/assets/dot.png" alt="Logo" class="logo" />
             <h1>UBXView</h1>
-            <p class="version">v0.0.3</p>
+            <p class="version">v1.0.3</p>
         </div>
 
 
@@ -40,7 +40,7 @@
             <div>Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
-                    <input type="number" id="pollRateInput" placeholder="200" min="10" step="10" value="200"
+                    <input type="number" id="pollRateInput" placeholder="10" min="10" step="10" value="10"
                         class="polling-input" />
                     <button id="updatePollRateBtn" class="polling-button">Set</button>
                 </div>
@@ -55,16 +55,15 @@
             <div id="sliderTooltip" class="slider-tooltip">0.5</div>
         </div>
 
-
         <label for="trail-colors">Plot Pallette</label>
         <div class="control-row" style="margin-top: 10px;">
             <span>
                 <label for="trail-head-color">&nbsp;&nbsp;&nbsp;Head</label>
-                <input type="color" id="trail-head-color" name="trail-head-color" value="#FFFFFF"/>
+                <input type="color" id="trail-head-color" name="trail-head-color" value="#FFFF00"/>
             </span>
             <span>
                 <label for="trail-tail-color">&nbsp;&nbsp;&nbsp;Tail</label>
-                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#0000FF" />
+                <input type="color" id="trail-tail-color" name="trail-tail-color" value="#0000ff" />
             </span>
             <span>
                 <label for="trail-line-color">&nbsp;&nbsp;&nbsp;Line</label>
@@ -122,45 +121,63 @@
     </div>
 
     <div id="stats">
-        <h2>Track Stats</h2>
-        <div>Points: <span id="points-stat">0</span></div>
-        <div>Total Duration: <span id="duration-stat">0.0</span>s</div>
-        <div>2D Distance: <span id="twod-stat">0.0</span>m</div>
-        <div>3D Distance: <span id="threed-stat">0.0</span>m</div>
+        <h2 style="margin: 0;">Statistics</h2>
+        <table>
+            <tbody>
+                <tr>
+                    <td>Points:</td>
+                    <td><span id="points-stat">0</span></td>
+                </tr>
+                <tr>
+                    <td>Duration:</td>
+                    <td><span id="duration-stat">0.0</span> s</td>
+                </tr>
+                <tr>
+                    <td>Lat:</td>
+                    <td><span id="lat-stat">0.000000</span>&deg;</td>
+                </tr>
+                <tr>
+                    <td>Lon:</td>
+                    <td><span id="long-stat">0.000000</span>&deg;</td>
+                </tr>
+                <tr>
+                    <td>Alt (MSL):</td>
+                    <td><span id="altitude-stat">0.00</span> m</td>
+                </tr>
+                <tr>
+                    <td>Alt (WGS84):</td>
+                    <td><span id="altwsg84-stat">0.00</span> m</td>
+                </tr>
+                <tr>
+                    <td>Speed:</td>
+                    <td><span id="speed-stat">0.00</span> m/s</td>
+                </tr>
+                <tr>
+                    <td>2D Distance:</td>
+                    <td><span id="twod-stat">0.0</span> m</td>
+                </tr>
+                <tr>
+                    <td>3D Distance:</td>
+                    <td><span id="threed-stat">0.0</span> m</td>
+                </tr>
+                <tr>
+                    <td>Satellites:</td>
+                    <td><span id="satellites-stat">0</span></td>
+                </tr>
+                <tr>
+                    <td>Start Time:</td>
+                    <td><span id="start-stat">UTC-00:00</span></td>
+                </tr>
 
-        <h2>Motion</h2>
-        <div>Speed: <span id="speed-stat">0.00</span>m/s</div>
-        <div><span style="color: rgb(116, 237, 100);">Alt: </span><span id="altitude-stat">0.00</span> MSL</div>
-        <div><span style="color: cornflowerblue;">Lat: </span><span id="lat-stat">0.000000</span>&#176;</div>
-        <div><span style="color: rgb(237, 100, 100);">Lon: </span><span id="long-stat">0.000000</span>&#176;</div>
+
+            </tbody>
+        </table>
     </div>
 
     <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/ui.js"></script>
 
-    <script>
-        const slider = document.getElementById('opacitySlider');
-        const tooltip = document.getElementById('sliderTooltip');
 
-        function updateTooltip() {
-            const value = parseFloat(slider.value).toFixed(1);
-            tooltip.textContent = value;
-            const thumbWidth = 15;
-            const sliderWidth = slider.offsetWidth;
-            const percent = (slider.value - slider.min) / (slider.max - slider.min);
-            const travelDistance = sliderWidth - thumbWidth;
-            const thumbCenter = (percent * travelDistance) + (thumbWidth / 2);
-            tooltip.style.left = `${thumbCenter}px`;
-        }
-
-        // Update position/value on input and on hover for a responsive feel
-        slider.addEventListener('input', updateTooltip);
-        slider.addEventListener('mousemove', updateTooltip);
-
-        // Use a slight delay on load to ensure correct initial width calculation
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(updateTooltip, 50);
-        });
-    </script>
 
 </body>
 

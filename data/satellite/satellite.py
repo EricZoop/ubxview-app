@@ -285,6 +285,7 @@ def create_layered_satellite_images(center_lat, center_lon, zoom, area_size_m, l
     
     return saved_files
 
+# THE EARTH | 0, 0
 # DRS RADA | 39.195572582706525, -77.2581730114447
 # BUTLERS ORCHARD | 39.22146543679169, -77.2231572767802
 # PEACH FARM | 39.27238759440129, -77.32603711238248
