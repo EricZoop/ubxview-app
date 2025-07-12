@@ -38,7 +38,7 @@ ubxview-app/
     │   ├── drone/
     │   │   ├── dronerun123.ubx
     │   │   ├── output.ubx
-    │   │   ├── $NMEA.py
+    │   │   ├── trackstat.py
     │   │   ├── simulate.py
     │   └── satellite/
     │       ├── compress.py
