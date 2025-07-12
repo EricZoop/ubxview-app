@@ -3,7 +3,7 @@
   UBXView
 </h1>
 
-*Model and stream real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.* 
+*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.* 
 <hr>
 
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
