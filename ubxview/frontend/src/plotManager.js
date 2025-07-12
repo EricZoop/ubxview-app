@@ -1,10 +1,7 @@
-// GPS DATA Plotting and Management
-
 import * as THREE from "three";
-// Import the master color update function from trailControls.js
+
 import { initializeTrailControls, getCurrentTrailColors, getLineVisibility, updatePointColors } from "./trailControls.js";
 
-// Module state
 let dataGroup = null;
 let gpsToCartesian = null;
 let center = null;
@@ -13,67 +10,36 @@ let baselineAltitude = null;
 let pointsObject = null;
 let lineObject = null;
 let masterGpsPoints = [];
-let droneObjects = []; // Array to hold individual drone visualization objects
+let droneObjects = []; 
 
-/**
- * Initialize the plot manager
- * @param {THREE.Group} group - The data group to add objects to
- */
 export function initializePlotManager(group) {
     dataGroup = group;
 }
 
-/**
- * Get the current coordinate conversion function
- * @returns {Function} The gpsToCartesian conversion function
- */
 export function getGpsToCartesian() {
     return gpsToCartesian;
 }
 
-/**
- * Get the current data bounds
- * @returns {Object} The bounds object
- */
 export function getBounds() {
     return bounds;
 }
 
-/**
- * Get the current center point
- * @returns {Object} The center point
- */
 export function getCenter() {
     return center;
 }
 
-/**
- * Get the current master GPS points array
- * @returns {Array} Array of GPS points
- */
 export function getMasterGpsPoints() {
     return masterGpsPoints;
 }
 
-/**
- * Set the master GPS points array
- * @param {Array} points - Array of GPS points
- */
 export function setMasterGpsPoints(points) {
     masterGpsPoints = points;
 }
 
-/**
- * Add points to the master GPS points array
- * @param {Array} points - Array of GPS points to add
- */
 export function addToMasterGpsPoints(points) {
     masterGpsPoints.push(...points);
 }
 
-/**
- * Clear all plotted data
- */
 export function clearPlotData() {
     if (!dataGroup) return;
 
@@ -100,10 +66,6 @@ export function clearPlotData() {
     baselineAltitude = null;
 }
 
-/**
- * Calculate bounds and center from GPS points
- * @param {Array} points - Array of GPS points
- */
 function calculateBoundsAndCenter(points) {
     if (!points || points.length === 0) return;
 
@@ -134,9 +96,6 @@ function calculateBoundsAndCenter(points) {
     baselineAltitude = points[0].alt;
 }
 
-/**
- * Create the GPS to Cartesian coordinate conversion function
- */
 function createCoordinateConverter() {
     gpsToCartesian = (lat, lon, alt) => {
         const centerLatRad = (center.lat * Math.PI) / 180;
@@ -148,11 +107,6 @@ function createCoordinateConverter() {
     };
 }
 
-/**
- * Create geometry from GPS points (POSITIONS ONLY)
- * @param {Array} points - Array of GPS points
- * @returns {Object} Object containing positions array
- */
 function createGeometryFromPoints(points) {
     const positions = [];
     points.forEach((p) => {
@@ -160,16 +114,9 @@ function createGeometryFromPoints(points) {
         positions.push(pos.x, pos.y, pos.z);
     });
 
-    // Color calculation is REMOVED from this function.
     return { positions };
 }
 
-/**
- * Create Three.js objects from geometry data
- * @param {Object} geometryData - Object containing positions
- * @param {string} droneColor - Optional color for drone-specific line
- * @param {number} droneId - Optional drone ID for object naming
- */
 function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -177,7 +124,6 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
         new THREE.Float32BufferAttribute(geometryData.positions, 3)
     );
 
-    // Create an empty color attribute to be populated by updatePointColors.
     const colorArray = new Float32Array(geometryData.positions.length);
     geometry.setAttribute(
         "color",
@@ -214,14 +160,6 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
     return { points: pointsObj, line: lineObj };
 }
 
-
-
-/**
- * Plot GPS data - can create new plot or append to existing
- * @param {Array|Object} data - Array of GPS points OR parse result object with {allPoints, droneStreams}
- * @param {boolean} append - Whether to append to existing data
- * @returns {Object} Object containing plot metadata
- */
 export function plotGpsData(data, append = false) {
     const allPoints = getMasterGpsPoints();
     if (!allPoints || allPoints.length === 0) {
@@ -248,7 +186,7 @@ export function plotGpsData(data, append = false) {
     }
 
     if (append && pointsObject && gpsToCartesian) {
-        // --- REVISED APPEND LOGIC ---
+
         const newPositions = [];
         points.forEach((p) => {
             const pos = gpsToCartesian(p.lat, p.lon, p.alt);
@@ -262,7 +200,6 @@ export function plotGpsData(data, append = false) {
         combinedPositions.set(oldPositions);
         combinedPositions.set(newPositions, oldPositions.length);
 
-        // Resize the color buffer as well, but don't calculate colors here.
         const combinedColors = new Float32Array(combinedPositions.length);
 
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(combinedPositions, 3));
@@ -281,7 +218,7 @@ export function plotGpsData(data, append = false) {
         console.log(`Appended ${points.length} points.`);
 
     } else {
-        // --- FULL PLOT LOGIC ---
+
         clearPlotData();
         masterGpsPoints = [...points];
         calculateBoundsAndCenter(points);
@@ -305,8 +242,6 @@ export function plotGpsData(data, append = false) {
         initializeTrailControls(pointsObject, lineObject, masterGpsPoints, bounds);
     }
 
-    // *** CRITICAL FIX ***
-    // After any plot or append operation, call the master color update function.
     if (pointsObject) {
         updatePointColors();
     }

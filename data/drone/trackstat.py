@@ -3,10 +3,15 @@ import math
 import argparse
 from typing import List, Dict, Union
 
-# Constants for outlier rejection
+# --- Constants for Data Processing ---
+
+# Outlier rejection within a single flight
 MAX_ALT_DIFF = 100        # meters
 MAX_SPEED = 100           # meters per second (360 km/h)
 MAX_LATLON_JUMP = 0.02    # degrees (≈ 2.2 km)
+
+# Threshold for detecting a new flight (e.g., 2 minutes)
+FLIGHT_GAP_SECONDS = 120
 
 def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """
@@ -28,7 +33,7 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def extract_gps_points_from_text(text: str) -> List[Dict[str, Union[float, int]]]:
     """
     Parses text to find and convert GNGGA/GPGGA sentences into structured points.
-    Includes outlier rejection.
+    Includes outlier rejection for points within a potential flight.
     
     Args:
         text: The raw text content from the file.
@@ -99,12 +104,14 @@ def extract_gps_points_from_text(text: str) -> List[Dict[str, Union[float, int]]
                 dt = point_data['time'] - prev['time']
                 
                 # Handle time wrap-around (midnight crossing)
-                if dt < 0: dt += 86400
+                if dt < -1000: dt += 86400 # Allow for small backward time jumps, but catch midnight
 
                 distance = haversine(prev['lat'], prev['lon'], point_data['lat'], point_data['lon'])
                 speed = distance / dt if dt > 0 else 0
 
-                if (abs(point_data['alt'] - prev['alt']) > MAX_ALT_DIFF or
+                # This logic now primarily cleans up noise WITHIN a flight.
+                # The gap detection for new flights happens later.
+                if dt > 1 and (abs(point_data['alt'] - prev['alt']) > MAX_ALT_DIFF or
                     speed > MAX_SPEED or
                     abs(point_data['lat'] - prev['lat']) > MAX_LATLON_JUMP or
                     abs(point_data['lon'] - prev['lon']) > MAX_LATLON_JUMP):
@@ -118,12 +125,50 @@ def extract_gps_points_from_text(text: str) -> List[Dict[str, Union[float, int]]
             
     return points
 
-def calculate_and_display_stats(points: List[Dict[str, Union[float, int]]]):
+def segment_into_flights(points: List[Dict]) -> List[List[Dict]]:
     """
-    Calculates statistics from the list of points and prints them to the console.
+    Segments a list of time-sorted GPS points into distinct flights
+    based on a time gap threshold.
     """
     if not points:
-        print("No valid GPS data points found.")
+        return []
+
+    # The master list that will hold each flight (which is a list of points)
+    all_flights = []
+    
+    # Start the first flight with the first point
+    current_flight = [points[0]]
+
+    for i in range(1, len(points)):
+        prev_point = points[i-1]
+        current_point = points[i]
+
+        time_diff = current_point['time'] - prev_point['time']
+
+        # Handle midnight wrap-around
+        if time_diff < 0:
+            time_diff += 86400 
+
+        # If the gap is too large, end the current flight and start a new one
+        if time_diff > FLIGHT_GAP_SECONDS:
+            all_flights.append(current_flight)
+            current_flight = [current_point] # Start the new flight
+        else:
+            current_flight.append(current_point) # Continue the current flight
+
+    # Don't forget to add the last flight to the list
+    all_flights.append(current_flight)
+    
+    return all_flights
+
+
+def calculate_and_display_stats(points: List[Dict], flight_number: int):
+    """
+    Calculates statistics from a list of points (for a single flight)
+    and prints them to the console.
+    """
+    if not points:
+        print(f"\n--- Flight #{flight_number}: No valid GPS data points found. ---")
         return
 
     # --- STATISTIC CALCULATIONS ---
@@ -168,7 +213,7 @@ def calculate_and_display_stats(points: List[Dict[str, Union[float, int]]]):
         total_3d_dist += segment_3d_dist
 
     # --- DISPLAY STATS ---
-    print("\n--- GPS Track Statistics ---")
+    print(f"\n--- Flight #{flight_number} Statistics ---")
     print(f"Total Points:     {total_points}")
     print(f"Start Time (UTC): {start_time_formatted}")
     print(f"Duration (s):     {total_duration:.1f}")
@@ -182,12 +227,12 @@ def calculate_and_display_stats(points: List[Dict[str, Union[float, int]]]):
     print(f"Altitude MSL (m): {current_altitude:.2f}")
     print(f"Altitude WGS84(m):{current_alt_wsg84:.2f}")
     print(f"Satellites:       {last_point['satellites']}")
-    print("-" * 28 + "\n")
+    print("-" * 28)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Parse a file with GNGGA/GPGGA sentences and display statistics."
+        description="Parse a file with GNGGA/GPGGA sentences, segment into distinct flights, and display statistics."
     )
     parser.add_argument("filepath", help="Path to the GPS data file.")
     args = parser.parse_args()
@@ -196,10 +241,26 @@ if __name__ == "__main__":
         with open(args.filepath, 'r', errors='ignore') as f:
             file_content = f.read()
             
-        gps_points = extract_gps_points_from_text(file_content)
-        calculate_and_display_stats(gps_points)
+        # 1. Extract all valid points from the file
+        all_gps_points = extract_gps_points_from_text(file_content)
+
+        if not all_gps_points:
+            print("No valid GPS data found in the file.")
+        else:
+            # 2. Sort all points by time to handle interleaved data
+            all_gps_points.sort(key=lambda p: p['time'])
+
+            # 3. Segment the sorted points into flights
+            flights = segment_into_flights(all_gps_points)
+
+            # 4. Report results
+            print(f"\n>>> Analysis Complete: Detected {len(flights)} distinct flight(s). <<<\n")
+
+            for i, flight_points in enumerate(flights):
+                calculate_and_display_stats(flight_points, flight_number=i + 1)
         
     except FileNotFoundError:
         print(f"Error: File not found at '{args.filepath}'")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
