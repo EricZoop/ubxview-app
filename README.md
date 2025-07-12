@@ -14,7 +14,7 @@
 
 ## Get Running
 
-```ps1
+```bash
 git clone https://github.com/EricZoop/ubxview-app.git
 cd ubxview-app
 
