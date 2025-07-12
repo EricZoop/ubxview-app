@@ -28,6 +28,17 @@ body {
     text-align: right;
 }
 
+.info-icon-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+}
+
+.info-icon-container:hover .info-icon {
+    fill: #007bff;
+}
+
 h1 {
     margin: 0;
     padding: 0;

@@ -13,7 +13,7 @@ import * as THREE from "three";
  */
 export function createGrid(scene, options = {}) {
   const {
-    size = 100000,
+    size = 200000,
     gridSize = 100.0,
     lineWidth = 0.5,
     color = 0x666666,

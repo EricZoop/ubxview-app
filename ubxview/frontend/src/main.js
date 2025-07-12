@@ -67,7 +67,7 @@ function initializeScene() {
     createGrid(scene);
     axesHelper = new THREE.AxesHelper(100);
     axesHelper.rotation.y = Math.PI / 2;
-    axesHelper.position.y = 2;
+    axesHelper.position.y = 1;
     scene.add(axesHelper);
 
     // Compass
