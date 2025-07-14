@@ -19,7 +19,7 @@
 ## Get Running
 
 ```bash
-git clone https://github.com/EricZoop/ubxview-app.git
+git clone https://rada-bitbucket.drs.com/scm/rtldev/ubxview-app.git
 cd ubxview-app
 
 cd ubxview
@@ -34,7 +34,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-### Directory Glance
+## Directory Glance
 ```rs
 ubxview-app/
     ├── README.md
