@@ -3,7 +3,11 @@
   UBXView
 </h1>
 
-*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.* 
+<p align="center">
+  <img src="data/Demo.gif" alt="UBXView Demo" width="600">
+</p>
+
+*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
 
 ## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
@@ -55,9 +59,9 @@ ubxview-app/
         │       ├── fileManager.js
         │       ├── gridSetup.js
         │       ├── imagePlane.js
-        │       ├── main.js
-        │       ├── parser.js             # .ubx 
-        │       ├── planeData.js          #
+        │       ├── main.js               # Init 3D Scene
+        │       ├── parser.js             # .ubx reader & stats
+        │       ├── planeData.js          # Map placer
         │       ├── plotManager.js
         │       ├── style.css
         │       ├── trailControls.js
