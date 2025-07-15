@@ -88,12 +88,22 @@ a:hover {
 }
 
 #info {
-
     padding-bottom: 1rem;
     width: 200px;
     top: 10px;
     left: 10px;
+    max-height: 900px;
+    overflow-y: auto;
+
+    /* Hide scrollbar (for WebKit browsers like Chrome, Safari) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
+
+#info::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
 
 .controls-container {
     width: auto;

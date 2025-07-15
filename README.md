@@ -3,10 +3,6 @@
   UBXView
 </h1>
 
-<p>
-  <img src="data/Demo.gif" alt="Demo" width="600">
-</p>
-
 *Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
 
 ## Dependencies
