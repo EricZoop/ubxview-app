@@ -34,11 +34,11 @@ export const planeDefinitions = [
     },
     imageUrl: imageUrl3,
   },
-  // {
-  //   coords: {
-  //     topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
-  //     bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
-  //   },
-  //   imageUrl: imageUrl0,
-  // },
+  {
+    coords: {
+      topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
+      bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
+    },
+    imageUrl: imageUrl0,
+  },
 ];

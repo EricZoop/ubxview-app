@@ -126,7 +126,7 @@ export function setupCameraControls(camera) {
             this.panOffset.lerp(cinematicTarget, 0.05);
 
             // Maintain a relatively consistent distance from the target.
-            const desiredDistance = 800; // A good starting distance, can be adjusted.
+            const desiredDistance = 600; // A good starting distance, can be adjusted.
             this.distance += (desiredDistance - this.distance) * 0.05;
 
             // Slowly orbit around the target for a more dynamic "cinematic" feel.
