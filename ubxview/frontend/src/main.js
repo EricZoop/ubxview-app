@@ -3,7 +3,7 @@ import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 // Module imports
 import { setupTrailControlListeners, resetTrailControls } from "./trailControls.js";
-import { initializePlotManager, getGpsToCartesian } from "./plotManager.js";
+import { initializePlotManager, getGpsToCartesian, getLatestPoint } from "./plotManager.js";
 import { setupFileManagerListeners } from "./fileManager.js";
 
 // Existing imports
@@ -191,6 +191,16 @@ function clearImagePlanes() {
  */
 function animate() {
     requestAnimationFrame(animate);
+
+    // If cinematic mode is active, update the target
+    if (controls.isCinematicActive()) {
+        const latestPoint = getLatestPoint(); // Assumes getLatestPoint() returns a THREE.Vector3 or null
+
+        console.log("Latest point for cinematic cam:", latestPoint); 
+        if (latestPoint) {
+            controls.setCinematicTarget(latestPoint);
+        }
+    }
 
     // Update controls and compass
     controls.update();

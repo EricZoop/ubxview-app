@@ -6,6 +6,8 @@ import {
     updatePointColors,
 } from "./trailControls.js";
 
+let latestPoint = null;
+
 let dataGroup = null;
 let gpsToCartesian = null;
 let center = null;
@@ -14,6 +16,22 @@ let baselineAltitude = null;
 let pointsObject = null;
 let lineObject = null;
 let masterGpsPoints = [];
+
+/**
+ * Returns the most recently added data point.
+ * @returns {THREE.Vector3 | null} The latest point as a Vector3, or null if no points exist.
+ */
+export function getLatestPoint() {
+    if (!masterGpsPoints || masterGpsPoints.length === 0 || !gpsToCartesian) {
+        return null;
+    }
+    
+    // Get the last point from the master GPS points array
+    const lastGpsPoint = masterGpsPoints[masterGpsPoints.length - 1];
+    
+    // Convert to cartesian coordinates and return
+    return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
+}
 
 export function initializePlotManager(group) {
     dataGroup = group;
@@ -50,6 +68,7 @@ function clearPlotData() {
     center = null;
     bounds = null;
     baselineAltitude = null;
+    latestPoint = null; // Clear latest point when clearing data
 }
 
 function calculateBoundsAndCenter(points) {
