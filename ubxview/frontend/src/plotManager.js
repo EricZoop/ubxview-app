@@ -96,13 +96,22 @@ function createCoordinateConverter() {
 
 function createGeometryFromPoints(points) {
     const positions = [];
-    points.forEach((p) => {
+    const indices = [];
+    
+    points.forEach((p, index) => {
         const pos = gpsToCartesian(p.lat, p.lon, p.alt);
         positions.push(pos.x, pos.y, pos.z);
+        
+        // Add a small random offset to prevent z-fighting
+        const offset = (Math.random() - 0.5) * 0.01;
+        positions[positions.length - 1] += offset; // Offset z-coordinate slightly
+        
+        indices.push(index);
     });
 
     return {
-        positions
+        positions,
+        indices
     };
 }
 
@@ -119,31 +128,69 @@ function createThreeJsObjects(geometryData) {
         new THREE.Float32BufferAttribute(colorArray, 3)
     );
 
-    const pointsObj = new THREE.Points(
-        geometry,
-        new THREE.PointsMaterial({
-            size: 4,
-            vertexColors: true,
-            sizeAttenuation: false,
-        })
-    );
+    // Enhanced point material with better rendering properties
+    const pointsMaterial = new THREE.PointsMaterial({
+        size: 6, // Slightly larger for better visibility
+        vertexColors: true,
+        sizeAttenuation: false,
+        alphaTest: 0.1, // Helps with transparency issues
+        transparent: true,
+        opacity: 0.95,
+        // Use a circular texture for better point appearance
+        map: createCircularTexture(),
+        depthTest: true,
+        depthWrite: false, // Important for preventing z-fighting
+        blending: THREE.NormalBlending,
+    });
+
+    const pointsObj = new THREE.Points(geometry, pointsMaterial);
+    
+    // Set render order to help with z-fighting
+    pointsObj.renderOrder = 1;
 
     const colors = getCurrentTrailColors();
-    const lineObj = new THREE.Line(
-        geometry,
-        new THREE.LineBasicMaterial({
-            color: colors.line,
-        })
-    );
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: colors.line,
+        transparent: true,
+        opacity: 0.8,
+        depthTest: true,
+        depthWrite: false,
+        linewidth: 2, // Note: linewidth > 1 only works with WebGL2
+    });
 
+    const lineObj = new THREE.Line(geometry, lineMaterial);
     lineObj.visible = getLineVisibility();
+    lineObj.renderOrder = 0; // Render lines before points
 
-    dataGroup.add(pointsObj, lineObj);
+    dataGroup.add(lineObj, pointsObj); // Add line first, then points
 
     return {
         points: pointsObj,
         line: lineObj
     };
+}
+
+// Create a circular texture for better point appearance
+function createCircularTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Create a radial gradient for a nice circular effect
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.8)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 32, 32);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    
+    return texture;
 }
 
 export function plotGpsData(points, append = false) {
@@ -169,7 +216,9 @@ export function plotGpsData(points, append = false) {
         const newPositions = [];
         points.forEach((p) => {
             const pos = gpsToCartesian(p.lat, p.lon, p.alt);
-            newPositions.push(pos.x, pos.y, pos.z);
+            // Add small random offset to prevent z-fighting
+            const offset = (Math.random() - 0.5) * 0.01;
+            newPositions.push(pos.x, pos.y, pos.z + offset);
         });
 
         const geometry = pointsObject.geometry;
