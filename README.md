@@ -15,7 +15,7 @@
 ## Get Running
 
 ```bash
-git clone https://rada-bitbucket.drs.com/scm/rtldev/ubxview-app.git
+git clone
 cd ubxview-app
 
 cd ubxview
