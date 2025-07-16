@@ -15,28 +15,21 @@ try {
     $port.Open()
     Write-Host "Successfully opened port '$portName'."
 
-    # Loop indefinitely to read data
     while ($true) {
+
         # Check if there is data waiting in the input buffer
         if ($port.BytesToRead -gt 0) {
             try {
-                # Read a string up to the next newline character
+
                 $data = $port.ReadLine()
-
-                # Print the data to the console in real-time
                 Write-Output $data
-
-                # Append the received line to the output file.
-                # This command creates the file if it doesn't exist.
                 Add-Content -Path $outputFile -Value $data
             }
             catch {
-                # Catch potential errors during ReadLine or Add-Content
-                # without stopping the entire script.
                 Write-Warning "An error occurred while reading or writing data: $_"
             }
         }
-        # Pause the script for a moment to prevent 100% CPU usage.
+        # Pause
         Start-Sleep -Milliseconds 10
     }
 }
