@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 // SVG definitions for compass ticks
-const SVG_TICK_SMALL = `<svg width="2" height="10" viewBox="0 0 2 10" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="0" x2="1" y2="10" stroke="currentColor" stroke-width="1"/></svg>`;
-const SVG_TICK_MEDIUM = `<svg width="2" height="15" viewBox="0 0 2 15" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="0" x2="1" y2="15" stroke="currentColor" stroke-width="1.5"/></svg>`;
-const SVG_TICK_LARGE = `<svg width="2" height="20" viewBox="0 0 2 20" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="0" x2="1" y2="20" stroke="currentColor" stroke-width="2"/></svg>`;
+const SVG_TICK_SMALL = `<svg width="2" height="10" viewBox="0 0 2 10"><line x1="1" y1="0" x2="1" y2="10" stroke="currentColor" stroke-width="1"/></svg>`;
+const SVG_TICK_MEDIUM = `<svg width="2" height="15" viewBox="0 0 2 15"><line x1="1" y1="0" x2="1" y2="15" stroke="currentColor" stroke-width="1.5"/></svg>`;
+const SVG_TICK_LARGE = `<svg width="2" height="20" viewBox="0 0 2 20"><line x1="1" y1="0" x2="1" y2="20" stroke="currentColor" stroke-width="2"/></svg>`;
 
 // Module-level variables to store labels and ticks
 let compassLabels = {};

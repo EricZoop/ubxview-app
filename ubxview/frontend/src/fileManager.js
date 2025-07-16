@@ -1,7 +1,7 @@
 // FILE HANDLING AND WATCHING
 
 import { extractGpsPointsFromText, updateStats } from "./parser.js";
-import { plotGpsData, setMasterGpsPoints, addToMasterGpsPoints, getMasterGpsPoints } from "./plotManager.js";
+import { plotGpsData, getMasterGpsPoints } from "./plotManager.js";
 
 // Module state
 let currentFile = null;
@@ -24,7 +24,7 @@ export function getPollingRate() {
  */
 export function setPollingRate(rate) {
     POLLING_RATE_MS = rate;
-    
+
     // Restart file watcher if active
     if (fileWatcherInterval) {
         clearInterval(fileWatcherInterval);
@@ -52,9 +52,6 @@ async function watchFileForChanges() {
             const newPoints = extractGpsPointsFromText(newText);
 
             if (newPoints && newPoints.length > 0) {
-                // Add new points to master list
-                addToMasterGpsPoints(newPoints);
-
                 // Append the new points to the plot
                 plotGpsData(newPoints, true);
 
@@ -122,14 +119,12 @@ export async function openFile(onPlotComplete) {
 
         if (masterGpsPoints.length === 0) {
             alert("No valid GPS points found in the file.");
-            setMasterGpsPoints([]);
             plotGpsData([]);
             updateStats([]);
             return false;
         }
 
-        // Set master points and plot initial data
-        setMasterGpsPoints(masterGpsPoints);
+        // Plot initial data; this also sets the master points in plotManager
         const plotMetadata = plotGpsData(masterGpsPoints, false);
         updateStats(masterGpsPoints);
 

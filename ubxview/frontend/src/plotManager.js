@@ -1,6 +1,10 @@
 import * as THREE from "three";
-
-import { initializeTrailControls, getCurrentTrailColors, getLineVisibility, updatePointColors } from "./trailControls.js";
+import {
+    initializeTrailControls,
+    getCurrentTrailColors,
+    getLineVisibility,
+    updatePointColors,
+} from "./trailControls.js";
 
 let dataGroup = null;
 let gpsToCartesian = null;
@@ -10,7 +14,6 @@ let baselineAltitude = null;
 let pointsObject = null;
 let lineObject = null;
 let masterGpsPoints = [];
-let droneObjects = []; 
 
 export function initializePlotManager(group) {
     dataGroup = group;
@@ -20,27 +23,11 @@ export function getGpsToCartesian() {
     return gpsToCartesian;
 }
 
-export function getBounds() {
-    return bounds;
-}
-
-export function getCenter() {
-    return center;
-}
-
 export function getMasterGpsPoints() {
     return masterGpsPoints;
 }
 
-export function setMasterGpsPoints(points) {
-    masterGpsPoints = points;
-}
-
-export function addToMasterGpsPoints(points) {
-    masterGpsPoints.push(...points);
-}
-
-export function clearPlotData() {
+function clearPlotData() {
     if (!dataGroup) return;
 
     while (dataGroup.children.length > 0) {
@@ -58,7 +45,6 @@ export function clearPlotData() {
 
     pointsObject = null;
     lineObject = null;
-    droneObjects = [];
     masterGpsPoints = [];
     gpsToCartesian = null;
     center = null;
@@ -100,7 +86,8 @@ function createCoordinateConverter() {
     gpsToCartesian = (lat, lon, alt) => {
         const centerLatRad = (center.lat * Math.PI) / 180;
         const scaleFactor = 10.0;
-        const x = (lon - center.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
+        const x =
+            (lon - center.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
         const y = (alt - baselineAltitude) * 5;
         const z = (lat - center.lat) * 111320 * scaleFactor;
         return new THREE.Vector3(x, y, -z);
@@ -114,10 +101,12 @@ function createGeometryFromPoints(points) {
         positions.push(pos.x, pos.y, pos.z);
     });
 
-    return { positions };
+    return {
+        positions
+    };
 }
 
-function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
+function createThreeJsObjects(geometryData) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
         "position",
@@ -140,44 +129,32 @@ function createThreeJsObjects(geometryData, droneColor = null, droneId = null) {
     );
 
     const colors = getCurrentTrailColors();
-    const lineColor = droneColor || colors.line;
     const lineObj = new THREE.Line(
         geometry,
         new THREE.LineBasicMaterial({
-            color: lineColor,
+            color: colors.line,
         })
     );
 
     lineObj.visible = getLineVisibility();
 
-    if (droneId !== null) {
-        pointsObj.name = `drone_${droneId}_points`;
-        lineObj.name = `drone_${droneId}_line`;
-    }
-
     dataGroup.add(pointsObj, lineObj);
 
-    return { points: pointsObj, line: lineObj };
+    return {
+        points: pointsObj,
+        line: lineObj
+    };
 }
 
-export function plotGpsData(data, append = false) {
-    const allPoints = getMasterGpsPoints();
-    if (!allPoints || allPoints.length === 0) {
-        clearPlotData();
-        return null;
+export function plotGpsData(points, append = false) {
+    if (!points) {
+        points = [];
     }
 
-    let points, droneStreams;
-
-    if (Array.isArray(data)) {
-        points = data;
-        droneStreams = [];
-    } else if (data && typeof data === 'object') {
-        points = data.allPoints || [];
-        droneStreams = data.droneStreams || [];
-    } else {
-        points = [];
-        droneStreams = [];
+    const allMasterPoints = getMasterGpsPoints();
+    if ((!allMasterPoints || allMasterPoints.length === 0) && points.length === 0) {
+        clearPlotData();
+        return null;
     }
 
     if (!points || points.length === 0) {
@@ -186,6 +163,8 @@ export function plotGpsData(data, append = false) {
     }
 
     if (append && pointsObject && gpsToCartesian) {
+        // When appending, add new points to the master list
+        masterGpsPoints.push(...points);
 
         const newPositions = [];
         points.forEach((p) => {
@@ -196,14 +175,22 @@ export function plotGpsData(data, append = false) {
         const geometry = pointsObject.geometry;
         const oldPositions = geometry.attributes.position.array;
 
-        const combinedPositions = new Float32Array(oldPositions.length + newPositions.length);
+        const combinedPositions = new Float32Array(
+            oldPositions.length + newPositions.length
+        );
         combinedPositions.set(oldPositions);
         combinedPositions.set(newPositions, oldPositions.length);
 
         const combinedColors = new Float32Array(combinedPositions.length);
 
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(combinedPositions, 3));
-        geometry.setAttribute("color", new THREE.Float32BufferAttribute(combinedColors, 3));
+        geometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(combinedPositions, 3)
+        );
+        geometry.setAttribute(
+            "color",
+            new THREE.Float32BufferAttribute(combinedColors, 3)
+        );
 
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.color.needsUpdate = true;
@@ -216,28 +203,17 @@ export function plotGpsData(data, append = false) {
         }
 
         console.log(`Appended ${points.length} points.`);
-
     } else {
-
         clearPlotData();
         masterGpsPoints = [...points];
         calculateBoundsAndCenter(points);
         createCoordinateConverter();
 
-        if (droneStreams.length > 0) {
-            createDroneObjects(droneStreams);
-            const geometryData = createGeometryFromPoints(points);
-            const objects = createThreeJsObjects(geometryData);
-            pointsObject = objects.points;
-            lineObject = objects.line;
-            console.log(`Successfully plotted ${points.length} points across ${droneStreams.length} drones.`);
-        } else {
-            const geometryData = createGeometryFromPoints(points);
-            const objects = createThreeJsObjects(geometryData);
-            pointsObject = objects.points;
-            lineObject = objects.line;
-            console.log(`Successfully plotted ${points.length} points.`);
-        }
+        const geometryData = createGeometryFromPoints(points);
+        const objects = createThreeJsObjects(geometryData);
+        pointsObject = objects.points;
+        lineObject = objects.line;
+        console.log(`Successfully plotted ${points.length} points.`);
 
         initializeTrailControls(pointsObject, lineObject, masterGpsPoints, bounds);
     }
@@ -255,6 +231,5 @@ export function plotGpsData(data, append = false) {
         firstPointVec: gpsToCartesian(points[0].lat, points[0].lon, points[0].alt),
         center,
         bounds,
-        droneCount: droneStreams.length
     };
 }
