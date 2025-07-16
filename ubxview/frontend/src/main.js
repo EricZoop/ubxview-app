@@ -196,7 +196,6 @@ function animate() {
     if (controls.isCinematicActive()) {
         const latestPoint = getLatestPoint(); // Assumes getLatestPoint() returns a THREE.Vector3 or null
 
-        console.log("Latest point for cinematic cam:", latestPoint); 
         if (latestPoint) {
             controls.setCinematicTarget(latestPoint);
         }

@@ -170,15 +170,15 @@ function createThreeJsObjects(geometryData) {
     const colors = getCurrentTrailColors();
     const lineMaterial = new THREE.LineBasicMaterial({
         color: colors.line,
-        transparent: true,
-        opacity: 0.8,
+        transparent: false, // Important: do not let blending mess with this
+        opacity: 1,          // Full opacity
         depthTest: true,
-        depthWrite: false,
-        linewidth: 2, // Note: linewidth > 1 only works with WebGL2
+        depthWrite: true,    // Let depth be written for solid rendering
+        linewidth: 4,
     });
 
     const lineObj = new THREE.Line(geometry, lineMaterial);
-    lineObj.visible = getLineVisibility();
+
     lineObj.renderOrder = 0; // Render lines before points
 
     dataGroup.add(lineObj, pointsObj); // Add line first, then points

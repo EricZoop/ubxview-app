@@ -9,6 +9,9 @@ import imageUrl1 from "./maps/RADA_2x2km.png";
 import imageUrl2 from "./maps/BUTLERS_2x2km.png";
 import imageUrl3 from "./maps/PEACH_2x2km.png";
 
+
+// CTRL + K, CTRL + C to comment blocks
+
 export const planeDefinitions = [
   {
     coords: {
@@ -31,11 +34,11 @@ export const planeDefinitions = [
     },
     imageUrl: imageUrl3,
   },
-  {
-    coords: {
-      topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
-      bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
-    },
-    imageUrl: imageUrl0,
-  },
+  // {
+  //   coords: {
+  //     topLeft: { lat: 39.24927084622339, lon: -77.32177734375 },
+  //     bottomRight: { lat: 39.14710270770075, lon: -77.18994140625 },
+  //   },
+  //   imageUrl: imageUrl0,
+  // },
 ];
