@@ -1,5 +1,5 @@
 <h1 style="display: flex; align-items: center; gap: 10px;">
-  <img src="ubxview/frontend/public/assets/dot.png" alt="Logo" height="42">
+  <img src="ubxview/frontend/public/assets/dot.png" alt="Logo" height="32">
   UBXView
 </h1>
 
@@ -15,7 +15,7 @@
 ## Get Running
 
 ```bash
-git clone
+git clone https://github.com/EricZoop/ubxview-app
 cd ubxview-app
 
 cd ubxview

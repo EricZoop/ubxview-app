@@ -339,3 +339,14 @@ select:hover {
 #show-lines-toggle {
     vertical-align: middle;
 }
+
+.compass-text {
+    font-family: monospace;
+    font-size: 32px;
+    color: white; /* or any base text color */
+    text-shadow:
+        -1px -1px 0 black,
+         1px -1px 0 black,
+        -1px  1px 0 black,
+         1px  1px 0 black; /* creates a black border around the text */
+}
