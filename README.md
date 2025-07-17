@@ -1,9 +1,9 @@
 <h1 style="display: flex; align-items: center; gap: 10px;">
-  <img src="ubxview/frontend/public/assets/dotbl.png" alt="Logo" height="32">
+  <img src="ubxview/frontend/public/assets/dot.png" alt="Logo" height="42">
   UBXView
 </h1>
 
-*Model real-time kinematic (RTK) drone-mounted sensors for radar auto-registration workflows, powered by u-center.*
+*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
 
 ## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
