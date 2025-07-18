@@ -1,5 +1,5 @@
 <h1 style="display: flex; align-items: center; gap: 10px;">
-  <img src="ubxview/frontend/public/assets/dot.png" alt="Logo" height="32">
+  <img src="ubxview/frontend/public/assets/dot-launch.png" alt="Logo" height="32">
   UBXView
 </h1>
 

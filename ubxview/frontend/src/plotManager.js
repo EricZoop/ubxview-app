@@ -149,14 +149,14 @@ function createThreeJsObjects(geometryData) {
 
     // Enhanced point material with better rendering properties
     const pointsMaterial = new THREE.PointsMaterial({
-        size: 6, // Slightly larger for better visibility
+        size: 5, // Slightly larger for better visibility
         vertexColors: true,
         sizeAttenuation: false,
         alphaTest: 0.1, // Helps with transparency issues
         transparent: true,
-        opacity: 0.95,
+        opacity: 1,
         // Use a circular texture for better point appearance
-        map: createCircularTexture(),
+
         depthTest: true,
         depthWrite: false, // Important for preventing z-fighting
         blending: THREE.NormalBlending,
@@ -174,7 +174,7 @@ function createThreeJsObjects(geometryData) {
         opacity: 1,          // Full opacity
         depthTest: true,
         depthWrite: true,    // Let depth be written for solid rendering
-        linewidth: 4,
+        linewidth: 100,
     });
 
     const lineObj = new THREE.Line(geometry, lineMaterial);

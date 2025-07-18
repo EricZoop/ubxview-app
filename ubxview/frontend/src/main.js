@@ -30,29 +30,20 @@ function initializeScene() {
     scene.background = new THREE.Color(0x050505);
     scene.add(dataGroup);
 
-    // Camera with extended render distance
+    // Camera
     camera = new THREE.PerspectiveCamera(
         70,
         window.innerWidth / window.innerHeight,
         0.1,
-        500000 // Increased from 100,000 to 1,000,000
+        500000
     );
 
-    // Renderers with enhanced settings
+    // Renderers
     renderer = new THREE.WebGLRenderer({
         antialias: true,
-        powerPreference: "high-performance", // Use dedicated GPU if available
-        precision: "highp" // Use high precision for better rendering at distance
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.sortObjects = true;
-    
-    // Enable logarithmic depth buffer for better depth precision at long distances
-    renderer.logarithmicDepthBuffer = true;
-    
-    // Set pixel ratio for better quality on high-DPI displays
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    
     document.body.appendChild(renderer.domElement);
 
     labelRenderer = new CSS2DRenderer();
@@ -66,24 +57,11 @@ function initializeScene() {
     controls = setupCameraControls(camera);
     controls.updateCameraPosition();
 
-    // Lights with extended range
-    scene.add(new THREE.AmbientLight(0xffccaa, 0.2));
-
-    const sunsetLight = new THREE.DirectionalLight(0xff8844, 1.5);
-    sunsetLight.position.set(-50, 30, -50);
-    sunsetLight.castShadow = true;
-    
-    // Extend shadow camera for better shadows at distance
-    if (sunsetLight.shadow) {
-        sunsetLight.shadow.camera.near = 0.1;
-        sunsetLight.shadow.camera.far = 500000;
-        sunsetLight.shadow.camera.left = -10000;
-        sunsetLight.shadow.camera.right = 10000;
-        sunsetLight.shadow.camera.top = 10000;
-        sunsetLight.shadow.camera.bottom = -10000;
-    }
-    
-    scene.add(sunsetLight);
+    // Lights
+    scene.add(new THREE.AmbientLight(0x404040, 1.5));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 100, 50);
+    scene.add(directionalLight);
 
     // Grid and Axes
     createGrid(scene);
@@ -104,7 +82,7 @@ function initializeScene() {
     // Start animation loop
     animate();
     
-    console.log("Stage initialized with extended render distance. Waiting for data file.");
+    console.log("Stage initialized. Waiting for data file.");
 }
 
 /**
@@ -123,17 +101,7 @@ function setupEventListeners() {
                 scene.remove(axesHelper);
             }
 
-            // Update camera position with extended far plane if needed
-            const dataSpan = plotMetadata.dataSpan;
-            const maxDistance = Math.max(dataSpan.x, dataSpan.y, dataSpan.z) * 10; // 10x buffer
-            
-            // Dynamically adjust camera far plane based on data size
-            if (maxDistance > camera.far * 0.8) {
-                camera.far = maxDistance;
-                camera.updateProjectionMatrix();
-                console.log(`Extended camera far plane to ${camera.far} based on data span`);
-            }
-            
+            // Update camera position
             controls.reset(plotMetadata.dataSpan, plotMetadata.firstPointVec);
             
             // Add compass labels to data group
@@ -166,7 +134,7 @@ function setupEventListeners() {
 }
 
 /**
- * Add image planes to the scene with enhanced settings
+ * Add image planes to the scene
  */
 async function addImagePlanes() {
     const gpsToCartesian = getGpsToCartesian();
@@ -194,26 +162,8 @@ async function addImagePlanes() {
 
     try {
         const planes = await Promise.all(planePromises);
-        
-        // Enhance plane materials for better distance rendering
-        planes.forEach(plane => {
-            if (plane && plane.material) {
-                // Disable depth test if planes are z-fighting
-                // plane.material.depthTest = false;
-                
-                // Ensure materials are updated
-                plane.material.needsUpdate = true;
-                
-                // Set render order to help with sorting
-                plane.renderOrder = 1;
-                
-                // Enable frustum culling
-                plane.frustumCulled = true;
-            }
-        });
-        
         imagePlanes.push(...planes);
-        console.log(`Added ${planes.length} image planes with enhanced distance rendering`);
+        console.log(`Added ${planes.length} image planes with opacity ${currentOpacity}`);
     } catch (error) {
         console.error("Error adding image planes:", error);
     }
@@ -237,7 +187,7 @@ function clearImagePlanes() {
 }
 
 /**
- * Animation loop with performance monitoring
+ * Animation loop
  */
 function animate() {
     requestAnimationFrame(animate);
@@ -254,14 +204,6 @@ function animate() {
     // Update controls and compass
     controls.update();
     updateCompass(camera);
-
-    // Optional: Log camera distance for debugging
-    if (controls.object) {
-        const distance = controls.object.position.length();
-        if (distance > camera.far * 0.9) {
-            console.warn(`Camera approaching far plane limit. Distance: ${distance.toFixed(2)}, Far: ${camera.far}`);
-        }
-    }
 
     // Render the scene
     renderer.render(scene, camera);
@@ -283,7 +225,7 @@ function onWindowResize() {
  */
 function initializeApplication() {
     initializeScene();
-    console.log("Application initialized successfully with enhanced render distance");
+    console.log("Application initialized successfully");
 }
 
 // Start the application
