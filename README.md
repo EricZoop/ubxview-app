@@ -57,7 +57,7 @@ ubxview-app/
         │       ├── imagePlane.js
         │       ├── main.js               # Init 3D Scene
         │       ├── parser.js             # .ubx reader & stats
-        │       ├── planeData.js          # Map placer
+        │       ├── planeData.js          # Map storage
         │       ├── plotManager.js
         │       ├── style.css
         │       ├── trailControls.js
