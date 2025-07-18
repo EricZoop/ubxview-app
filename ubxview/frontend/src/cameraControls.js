@@ -130,7 +130,7 @@ export function setupCameraControls(camera) {
             this.distance += (desiredDistance - this.distance) * 0.05;
 
             // Slowly orbit around the target for a more dynamic "cinematic" feel.
-            this.angleY += 0.001;
+            this.angleY += 0.0005;
 
             this.updateCameraPosition();
         },
