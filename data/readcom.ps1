@@ -8,20 +8,14 @@ $stopBits   = [System.IO.Ports.StopBits]::One
 
 $port = New-Object System.IO.Ports.SerialPort($portName, $baudRate, $parity, $dataBits, $stopBits)
 
-
-
 try {
-
     $port.Open()
     Write-Host "Successfully opened port '$portName'."
 
     while ($true) {
-
-        # Check if there is data waiting in the input buffer
         if ($port.BytesToRead -gt 0) {
             try {
-
-                $data = $port.ReadLine()
+                $data = $port.ReadLine().TrimEnd("`r", "`n")  # Remove newline chars
                 Write-Output $data
                 Add-Content -Path $outputFile -Value $data
             }
@@ -29,7 +23,6 @@ try {
                 Write-Warning "An error occurred while reading or writing data: $_"
             }
         }
-        # Pause
         Start-Sleep -Milliseconds 10
     }
 }
@@ -39,7 +32,6 @@ catch {
     Write-Error "Please ensure the port name ('$portName') is correct and not in use by another application."
 }
 finally {
-
     if ($port -and $port.IsOpen) {
         Write-Host "Closing port '$portName'..."
         $port.Close()

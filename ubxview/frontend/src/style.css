@@ -88,9 +88,7 @@ a:hover {
     -ms-overflow-style: none;
 }
 
-#info::-webkit-scrollbar {
-    display: none;
-}
+
 
 .controls-container {
     width: auto;
@@ -298,6 +296,10 @@ input {
     margin-bottom: 0.9em;
 }
 
+.control-row:last-child {
+    margin-bottom: 0.1em;
+}
+
 .keys {
     display: flex;
     gap: 0.4em;
@@ -338,7 +340,7 @@ select {
     font-family: inherit;
     font-size: 0.85em;
     cursor: pointer;
-    -webkit-appearance: none;
+
     appearance: none;
     background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23eee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
     background-repeat: no-repeat;

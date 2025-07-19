@@ -129,11 +129,11 @@ export function setupCameraControls(camera) {
             this.panOffset.lerp(cinematicTarget, 0.05);
 
             // Use the cached distance as the target. Fallback to 600 if not set.
-            const desiredDistance = cachedDistance || 600;
+            const desiredDistance = cachedDistance || 900;
             this.distance += (desiredDistance - this.distance) * 0.05;
 
             // Slowly orbit around the target for a more dynamic "cinematic" feel.
-            this.angleY += 0.0005;
+            this.angleY += 0.0000;
 
             this.updateCameraPosition();
         },
