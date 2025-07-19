@@ -174,7 +174,7 @@ function createThreeJsObjects(geometryData) {
         opacity: 1,          // Full opacity
         depthTest: true,
         depthWrite: true,    // Let depth be written for solid rendering
-        linewidth: 100,
+        linewidth: 10000,
     });
 
     const lineObj = new THREE.Line(geometry, lineMaterial);

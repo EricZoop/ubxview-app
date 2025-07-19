@@ -23,6 +23,9 @@ export function setupCameraControls(camera) {
     // --- State for cinematic camera ---
     let isCinematicMode = false;
     let cinematicTarget = new THREE.Vector3();
+    let cachedAngleX = null;
+    let cachedAngleY = null;
+    let cachedDistance = null; // To store distance before cinematic mode
 
     const controls = {
         // --- Camera positioning properties ---
@@ -125,8 +128,8 @@ export function setupCameraControls(camera) {
             // Smoothly interpolate the camera's look-at point (panOffset) towards the cinematic target.
             this.panOffset.lerp(cinematicTarget, 0.05);
 
-            // Maintain a relatively consistent distance from the target.
-            const desiredDistance = 600; // A good starting distance, can be adjusted.
+            // Use the cached distance as the target. Fallback to 600 if not set.
+            const desiredDistance = cachedDistance || 600;
             this.distance += (desiredDistance - this.distance) * 0.05;
 
             // Slowly orbit around the target for a more dynamic "cinematic" feel.
@@ -140,14 +143,12 @@ export function setupCameraControls(camera) {
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
             
             if (isCinematicMode) {
-                // Cache the current angles
+                // Cache the current angles and distance
                 cachedAngleX = this.angleX;
                 cachedAngleY = this.angleY;
-
-                // Snap to a more cinematic angle
-                this.angleX = Math.PI / 1; // Lower tilt
+                cachedDistance = this.distance;
             } else {
-                // Restore previous angles
+                // Restore previous angles when exiting
                 if (cachedAngleX !== null && cachedAngleY !== null) {
                     this.angleX = cachedAngleX;
                     this.angleY = cachedAngleY;
