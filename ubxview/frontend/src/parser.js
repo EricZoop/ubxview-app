@@ -17,6 +17,21 @@ export function extractGpsPointsFromText(text) {
 
     if (!matches) return points;
 
+    const MAX_ALT_DIFF = 500;         // meters
+    const MAX_SPEED = 100;            // meters per second (360 km/h)
+    const MAX_LATLON_JUMP = 0.02;     // degrees (≈ 2.2 km)
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = deg => deg * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
     for (const sentence of matches) {
         const parts = sentence.split(',');
         if (parts.length < 15) continue;
@@ -65,7 +80,26 @@ export function extractGpsPointsFromText(text) {
             const time = h * 3600 + m * 60 + s;
 
             if (!isNaN(lat) && !isNaN(lon) && !isNaN(time)) {
-                // The outlier rejection block has been removed from here.
+                // --- Outlier rejection ---
+                const prev = points[points.length - 1];
+                if (prev) {
+                    const dt = time - prev.time;
+                    const dAlt = Math.abs(alt - prev.alt);
+                    const dLat = Math.abs(lat - prev.lat);
+                    const dLon = Math.abs(lon - prev.lon);
+                    const distance = haversine(prev.lat, prev.lon, lat, lon);
+                    const speed = dt > 0 ? distance / dt : 0;
+
+                    if (
+                        dAlt > MAX_ALT_DIFF ||
+                        speed > MAX_SPEED ||
+                        dLat > MAX_LATLON_JUMP ||
+                        dLon > MAX_LATLON_JUMP
+                    ) {
+                        continue; // Skip this outlier
+                    }
+                }
+
                 points.push({ 
                     lat, 
                     lon, 

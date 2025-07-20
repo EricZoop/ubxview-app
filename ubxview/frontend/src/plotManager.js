@@ -193,41 +193,37 @@ function createThreeJsObjects(geometryData) {
         new THREE.Float32BufferAttribute(colorArray, 3)
     );
 
-    // Enhanced point material with better rendering properties
+    // Fixed points material to match line rendering behavior
     const pointsMaterial = new THREE.PointsMaterial({
-        size: 5, // Slightly larger for better visibility
+        size: 5,
         vertexColors: true,
         sizeAttenuation: false,
-        alphaTest: 0.1, // Helps with transparency issues
-        transparent: true,
+        transparent: false,  // Changed from true to match lines
         opacity: 1,
-        // Use a circular texture for better point appearance
-
         depthTest: true,
-        depthWrite: false, // Important for preventing z-fighting
+        depthWrite: true,    // Changed from false to match lines
         blending: THREE.NormalBlending,
     });
 
     const pointsObj = new THREE.Points(geometry, pointsMaterial);
     
-    // Set render order to help with z-fighting
-    pointsObj.renderOrder = 1;
+    // Set same render order as lines for consistency
+    pointsObj.renderOrder = 0;  // Changed from 1 to match lines
 
     const colors = getCurrentTrailColors();
     const lineMaterial = new THREE.LineBasicMaterial({
         color: colors.line,
-        transparent: false, // Important: do not let blending mess with this
-        opacity: 1,          // Full opacity
+        transparent: false,
+        opacity: 1,
         depthTest: true,
-        depthWrite: true,    // Let depth be written for solid rendering
+        depthWrite: true,
         linewidth: 10000,
     });
 
     const lineObj = new THREE.Line(geometry, lineMaterial);
+    lineObj.renderOrder = 0;
 
-    lineObj.renderOrder = 0; // Render lines before points
-
-    dataGroup.add(lineObj, pointsObj); // Add line first, then points
+    dataGroup.add(lineObj, pointsObj);
 
     return {
         points: pointsObj,
