@@ -83,7 +83,7 @@ a:hover {
     top: 10px;
     left: 10px;
     max-height: 900px;
-    overflow-y: auto;
+    overflow: visible;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -198,8 +198,7 @@ input {
 #opacitySlider {
     width: 200px;
 
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
+
     background: transparent;
     -webkit-appearance: none;
     appearance: none;
@@ -256,7 +255,9 @@ input {
 
 .slider-wrapper {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+
 }
 
 .slider-tooltip {
@@ -269,7 +270,8 @@ input {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s ease;
-    transform: translateX(-50%);
+    transform: translateX(205px);
+
 }
 
 .slider-wrapper:hover .slider-tooltip {

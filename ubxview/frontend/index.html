@@ -22,17 +22,17 @@
         </div>
 
 
-        <div>Model Real-Time Kinematics (RTK) NMEA sentences live.</div><hr style="border-width: 0px;">
+        <div>Model real-time kinematic (RTK) drone-mounted NMEA sensors for radar calibration workflows, powered by u-center.</div><hr style="border-width: 0px;">
 
         <!--<h2>Read Capture </h2>-->
 
 
         <div class="controls-container">
 
-            <div>Choose File</div>
+            <div style="font-weight: 600;">Choose File</div>
             <label id="fileInputLabel" class="custom-file">
                 <span id="fileLabel">
-                    .ubx, .txt, .csv, .log
+                    .ubx, .txt, .csv, .log&nbsp;
                     <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
                         <path fill="#eee"
                             d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
@@ -40,7 +40,7 @@
                 </span>
             </label>
 
-            <div>Poll Rate (ms)</div>
+            <div style="font-weight: 600;">Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
                     <input type="number" id="pollRateInput" placeholder="10" min="10" step="10" value="10"
@@ -53,7 +53,7 @@
 
         <!--<h2>Scene Visuals</h2>-->
 
-        <div>Canvas</div>
+        <div style="font-weight: 600;">Canvas</div>
         <div class="view-toggle">
             <button class="view-option active" data-view="satellite">Satellite</button>
             <button class="view-option" data-view="streetview">Streetview</button>
@@ -73,13 +73,13 @@
         });    
         </script>
 
-        <div>Map Opacity</div>
+        <div style="font-weight: 600;">Map Opacity</div>
         <div class="slider-wrapper">
             <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />
             <div id="opacityTooltip" class="slider-tooltip">0.2</div>
         </div>
 
-        <div>Render Distance</div>
+        <div style="font-weight: 600;">Render Distance</div>
         <div class="plus-minus-selector">
             <button id="renderMinus" type="button">&#8722;</button>
             <div id="renderValue" class="value-display">17</div>
@@ -90,7 +90,7 @@
         <div class="trail-controls">
             <!-- Preset selector -->
             <div style="margin-bottom: 10px;">
-                <label for="trail-preset" style="display: block; margin-bottom: 5px; font-size: 14px;">Plot Palette</label>
+                <label for="trail-preset" style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 600;">Plot Palette</label>
                 <select id="trail-preset" style="
             width: 100%;
             padding: 6px;
