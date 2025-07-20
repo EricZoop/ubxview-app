@@ -38,3 +38,4 @@ document.addEventListener("DOMContentLoaded", () => {
         initializeSlider(slider, tooltip);
     });
 });
+

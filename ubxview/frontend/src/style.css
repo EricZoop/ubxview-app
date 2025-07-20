@@ -436,3 +436,33 @@ select:hover {
     font-weight: normal;
     box-sizing: border-box;
 }
+
+.view-toggle {
+    font-family: inherit;
+    display: flex;
+    width: 200px;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.view-option {
+    flex: 1;
+    padding: 0.6em 0.8em;
+    background: #2a2a2a; /* now lighter by default */
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s ease;
+}
+
+.view-option:hover {
+    background-color: #3a3a3a;
+}
+
+.view-option.active {
+    background-color: #1a1a1a; /* darker when active */
+    color: #eee;
+}

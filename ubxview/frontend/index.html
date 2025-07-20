@@ -53,6 +53,25 @@
 
         <!--<h2>Scene Visuals</h2>-->
 
+        <div>Canvas</div>
+        <div class="view-toggle">
+        <button class="view-option active" data-view="satellite">Satellite</button>
+        <button class="view-option" data-view="streetview">Streetview</button>
+        </div>
+
+        <script>
+        document.querySelectorAll('.view-option').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.view-option').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const selectedView = button.dataset.view;
+                // 🔁 Replace this line with your logic to switch views
+                console.log('Selected view:', selectedView);
+            });
+        });    
+        </script>
+
         <div>Map Opacity</div>
         <div class="slider-wrapper">
             <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />

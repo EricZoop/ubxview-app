@@ -18,9 +18,19 @@ const tileGroup = new THREE.Group(); // Group to hold map tiles
 
 let currentOpacity = 0.2; // default starting value
 
+// Tile service configurations
+const TILE_SERVICES = {
+    satellite: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        name: "Satellite"
+    },
+    streetview: {
+        url: "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        name: "Street View"
+    }
+};
 
-// Tile server URL
-const TILE_SERVER_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+let currentTileService = 'satellite'; // Default tile service
 
 /**
  * Initialize the Three.js scene
@@ -118,6 +128,36 @@ function setupEventListeners() {
     
     // Setup slider functionality
     setupSliders();
+    
+    // Setup tile service toggle buttons
+    setupTileServiceToggle();
+}
+
+/**
+ * Setup tile service toggle functionality
+ */
+function setupTileServiceToggle() {
+    document.querySelectorAll('.view-option').forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active button
+            document.querySelectorAll('.view-option').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const selectedView = button.dataset.view;
+            
+            // Only change if it's a different service
+            if (selectedView !== currentTileService && TILE_SERVICES[selectedView]) {
+                currentTileService = selectedView;
+                console.log('Switched to tile service:', TILE_SERVICES[selectedView].name);
+                
+                // Refresh tiles with new service if data is loaded
+                const boundingBox = getBoundingBox();
+                if (boundingBox) {
+                    fetchAndDisplayTiles();
+                }
+            }
+        });
+    });
 }
 
 /**
@@ -187,6 +227,8 @@ async function fetchAndDisplayTiles() {
     let tilesLoaded = 0;
     let tilesAttempted = 0;
 
+    console.log(`Loading tiles using ${TILE_SERVICES[currentTileService].name} service...`);
+
     for (const { x, y } of tileCoords) {
         tilesAttempted++;
         try {
@@ -197,14 +239,17 @@ async function fetchAndDisplayTiles() {
         }
     }
 
-    console.log(`Successfully loaded ${tilesLoaded}/${tilesAttempted} tiles at zoom level ${zoomLevel}`);
+    console.log(`Successfully loaded ${tilesLoaded}/${tilesAttempted} tiles at zoom level ${zoomLevel} using ${TILE_SERVICES[currentTileService].name}`);
 }
 
 /**
  * Loads a single tile
  */
 async function loadTile(x, y, zoomLevel, textureLoader, gpsToCartesian) {
-    const tileUrl = TILE_SERVER_URL
+    // Get the current tile service URL
+    const tileServerUrl = TILE_SERVICES[currentTileService].url;
+    
+    const tileUrl = tileServerUrl
         .replace('{z}', zoomLevel)
         .replace('{y}', y)
         .replace('{x}', x);
@@ -260,7 +305,8 @@ async function loadTile(x, y, zoomLevel, textureLoader, gpsToCartesian) {
         tileX: x,
         tileY: y,
         zoom: zoomLevel,
-        bounds: { topLeft, bottomRight }
+        bounds: { topLeft, bottomRight },
+        service: currentTileService
     };
 
     tileGroup.add(plane);
