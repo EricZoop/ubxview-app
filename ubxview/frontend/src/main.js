@@ -24,9 +24,13 @@ const TILE_SERVICES = {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         name: "Satellite"
     },
+    // streetview: {
+    //     url: "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+    //     name: "Street View"
+    // },
     streetview: {
-        url: "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-        name: "Street View"
+        url: "https://server.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        name: "Topographic"
     }
 };
 
