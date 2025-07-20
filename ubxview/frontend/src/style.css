@@ -379,6 +379,7 @@ select:hover {
     width: 200px;
     font-family: inherit;
     font-size: 0.85em;
+    height: 29px;
 }
 
 .plus-minus-selector button {
@@ -422,7 +423,7 @@ select:hover {
 .plus-minus-selector .value-display {
     width: 140px;
     background: #1a1a1a;
-    padding: 0.6em 0;
+    padding: 0.6em .8em;
     color: #eee;
     text-align: center;
     user-select: none;
