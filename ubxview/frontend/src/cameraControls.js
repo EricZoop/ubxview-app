@@ -23,13 +23,11 @@ export function setupCameraControls(camera) {
     // --- State for cinematic camera ---
     let isCinematicMode = false;
     let cinematicTarget = new THREE.Vector3();
-    let cachedAngleX = null;
-    let cachedAngleY = null;
     let cachedDistance = null; // To store distance before cinematic mode
 
     const controls = {
         // --- Camera positioning properties ---
-        distance: 2000,
+        distance: 1000,
         angleX: Math.PI / 6,
         angleY: Math.PI / 4,
         panOffset: new THREE.Vector3(0, 0, 0),
@@ -60,7 +58,7 @@ export function setupCameraControls(camera) {
         update: function() {
             if (isCinematicMode) {
                 this.updateCinematic();
-                return;
+                // We still process keyboard movements in cinematic mode for panning
             }
 
             const dynamicMoveSpeed = this.distance * 0.01;
@@ -128,12 +126,12 @@ export function setupCameraControls(camera) {
             // Smoothly interpolate the camera's look-at point (panOffset) towards the cinematic target.
             this.panOffset.lerp(cinematicTarget, 0.05);
 
-            // Use the cached distance as the target. Fallback to 600 if not set.
-            const desiredDistance = cachedDistance || 900;
+            // Use the cached distance as the target. Fallback to 1000 if not set.
+            const desiredDistance = cachedDistance || 1000;
             this.distance += (desiredDistance - this.distance) * 0.05;
 
             // Slowly orbit around the target for a more dynamic "cinematic" feel.
-            this.angleY += 0.0000;
+            //this.angleY += 0.0005;
 
             this.updateCameraPosition();
         },
@@ -143,17 +141,12 @@ export function setupCameraControls(camera) {
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
             
             if (isCinematicMode) {
-                // Cache the current angles and distance
-                cachedAngleX = this.angleX;
-                cachedAngleY = this.angleY;
+                // Cache the current distance to influence the cinematic zoom
                 cachedDistance = this.distance;
-            } else {
-                // Restore previous angles when exiting
-                if (cachedAngleX !== null && cachedAngleY !== null) {
-                    this.angleX = cachedAngleX;
-                    this.angleY = cachedAngleY;
-                }
-            }
+            } 
+            // When exiting cinematic mode, we no longer restore the old position.
+            // The camera will simply remain where it was, allowing a seamless
+            // transition to free-look control.
         },
 
 
@@ -210,7 +203,7 @@ export function setupCameraControls(camera) {
             }
             return; 
         }
-        if (isCinematicMode) return; // Disable keyboard controls in cinematic mode
+        // In cinematic mode, we still want to allow keyboard panning, so we don't return early.
         keyState[e.code] = true;
     });
     
@@ -227,7 +220,8 @@ export function setupCameraControls(camera) {
 
     // --- Mouse Listeners ---
     document.addEventListener("mousedown", (e) => {
-        if (isCinematicMode) return; // Disable mouse controls in cinematic mode
+        // MODIFIED: This check is removed to allow mouse interaction in cinematic mode.
+        // if (isCinematicMode) return; 
         if (e.target.closest("#info")) return;
         isMouseDown = true;
         isPanning = e.shiftKey || e.button === 1;
@@ -242,11 +236,13 @@ export function setupCameraControls(camera) {
     });
 
     document.addEventListener("mousemove", (e) => {
-        if (!isMouseDown || isCinematicMode) return; // Disable mouse controls in cinematic mode
+        // MODIFIED: This check is removed to allow orbiting in cinematic mode.
+        if (!isMouseDown) return; 
         const deltaX = e.clientX - mouseX;
         const deltaY = e.clientY - mouseY;
 
         if (isPanning) {
+            // Note: Panning with Shift + Mouse Drag is now also enabled in cinematic mode.
             const panSpeed = controls.distance * 0.001;
             const cameraDir = new THREE.Vector3();
             camera.getWorldDirection(cameraDir);
@@ -266,7 +262,8 @@ export function setupCameraControls(camera) {
     });
 
     document.addEventListener("wheel", (e) => {
-        if (isCinematicMode) return; // Disable wheel zoom in cinematic mode
+        // MODIFIED: This check is removed to allow zooming in cinematic mode.
+        // if (isCinematicMode) return; 
         if (e.target.closest("#info")) return;
         controls.distance += e.deltaY * 0.5;
         controls.distance = Math.max(50, controls.distance);

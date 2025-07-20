@@ -8,14 +8,14 @@ body {
 
 #info,
 #stats,
-#credits {
+#controls {
     position: absolute;
     padding: 12px 18px;
     background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29,31,33,0.4));
     border-radius: 4px;
     font-size: .85rem;
     color: white;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
@@ -93,12 +93,12 @@ a:hover {
 .controls-container {
     width: auto;
     display: flex;
-    gap: 0.25em;
+    gap: 0.5em;
     align-items: stretch;
     flex-direction: column;
+    justify-content: space-between;
     flex-wrap: wrap;
     align-content: center;
-    justify-content: center;
 }
 
 .controls-container>* {
@@ -197,9 +197,9 @@ input {
 
 #opacitySlider {
     width: 200px;
-    margin: .55em 0 0 0;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
     background: transparent;
     -webkit-appearance: none;
     appearance: none;
@@ -277,15 +277,16 @@ input {
 }
 
 #stats {
+
     top: 10px;
     right: 10px;
 
 }
 
-#credits {
+#controls {
     bottom: 10px;
     right: 10px;
-    width: auto
+    width: 160px
 }
 
 .control-row {
@@ -302,7 +303,7 @@ input {
 
 .keys {
     display: flex;
-    gap: 0.4em;
+    gap: 0.25em;
 }
 
 .key {
@@ -366,4 +367,71 @@ select:hover {
          1px -1px 0 black,
         -1px  1px 0 black,
          1px  1px 0 black; /* creates a black border around the text */
+}
+
+.plus-minus-selector {
+    display: flex;
+    align-items: stretch;
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid #333;
+    background: #1a1a1a;
+    width: 200px;
+    font-family: inherit;
+    font-size: 0.85em;
+}
+
+.plus-minus-selector button {
+    background: #1a1a1a;
+    border: none;
+    cursor: pointer;
+    font-size: inherit;
+    color: #eee;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+
+    border-right: 1px solid #333;
+    font-size: 18px;
+}
+
+.plus-minus-selector button:last-child {
+    border-right: none;
+}
+
+.plus-minus-selector button:hover:not(:disabled) {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #fff;
+}
+
+.plus-minus-selector button:active:not(:disabled) {
+    background-color: #0a0a0a;
+    border-color: #555;
+    transform: translateY(1px);
+}
+
+.plus-minus-selector button:disabled {
+    background: #2a2a2a;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.plus-minus-selector .value-display {
+    width: 140px;
+    background: #1a1a1a;
+    padding: 0.6em 0;
+    color: #eee;
+    text-align: center;
+    user-select: none;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    font-weight: normal;
+    box-sizing: border-box;
 }

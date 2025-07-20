@@ -18,13 +18,13 @@
 
             <img src="/assets/dot.png" alt="Logo" class="logo" />
             <h1>UBXView</h1>
-            <p class="version">v1.0.5</p>
+            <p class="version">v2.0.1</p>
         </div>
 
 
-        <div>Model Real-Time Kinematics (RTK) sensors live with u-center.</div>
+        <div>Model Real-Time Kinematics (RTK) NMEA sentences live.</div><hr style="border-width: 0px;">
 
-        <h2>Read Capture </h2>
+        <!--<h2>Read Capture </h2>-->
 
 
         <div class="controls-container">
@@ -49,40 +49,48 @@
                 </div>
             </div>
 
-        </div>
+        
 
-        <h2>Scene Visuals</h2>
+        <!--<h2>Scene Visuals</h2>-->
 
-        <label for="opacitySlider">Map Opacity</label>
+        <div>Map Opacity</div>
         <div class="slider-wrapper">
             <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />
-            <div id="sliderTooltip" class="slider-tooltip">0.5</div>
+            <div id="opacityTooltip" class="slider-tooltip">0.2</div>
         </div>
 
-<div class="trail-controls">
-    <!-- Preset selector -->
-    <div style="margin-bottom: 15px;">
-        <label for="trail-preset" style="display: block; margin-bottom: 5px; font-size: 14px;">Trail Preset:</label>
-        <select id="trail-preset" style="
-    width: 100%;
-    padding: 6px;
-    background: #1a1a1a url('data:image/svg+xml;utf8,<svg fill=\'%23e0e0e0\' height=\'16\' viewBox=\'0 0 24 24\' width=\'16\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>') no-repeat right 5px center;
-    color: #e0e0e0;
-    border: 1px solid #333;
-    border-radius: 2px;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-size: 24px;
-">
-            <option value="">Custom</option>
-            <option value="elevation">Elevation</option>
-            <option value="neon">Neon</option>
-            <option value="america">1776</option>
-            <option value="invincible">Invincible</option>
+        <div>Render Distance</div>
+        <div class="plus-minus-selector">
+            <button id="renderMinus" type="button">-</button>
+            <div id="renderValue" class="value-display">17</div>
+            <button id="renderPlus" type="button">+</button>
+        </div>
 
-        </select>
-    </div>
+
+        <div class="trail-controls">
+            <!-- Preset selector -->
+            <div style="margin-bottom: 15px;">
+                <label for="trail-preset" style="display: block; margin-bottom: 5px; font-size: 14px;">Plot Palette</label>
+                <select id="trail-preset" style="
+            width: 100%;
+            padding: 6px;
+            background: #1a1a1a url('data:image/svg+xml;utf8,<svg fill=\'%23e0e0e0\' height=\'16\' viewBox=\'0 0 24 24\' width=\'16\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>') no-repeat right 5px center;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 2px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-size: 24px;
+        ">
+                    <option value="">Custom</option>
+                    <option value="elevation">Elevation</option>
+                    <option value="neon">Neon</option>
+                    <option value="america">1776</option>
+                    <option value="invincible">Invincible</option>
+
+                </select>
+            </div>
 
     <!-- Color controls -->
     <div style="display: flex; justify-content: space-between; margin-top: 10px;">
@@ -103,7 +111,7 @@
         </span>
     </div>
 
-
+</div>
 </div>
 
 <script type="module">
@@ -118,8 +126,8 @@
 
     const presets = {
         invincible: {
-            head: '#4c9cbf', 
-            tail: '#ffe753',
+            head: '#ffe753', 
+            tail: '#4c9cbf',
             line: '#3a3b3d', 
             showLines: false 
         },
@@ -234,55 +242,12 @@
     console.log('Trail controls with dynamic custom preset management initialized');
 </script>
 
-        <h2>Camera Controls</h2><hr style="border: none; border-top: 2px solid rgba(0, 0, 0, 0);">
 
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">&larr;</span>
-                <span class="key">&uarr;</span>
-                <span class="key">&rarr;</span>
-                <span class="key">&darr;</span>
-            </div>
-            <div class="action">Look</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">W</span>
-                <span class="key">S</span>
-            </div>
-            <div class="action">Zoom In/Out</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">A</span>
-                <span class="key">D</span>
-            </div>
-            <div class="action">Left/Right</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">Q</span>
-                <span class="key">E</span>
-            </div>
-            <div class="action">Down/Up</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">R</span>
-            </div>
-            <div class="action">Reorient</div>
-        </div>
-        <div class="control-row">
-            <div class="keys">
-                <span class="key">C</span>
-            </div>
-            <div class="action">Cinematic</div>
-        </div>
 
     </div>
 
     <div id="stats">
-        <h2 style="margin: 0;">Statistics</h2>
+        <!--<h2 style="margin: 0;">Statistics</h2>-->
         <table>
             <tbody>
                 <tr>
@@ -340,6 +305,56 @@
         </table>
     </div>
 
+
+            
+
+    <div id="controls" >
+
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">&larr;</span>
+                <span class="key">&uarr;</span>
+                <span class="key">&rarr;</span>
+                <span class="key">&darr;</span>
+            </div>
+            <div class="action">Look</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">W</span>
+                <span class="key">S</span>
+            </div>
+            <div class="action">Zoom In/Out</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">A</span>
+                <span class="key">D</span>
+            </div>
+            <div class="action">Left/Right</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">Q</span>
+                <span class="key">E</span>
+            </div>
+            <div class="action">Down/Up</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">R</span>
+            </div>
+            <div class="action">Reorient</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">C</span>
+            </div>
+            <div class="action">Cinematic</div>
+        </div>
+    </div>
+
+    <!--
     <div id="credits" >
         <h3 style="margin: 0;">Test Pilots</h3>
         <a href="mailto:marc.issa@drs.com">marc.issa@drs.com</a><br>
@@ -349,6 +364,7 @@
         <a href="mailto:ji.park@drs.com">ji.park@drs.com</a><br>
         <a href="mailto:eric.zipor@drs.com">eric.zipor@drs.com</a>
     </div>
+    -->
 
 
 

@@ -33,6 +33,14 @@ export function getLatestPoint() {
     return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
 }
 
+/**
+ * Returns the calculated bounding box of the GPS data.
+ * @returns {object | null} The bounds object, or null if not calculated.
+ */
+export function getBoundingBox() {
+    return bounds;
+}
+
 export function initializePlotManager(group) {
     dataGroup = group;
 }
@@ -48,19 +56,35 @@ export function getMasterGpsPoints() {
 function clearPlotData() {
     if (!dataGroup) return;
 
-    while (dataGroup.children.length > 0) {
-        const object = dataGroup.children[0];
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
-            if (Array.isArray(object.material)) {
-                object.material.forEach((material) => material.dispose());
+    // Specifically remove the points and line objects if they exist
+    if (pointsObject) {
+        if (pointsObject.geometry) {
+            pointsObject.geometry.dispose();
+        }
+        if (pointsObject.material) {
+            // Check if material is an array before disposing
+            if (Array.isArray(pointsObject.material)) {
+                pointsObject.material.forEach(m => m.dispose());
             } else {
-                object.material.dispose();
+                pointsObject.material.dispose();
             }
         }
-        dataGroup.remove(object);
+        dataGroup.remove(pointsObject);
+    }
+    
+    if (lineObject) {
+        // The line shares geometry with points, so no need to dispose it again
+        if (lineObject.material) {
+            if (Array.isArray(lineObject.material)) {
+                lineObject.material.forEach(m => m.dispose());
+            } else {
+                lineObject.material.dispose();
+            }
+        }
+        dataGroup.remove(lineObject);
     }
 
+    // Reset all plot-specific variables
     pointsObject = null;
     lineObject = null;
     masterGpsPoints = [];
@@ -68,7 +92,7 @@ function clearPlotData() {
     center = null;
     bounds = null;
     baselineAltitude = null;
-    latestPoint = null; // Clear latest point when clearing data
+    latestPoint = null;
 }
 
 function calculateBoundsAndCenter(points) {
@@ -102,7 +126,29 @@ function calculateBoundsAndCenter(points) {
 }
 
 function createCoordinateConverter() {
-    gpsToCartesian = (lat, lon, alt) => {
+    gpsToCartesian = (p1, p2, p3) => {
+        let lat, lon, alt;
+
+        // Check if the first argument is an object with lat/lon properties
+        if (typeof p1 === 'object' && p1 !== null && 'lat' in p1 && 'lon' in p1) {
+            lat = p1.lat;
+            lon = p1.lon;
+            // Use the object's altitude if it exists, otherwise default to the baseline
+            alt = p1.alt !== undefined ? p1.alt : baselineAltitude;
+        } else {
+            // Otherwise, assume the original (lat, lon, alt) signature
+            lat = p1;
+            lon = p2;
+            // Use the provided altitude if it exists, otherwise default to the baseline
+            alt = p3 !== undefined ? p3 : baselineAltitude;
+        }
+
+        // Defensive check to prevent NaN if data is still bad
+        if (lat === undefined || lon === undefined || alt === undefined || center === null || baselineAltitude === null) {
+            console.error("Invalid arguments or context for gpsToCartesian", { lat, lon, alt, center });
+            return new THREE.Vector3(0, 0, 0); // Return a default vector to prevent crashes
+        }
+
         const centerLatRad = (center.lat * Math.PI) / 180;
         const scaleFactor = 10.0;
         const x =
