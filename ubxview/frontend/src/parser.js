@@ -81,24 +81,24 @@ export function extractGpsPointsFromText(text) {
 
             if (!isNaN(lat) && !isNaN(lon) && !isNaN(time)) {
                 // --- Outlier rejection ---
-                const prev = points[points.length - 1];
-                if (prev) {
-                    const dt = time - prev.time;
-                    const dAlt = Math.abs(alt - prev.alt);
-                    const dLat = Math.abs(lat - prev.lat);
-                    const dLon = Math.abs(lon - prev.lon);
-                    const distance = haversine(prev.lat, prev.lon, lat, lon);
-                    const speed = dt > 0 ? distance / dt : 0;
+                // const prev = points[points.length - 1];
+                // if (prev) {
+                //     const dt = time - prev.time;
+                //     const dAlt = Math.abs(alt - prev.alt);
+                //     const dLat = Math.abs(lat - prev.lat);
+                //     const dLon = Math.abs(lon - prev.lon);
+                //     const distance = haversine(prev.lat, prev.lon, lat, lon);
+                //     const speed = dt > 0 ? distance / dt : 0;
 
-                    if (
-                        dAlt > MAX_ALT_DIFF ||
-                        speed > MAX_SPEED ||
-                        dLat > MAX_LATLON_JUMP ||
-                        dLon > MAX_LATLON_JUMP
-                    ) {
-                        continue; // Skip this outlier
-                    }
-                }
+                //     if (
+                //         dAlt > MAX_ALT_DIFF ||
+                //         speed > MAX_SPEED ||
+                //         dLat > MAX_LATLON_JUMP ||
+                //         dLon > MAX_LATLON_JUMP
+                //     ) {
+                //         continue; // Skip this outlier
+                //     }
+                // }
 
                 points.push({ 
                     lat, 
