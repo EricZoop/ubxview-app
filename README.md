@@ -50,18 +50,9 @@ ubxview-app/
         │   ├── package.json
         │   ├── vite.config.js
         │   └── src/                      # three.js render engine 
-        │       ├── cameraControls.js
-        │       ├── compassRose.js
-        │       ├── fileManager.js
-        │       ├── gridSetup.js
-        │       ├── imagePlane.js
         │       ├── main.js               # Init 3D Scene
         │       ├── parser.js             # .ubx reader & stats
-        │       ├── planeData.js          # Map storage
-        │       ├── plotManager.js
-        │       ├── style.css
-        │       ├── trailControls.js
-        │       └── ui.js
+        │       └── tileManager.js        # Map API
         └── src-tauri/
             ├── build.rs
             ├── Cargo.toml
