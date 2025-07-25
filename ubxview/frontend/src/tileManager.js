@@ -42,6 +42,19 @@ export async function fetchAndDisplayTiles() {
         y: Math.floor((minTileUnpadded.y + maxTileUnpadded.y) / 2)
     };
 
+    // Ensure tile ranges are valid
+    if (
+        isNaN(minTile.x) || isNaN(minTile.y) ||
+        isNaN(maxTile.x) || isNaN(maxTile.y) ||
+        maxTile.x < minTile.x || maxTile.y < minTile.y ||
+        (maxTile.x - minTile.x) > 1000 || (maxTile.y - minTile.y) > 1000
+    ) {
+        console.error("Invalid tile coordinate range:", {
+            minTile, maxTile, boundingBox
+        });
+        return;
+    }
+
     const tileCoords = [];
     for (let x = minTile.x; x <= maxTile.x; x++) {
         for (let y = minTile.y; y <= maxTile.y; y++) {

@@ -1,35 +1,60 @@
 /**
- * Main parsing function that detects the data format and calls the appropriate parser.
+ * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
+ * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
  * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
  */
-export function parseGpsData(text) {
-    const cleanedText = text
-        .replace(/[^\x20-\x7E\r\n$,.\-0-9A-Za-z]/g, '') // Clean non-printable chars, allow more for CSV
-        .replace(/\r\n|\r/g, '\n')
-        .replace(/\n{2,}/g, '\n');
+export function extractGpsPointsFromText(text) {
+    const points = [];
 
-    // Detect format and delegate to the correct parser
-    if (cleanedText.includes('$GPGGA') || cleanedText.includes('$GNGGA')) {
-        return extractGpsPointsFromNmea(cleanedText);
-    } else if (cleanedText.includes('Longitude_deg,Latitude_deg')) {
-        return extractGpsPointsFromCsv(cleanedText);
+    const cleanedText = text
+        .replace(/[^\x20-\x7E\r\n$]/g, '') // Remove non-printable characters
+        .replace(/\r\n|\r/g, '\n')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+
+    const lines = cleanedText.split('\n');
+
+    // Check if it's CSV format based on header
+    if (lines[0].startsWith('Timestamp,iTOW_ms,Longitude_deg,Latitude_deg')) {
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+
+            
+            const parts = line.split(',');
+            if (parts.length < 8) continue;
+
+            try {
+                const [timestampStr, , lonStr, latStr, altStr, , , ] = parts;
+
+                const lat = parseFloat(latStr);
+                const lon = parseFloat(lonStr);
+                const alt = parseFloat(altStr);
+                const undulation = 0; // Not available in this format
+                const satellites = 0; // Not available either
+
+                const time = parseTimeToSeconds(timestampStr);
+
+                if (
+                    !isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)
+                ) {
+                    points.push({ lat, lon, alt, time, satellites, undulation });
+                }
+
+                
+            } catch {
+                continue;
+            }
+        }
+
+        return points;
     }
 
-    return []; // Return empty if format is unknown
-}
-
-/**
- * Parses NMEA GNGGA/GPGGA sentences from text into structured points.
- * This is an internal function. Use parseGpsData as the entry point.
- * @param {string} text The raw text content from the file.
- * @returns {Array} An array of GPS points.
- */
-function extractGpsPointsFromNmea(text) {
-    const points = [];
+    // --- FALLBACK: original NMEA parser ---
     const ggaRegex = /\$(?:GPGGA|GNGGA),[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
-    const matches = text.match(ggaRegex);
-
+    const matches = cleanedText.match(ggaRegex);
     if (!matches) return points;
 
     for (const sentence of matches) {
@@ -48,87 +73,43 @@ function extractGpsPointsFromNmea(text) {
             const altUnits = parts[10];
             const undulationStr = parts[11];
 
-            if (!latStr || !lonStr || !latDir || !lonDir || !altStr || altUnits !== 'M' || isNaN(fixQuality) || fixQuality === 0 || isNaN(numSatellites) || numSatellites < 3) continue;
+            if (
+                !latStr || !lonStr || !latDir || !lonDir || !altStr ||
+                latStr.length < 4 || lonStr.length < 5 ||
+                altUnits !== 'M' ||
+                isNaN(fixQuality) || fixQuality === 0 ||
+                isNaN(numSatellites) || numSatellites < 3
+            ) continue;
 
             const latDeg = parseFloat(latStr.substring(0, 2));
             const latMin = parseFloat(latStr.substring(2));
+            if (isNaN(latDeg) || isNaN(latMin)) continue;
             let lat = latDeg + latMin / 60;
             if (latDir === 'S') lat = -lat;
 
             const lonDeg = parseFloat(lonStr.substring(0, 3));
             const lonMin = parseFloat(lonStr.substring(3));
+            if (isNaN(lonDeg) || isNaN(lonMin)) continue;
             let lon = lonDeg + lonMin / 60;
             if (lonDir === 'W') lon = -lon;
 
             const alt = parseFloat(altStr);
             const undulation = parseFloat(undulationStr) || 0;
+
             const h = parseInt(UTCstr.slice(0, 2)) || 0;
             const m = parseInt(UTCstr.slice(2, 4)) || 0;
             const s = parseFloat(UTCstr.slice(4)) || 0;
             const time = h * 3600 + m * 60 + s;
 
-            if (!isNaN(lat) && !isNaN(lon) && !isNaN(time) && !isNaN(alt)) {
-                points.push({ lat, lon, alt, time, satellites: numSatellites, undulation });
-            }
+            points.push({ lat, lon, alt, time, satellites: numSatellites, undulation });
         } catch {
             continue;
         }
     }
+
     return points;
 }
 
-/**
- * Parses custom CSV data into structured points.
- * This is an internal function. Use parseGpsData as the entry point.
- * @param {string} text The raw text content from the file.
- * @returns {Array} An array of GPS points.
- */
-function extractGpsPointsFromCsv(text) {
-    const points = [];
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-
-    // Skip header if it exists
-    if (lines.length > 0 && lines[0].includes('Timestamp,iTOW_ms')) {
-        lines.shift();
-    }
-
-    for (const line of lines) {
-        const parts = line.split(',');
-        if (parts.length < 8) continue;
-
-        try {
-            const timestampStr = parts[0];
-            const lon = parseFloat(parts[2]);
-            const lat = parseFloat(parts[3]);
-            const heightEllipsoid = parseFloat(parts[4]);
-            const alt = parseFloat(parts[5]); // Height MSL
-
-            if (isNaN(lon) || isNaN(lat) || isNaN(heightEllipsoid) || isNaN(alt)) continue;
-
-            // Calculate undulation: Undulation = Ellipsoid Height - MSL Height
-            const undulation = heightEllipsoid - alt;
-
-            // Parse time from timestamp (e.g., "2025-07-25 14:01:36.908")
-            const date = new Date(timestampStr.replace(' ', 'T') + 'Z'); // Treat as UTC
-            const h = date.getUTCHours();
-            const m = date.getUTCMinutes();
-            const s = date.getUTCSeconds() + date.getUTCMilliseconds() / 1000;
-            const time = h * 3600 + m * 60 + s;
-
-            points.push({
-                lat,
-                lon,
-                alt,
-                time,
-                satellites: 0, // CSV format does not provide satellite count
-                undulation
-            });
-        } catch {
-            continue;
-        }
-    }
-    return points;
-}
 
 
 /**
@@ -145,6 +126,17 @@ function haversine(lat1, lon1, lat2, lon2) {
               Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+function parseTimeToSeconds(timestampStr) {
+    // Example input: '2025-07-25 14:01:36.908'
+    const timePart = timestampStr.split(' ')[1]; // '14:01:36.908'
+    if (!timePart) return NaN;
+
+    const [h, m, s] = timePart.split(':');
+    const sec = parseFloat(s);
+    return parseInt(h) * 3600 + parseInt(m) * 60 + sec;
+}
+
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.
@@ -163,6 +155,7 @@ export function updateStats(points) {
     const longEl = document.getElementById('long-stat');
     const satellitesEl = document.getElementById('satellites-stat');
     const startEl = document.getElementById('start-stat');
+    // Get the end time element
     const endEl = document.getElementById('end-stat');
 
     // Handle the case where there are no points by resetting the stats
@@ -178,13 +171,17 @@ export function updateStats(points) {
         if (longEl) longEl.textContent = '0.000000';
         if (satellitesEl) satellitesEl.textContent = '0';
         if (startEl) startEl.textContent = 'HH:mm:ss';
+        // Reset the end time stat
         if (endEl) endEl.textContent = 'HH:mm:ss';
         return;
     }
 
+    // --- STATISTIC CALCULATIONS ---
+
     const lastPoint = points[points.length - 1];
     const firstPoint = points[0];
 
+    // Basic stats from the last point or array length
     const totalPoints = points.length;
     const totalDuration = lastPoint.time - firstPoint.time;
     const currentAltitude = lastPoint.alt;
@@ -193,16 +190,22 @@ export function updateStats(points) {
     const currentLon = lastPoint.lon;
     const currentSatellites = lastPoint.satellites || 0;
 
-    const formatTime = (timeInSeconds) => {
-        const hours = Math.floor(timeInSeconds / 3600);
-        const minutes = Math.floor((timeInSeconds % 3600) / 60);
-        const seconds = Math.floor(timeInSeconds % 60);
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
+    // Format start time as HH:mm:ss
+    const startTime = firstPoint.time;
+    const startHours = Math.floor(startTime / 3600);
+    const startMinutes = Math.floor((startTime % 3600) / 60);
+    const startSeconds = Math.floor(startTime % 60);
+    const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:${startSeconds.toString().padStart(2, '0')}`;
+    
+    // Format end time as HH:mm:ss
+    const endTime = lastPoint.time;
+    const endHours = Math.floor(endTime / 3600);
+    const endMinutes = Math.floor((endTime % 3600) / 60);
+    const endSeconds = Math.floor(endTime % 60);
+    const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:${endSeconds.toString().padStart(2, '0')}`;
 
-    const startTimeFormatted = formatTime(firstPoint.time);
-    const endTimeFormatted = formatTime(lastPoint.time);
 
+    // Speed (based on last 2 points' 2D distance)
     let latestSpeed = 0;
     if (points.length >= 2) {
         const p1 = points[points.length - 2];
@@ -214,18 +217,28 @@ export function updateStats(points) {
         }
     }
 
+    // Initialize total distance accumulators
     let total2DDistance = 0;
     let total3DDistance = 0;
 
+    // Loop through all points to calculate cumulative 2D and 3D distances
     for (let i = 1; i < points.length; i++) {
         const p1 = points[i - 1];
         const p2 = points[i];
+
+        // Calculate 2D distance for this segment
         const segment2DDistance = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
         total2DDistance += segment2DDistance;
+
+        // Calculate altitude change for this segment
         const altitudeChange = p2.alt - p1.alt;
+
+        // Calculate 3D distance for this segment using Pythagorean theorem
         const segment3DDistance = Math.sqrt(Math.pow(segment2DDistance, 2) + Math.pow(altitudeChange, 2));
         total3DDistance += segment3DDistance;
     }
+
+    // --- DOM UPDATES ---
 
     if (pointsEl) pointsEl.textContent = totalPoints;
     if (durationEl) durationEl.textContent = totalDuration.toFixed(1);
@@ -234,9 +247,10 @@ export function updateStats(points) {
     if (speedEl) speedEl.textContent = latestSpeed.toFixed(2);
     if (altitudeEl) altitudeEl.textContent = currentAltitude.toFixed(2);
     if (altWsg84El) altWsg84El.textContent = currentAltWsg84.toFixed(2);
-    if (latEl) latEl.textContent = currentLat.toFixed(6);
-    if (longEl) longEl.textContent = currentLon.toFixed(6);
+    if (latEl) latEl.textContent = currentLat.toFixed(7); // More precision for lat/lon
+    if (longEl) longEl.textContent = currentLon.toFixed(7);
     if (satellitesEl) satellitesEl.textContent = currentSatellites;
     if (startEl) startEl.textContent = startTimeFormatted;
+    // Update the end time stat
     if (endEl) endEl.textContent = endTimeFormatted;
 }

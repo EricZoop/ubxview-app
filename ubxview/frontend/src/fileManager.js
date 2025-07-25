@@ -1,7 +1,6 @@
 // FILE HANDLING AND WATCHING
 
-// CHANGED THIS LINE 👇
-import { parseGpsData, updateStats } from "./parser.js"; 
+import { extractGpsPointsFromText, updateStats } from "./parser.js";
 import { plotGpsData, getMasterGpsPoints } from "./plotManager.js";
 
 // Module state
@@ -50,8 +49,7 @@ async function watchFileForChanges() {
 
         if (newText.length > 0) {
             // Parse only the new text chunk
-            // CHANGED THIS LINE 👇
-            const newPoints = parseGpsData(newText);
+            const newPoints = extractGpsPointsFromText(newText);
 
             if (newPoints && newPoints.length > 0) {
                 // Append the new points to the plot
@@ -116,7 +114,7 @@ export async function openFile(onPlotComplete) {
 
         // Read and parse initial file content
         const initialText = await file.text();
-        const masterGpsPoints = parseGpsData(initialText); // CHANGED THIS LINE
+        const masterGpsPoints = extractGpsPointsFromText(initialText);
         readOffset = file.size;
 
         if (masterGpsPoints.length === 0) {

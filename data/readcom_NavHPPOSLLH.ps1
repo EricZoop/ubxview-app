@@ -1,5 +1,5 @@
 $portName   = "COM3"
-$baudRate   = 115200  # Fixed typo: was 115600
+$baudRate   = 115200 
 $hpposllhFile = "hpposllh_data.csv"
 
 $parity     = [System.IO.Ports.Parity]::None
@@ -72,13 +72,13 @@ function Parse-HPPOSLLH {
     $hAcc = [BitConverter]::ToUInt32($payload, 28)
     $vAcc = [BitConverter]::ToUInt32($payload, 32)
     
-    # Calculate high precision coordinates
-    $lonDeg = ($lon * 1e-7) + ($lonHp * 0.1 * 1e-7)
-    $latDeg = ($lat * 1e-7) + ($latHp * 0.1 * 1e-7)
-    $heightM = ($height * 1e-3) + ($heightHp * 0.1 * 1e-3)
-    $hMSLM = ($hMSL * 1e-3) + ($hMSLHp * 0.1 * 1e-3)
-    $hAccM = $hAcc * 1e-3
-    $vAccM = $vAcc * 1e-3
+    # --- CALCULATIONS ---
+    $lonDeg = ($lon * 1e-7) + ($lonHp * 1e-9)
+    $latDeg = ($lat * 1e-7) + ($latHp * 1e-9)
+    $heightM = ($height * 1e-3) + (($heightHp * 0.1) * 1e-3) # Height is mm + 0.1mm components
+    $hMSLM = ($hMSL * 1e-3) + (($hMSLHp * 0.1) * 1e-3)   # hMSL is mm + 0.1mm components
+    $hAccM = $hAcc * 1e-4 # Accuracy is 0.1mm units -> meters
+    $vAccM = $vAcc * 1e-4 # Accuracy is 0.1mm units -> meters
     
     # Get current timestamp
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
@@ -87,17 +87,17 @@ function Parse-HPPOSLLH {
     Write-Host "--- HPPOSLLH Decoded ---" -ForegroundColor Cyan
     Write-Host "Time: $timestamp"
     Write-Host "iTOW: $iTOW ms"
-    Write-Host "Longitude: $($lonDeg.ToString('F8'))°"
-    Write-Host "Latitude: $($latDeg.ToString('F8'))°"
+    Write-Host "Longitude: $($lonDeg.ToString('F9'))°" # Increased precision for F9
+    Write-Host "Latitude: $($latDeg.ToString('F9'))°" # Increased precision for F9
     Write-Host "Height (ellipsoid): $($heightM.ToString('F4')) m"
     Write-Host "Height (MSL): $($hMSLM.ToString('F4')) m"
-    Write-Host "Horizontal Accuracy: $($hAccM.ToString('F3')) m"
-    Write-Host "Vertical Accuracy: $($vAccM.ToString('F3')) m"
+    Write-Host "Horizontal Accuracy: $($hAccM.ToString('F4')) m"
+    Write-Host "Vertical Accuracy: $($vAccM.ToString('F4')) m"
     Write-Host "------------------------" -ForegroundColor Cyan
     
     # Write to CSV file with proper error handling
     try {
-        $csvLine = "$timestamp,$iTOW,$($lonDeg.ToString('F8')),$($latDeg.ToString('F8')),$($heightM.ToString('F4')),$($hMSLM.ToString('F4')),$($hAccM.ToString('F3')),$($vAccM.ToString('F3'))"
+        $csvLine = "$timestamp,$iTOW,$($lonDeg.ToString('F9')),$($latDeg.ToString('F9')),$($heightM.ToString('F4')),$($hMSLM.ToString('F4')),$($hAccM.ToString('F4')),$($vAccM.ToString('F4'))"
         Add-Content -Path $script:hpposllhFile -Value $csvLine -ErrorAction Stop
     }
     catch {
