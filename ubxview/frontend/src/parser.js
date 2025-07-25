@@ -1,5 +1,5 @@
 /**
- * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
+ * Parses text content to find and convert GNGGA/GPGGA or custom $HPPOSLLH sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
  * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
@@ -14,43 +14,42 @@ export function extractGpsPointsFromText(text) {
         .trim();
 
     const lines = cleanedText.split('\n');
+    if (lines.length === 0) return points;
 
-    // Check if it's CSV format based on header
-    if (lines[0].startsWith('Timestamp,iTOW_ms,Longitude_deg,Latitude_deg')) {
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+    // --- The CSV parsing block has been removed. ---
 
+    // Check for custom $HPPOSLLH format
+    if (lines[0].startsWith('$HPPOSLLH')) {
+        for (const line of lines) {
+            if (!line.startsWith('$HPPOSLLH')) continue;
 
-            
             const parts = line.split(',');
-            if (parts.length < 8) continue;
+            // Expected format: $HPPOSLLH,lat,lon,iTOW,height_ellipsoid,height_msl,...
+            if (parts.length < 6) continue;
 
             try {
-                const [timestampStr, , lonStr, latStr, altStr, , , ] = parts;
+                const lat = parseFloat(parts[1]);
+                const lon = parseFloat(parts[2]);
+                const iTOW_ms = parseInt(parts[3]);
+                const alt = parseFloat(parts[4]); // Use ellipsoid height for 'alt'
+                const msl = parseFloat(parts[5]); // MSL height
 
-                const lat = parseFloat(latStr);
-                const lon = parseFloat(lonStr);
-                const alt = parseFloat(altStr);
-                const undulation = 0; // Not available in this format
-                const satellites = 0; // Not available either
+                // Convert iTOW from milliseconds to seconds to be compatible with duration logic
+                const time = iTOW_ms / 1000;
+                const satellites = 0; // Not available in this format
+                // Calculate undulation (Geoid separation) = MSL - Ellipsoid Height
+                const undulation = msl - alt;
 
-                const time = parseTimeToSeconds(timestampStr);
-
-                if (
-                    !isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)
-                ) {
+                if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)) {
                     points.push({ lat, lon, alt, time, satellites, undulation });
                 }
-
-                
             } catch {
                 continue;
             }
         }
-
         return points;
     }
+
 
     // --- FALLBACK: original NMEA parser ---
     const ggaRegex = /\$(?:GPGGA|GNGGA),[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
