@@ -8,7 +8,8 @@ body {
 
 #info,
 #stats,
-#controls {
+#controls,
+#credits {
     position: absolute;
     padding: 12px 18px;
     background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29,31,33,0.4));
@@ -279,10 +280,14 @@ input {
 }
 
 #stats {
-
     top: 10px;
     right: 10px;
+}
 
+#credits {
+    bottom: 10px;
+    left: 10px;
+    width: 160px
 }
 
 #controls {
@@ -290,6 +295,8 @@ input {
     right: 10px;
     width: 160px
 }
+
+
 
 .control-row {
     display: flex;

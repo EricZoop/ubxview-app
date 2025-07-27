@@ -19,5 +19,5 @@ export const DEFAULTS = {
     initialOpacity: 0.2,
     initialTileService: 'satellite',
     zoomLevel: 17,
-    initialRenderDistance: 17
+    initialRenderDistance: 5
 };
