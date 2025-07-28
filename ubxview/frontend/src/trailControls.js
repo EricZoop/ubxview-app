@@ -22,6 +22,12 @@ export function initializeTrailControls(points, line, gpsPoints, dataBounds) {
     lineObject = line;
     masterGpsPoints = gpsPoints;
     bounds = dataBounds;
+    
+    // Apply current line visibility setting to the new line object
+    if (lineObject) {
+        const toggle = document.getElementById('show-lines-toggle');
+        lineObject.visible = toggle ? toggle.checked : false;
+    }
 }
 
 /**
@@ -234,6 +240,7 @@ export function toggleLineVisibility() {
     
     const showLines = document.getElementById('show-lines-toggle').checked;
     lineObject.visible = showLines;
+    console.log(`Line visibility set to: ${showLines}`);
 }
 
 /**
@@ -254,7 +261,7 @@ export function getCurrentTrailColors() {
  */
 export function getLineVisibility() {
     const toggle = document.getElementById('show-lines-toggle');
-    return toggle ? toggle.checked : true;
+    return toggle ? toggle.checked : false; // Default to false - lines off by default
 }
 
 /**

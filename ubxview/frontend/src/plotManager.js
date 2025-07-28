@@ -17,6 +17,12 @@ let pointsObject = null;
 let lineObject = null;
 let masterGpsPoints = [];
 
+// Add these variables to maintain stable coordinate system
+let globalBounds = null;
+let globalCenter = null;
+let globalBaselineAltitude = null;
+let isCoordinateSystemInitialized = false;
+
 /**
  * Returns the most recently added data point.
  * @returns {THREE.Vector3 | null} The latest point as a Vector3, or null if no points exist.
@@ -53,6 +59,53 @@ export function getMasterGpsPoints() {
     return masterGpsPoints;
 }
 
+/**
+ * Initialize the global coordinate system based on the complete dataset
+ * This should be called once when the file is first loaded with all data
+ */
+export function initializeCoordinateSystem(allPoints) {
+    if (!allPoints || allPoints.length === 0) return;
+
+    globalBounds = allPoints.reduce(
+        (acc, p) => ({
+            minLat: Math.min(acc.minLat, p.lat),
+            maxLat: Math.max(acc.maxLat, p.lat),
+            minLon: Math.min(acc.minLon, p.lon),
+            maxLon: Math.max(acc.maxLon, p.lon),
+            minAlt: Math.min(acc.minAlt, p.alt),
+            maxAlt: Math.max(acc.maxAlt, p.alt),
+        }), {
+            minLat: Infinity,
+            maxLat: -Infinity,
+            minLon: Infinity,
+            maxLon: -Infinity,
+            minAlt: Infinity,
+            maxAlt: -Infinity,
+        }
+    );
+
+    globalCenter = {
+        lat: (globalBounds.minLat + globalBounds.maxLat) / 2,
+        lon: (globalBounds.minLon + globalBounds.maxLon) / 2,
+        alt: (globalBounds.minAlt + globalBounds.maxAlt) / 2,
+    };
+
+    globalBaselineAltitude = allPoints[0].alt;
+    isCoordinateSystemInitialized = true;
+
+    console.log("Global coordinate system initialized:", { globalCenter, globalBounds });
+}
+
+/**
+ * Reset the coordinate system (call when loading a new file)
+ */
+export function resetCoordinateSystem() {
+    globalBounds = null;
+    globalCenter = null;
+    globalBaselineAltitude = null;
+    isCoordinateSystemInitialized = false;
+}
+
 function clearPlotData() {
     if (!dataGroup) return;
 
@@ -84,11 +137,12 @@ function clearPlotData() {
         dataGroup.remove(lineObject);
     }
 
-    // Reset all plot-specific variables
+    // Reset plot-specific variables but keep global coordinate system
     pointsObject = null;
     lineObject = null;
     masterGpsPoints = [];
-    gpsToCartesian = null;
+    
+    // Only reset local bounds/center, keep global ones for coordinate system stability
     center = null;
     bounds = null;
     baselineAltitude = null;
@@ -98,6 +152,7 @@ function clearPlotData() {
 function calculateBoundsAndCenter(points) {
     if (!points || points.length === 0) return;
 
+    // Calculate bounds for the current subset of points
     bounds = points.reduce(
         (acc, p) => ({
             minLat: Math.min(acc.minLat, p.lat),
@@ -134,27 +189,30 @@ function createCoordinateConverter() {
             lat = p1.lat;
             lon = p1.lon;
             // Use the object's altitude if it exists, otherwise default to the baseline
-            alt = p1.alt !== undefined ? p1.alt : baselineAltitude;
+            alt = p1.alt !== undefined ? p1.alt : (globalBaselineAltitude || baselineAltitude);
         } else {
             // Otherwise, assume the original (lat, lon, alt) signature
             lat = p1;
             lon = p2;
             // Use the provided altitude if it exists, otherwise default to the baseline
-            alt = p3 !== undefined ? p3 : baselineAltitude;
+            alt = p3 !== undefined ? p3 : (globalBaselineAltitude || baselineAltitude);
         }
 
+        // Use global coordinate system if initialized, otherwise fall back to local
+        const useCenter = isCoordinateSystemInitialized ? globalCenter : center;
+        const useBaselineAlt = isCoordinateSystemInitialized ? globalBaselineAltitude : baselineAltitude;
+
         // Defensive check to prevent NaN if data is still bad
-        if (lat === undefined || lon === undefined || alt === undefined || center === null || baselineAltitude === null) {
-            console.error("Invalid arguments or context for gpsToCartesian", { lat, lon, alt, center });
+        if (lat === undefined || lon === undefined || alt === undefined || useCenter === null || useBaselineAlt === null) {
+            console.error("Invalid arguments or context for gpsToCartesian", { lat, lon, alt, useCenter });
             return new THREE.Vector3(0, 0, 0); // Return a default vector to prevent crashes
         }
 
-        const centerLatRad = (center.lat * Math.PI) / 180;
+        const centerLatRad = (useCenter.lat * Math.PI) / 180;
         const scaleFactor = 10.0;
-        const x =
-            (lon - center.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
-        const y = (alt - baselineAltitude) * 5;
-        const z = (lat - center.lat) * 111320 * scaleFactor;
+        const x = (lon - useCenter.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
+        const y = (alt - useBaselineAlt) * 5;
+        const z = (lat - useCenter.lat) * 111320 * scaleFactor;
         return new THREE.Vector3(x, y, -z);
     };
 }
@@ -222,6 +280,10 @@ function createThreeJsObjects(geometryData) {
 
     const lineObj = new THREE.Line(geometry, lineMaterial);
     lineObj.renderOrder = 0;
+
+    // Check current line visibility setting before adding to scene
+    const lineToggle = document.getElementById('show-lines-toggle');
+    lineObj.visible = lineToggle ? lineToggle.checked : false; // Default to false
 
     dataGroup.add(lineObj, pointsObj);
 
@@ -314,32 +376,43 @@ export function plotGpsData(points, append = false) {
 
         console.log(`Appended ${points.length} points.`);
     } else {
+        // When not appending (full replot), use the global coordinate system
         clearPlotData();
         masterGpsPoints = [...points];
+        
+        // Calculate local bounds for the current subset
         calculateBoundsAndCenter(points);
+        
+        // Create coordinate converter (will use global system if initialized)
         createCoordinateConverter();
 
         const geometryData = createGeometryFromPoints(points);
         const objects = createThreeJsObjects(geometryData);
         pointsObject = objects.points;
         lineObject = objects.line;
-        console.log(`Successfully plotted ${points.length} points.`);
+        console.log(`Successfully plotted ${points.length} points using ${isCoordinateSystemInitialized ? 'global' : 'local'} coordinate system.`);
 
-        initializeTrailControls(pointsObject, lineObject, masterGpsPoints, bounds);
+        // Use global bounds for trail controls if available, otherwise use local bounds
+        const boundsForTrailControls = isCoordinateSystemInitialized ? globalBounds : bounds;
+        initializeTrailControls(pointsObject, lineObject, masterGpsPoints, boundsForTrailControls);
     }
 
     if (pointsObject) {
         updatePointColors();
     }
 
+    // Return metadata using global bounds if available
+    const returnBounds = isCoordinateSystemInitialized ? globalBounds : bounds;
+    const returnCenter = isCoordinateSystemInitialized ? globalCenter : center;
+    
     return {
         dataSpan: Math.max(
-            (bounds.maxLat - bounds.minLat) * 111320,
-            (bounds.maxLon - bounds.minLon) * 111320
+            (returnBounds.maxLat - returnBounds.minLat) * 111320,
+            (returnBounds.maxLon - returnBounds.minLon) * 111320
         ),
         firstPoint: points[0],
         firstPointVec: gpsToCartesian(points[0].lat, points[0].lon, points[0].alt),
-        center,
-        bounds,
+        center: returnCenter,
+        bounds: returnBounds,
     };
 }

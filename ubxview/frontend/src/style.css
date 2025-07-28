@@ -9,7 +9,8 @@ body {
 #info,
 #stats,
 #controls,
-#credits {
+#credits,
+#playback {
     position: absolute;
     padding: 12px 18px;
     background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29,31,33,0.4));
@@ -296,7 +297,143 @@ input {
     width: 160px
 }
 
+#playback {
+    pointer-events: auto !important;
+      user-select: none;
+       z-index: 1000;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vh;
+  height: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 
+
+}
+
+#playback .controls {
+  display: flex;
+  gap: 10px;
+
+  align-items: center;
+}
+
+#playback button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+/* This new rule fixes the alignment glitch */
+#playback button svg {
+  display: block;
+}
+
+#playback button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#playback img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  display: block;
+}
+
+#playback input[type="range"] {
+  width: 100%;
+  position: relative;
+  z-index: 1000;
+  
+}
+
+#timeSlider {
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
+#goLive {
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid #ffffff40;
+  padding: 4px 10px;
+  border-radius: 4px;
+  
+}
+
+        #goLive {
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid #ffffff40;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+
+        /* --- NEW STYLES FOR SPEED CONTROL --- */
+
+        /* Container to position the options menu relative to the button */
+        .speed-control-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The pop-up menu for speed options */
+        .speed-options {
+            visibility: hidden; /* Use visibility to allow transitions */
+            opacity: 0;
+            position: absolute;
+            bottom: 120%; /* Position above the button with a gap */
+            left: 50%;
+            transform: translateX(-50%) translateY(10px); /* Start slightly lower for transition */
+            background: linear-gradient(180deg, rgba(25, 25, 25, 0.8), rgba(39,41,43,0.7));
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid #ffffff23;
+            border-radius: 6px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 5001; /* Ensure it's above other controls */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        }
+
+        /* Class to show the menu */
+        .speed-options.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Individual speed option buttons */
+        .speed-option {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-align: center;
+            transition: background 0.2s ease;
+            width: 100%;
+        }
+
+        .speed-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
 
 .control-row {
     display: flex;
