@@ -17,8 +17,65 @@ let isPlaying = false;
 let isLiveMode = true;
 let playbackInterval = null;
 let totalGpsPoints = [];
-const PLAYBACK_SPEED_MS = 100; // 0.10 seconds per line
+let currentPlaybackSpeed = 1.0; // Default speed multiplier
+const BASE_PLAYBACK_SPEED_MS = 100; // Base: 0.10 seconds per line
 const SEEK_LINES = 100; // Rewind/forward by 100 lines
+
+/**
+ * Get the current playback speed multiplier
+ * @returns {number} Current speed multiplier
+ */
+export function getPlaybackSpeed() {
+    return currentPlaybackSpeed;
+}
+
+/**
+ * Set the playback speed multiplier
+ * @param {number} speed - Speed multiplier (0.5 = half speed, 2 = double speed)
+ */
+export function setPlaybackSpeed(speed) {
+    const oldSpeed = currentPlaybackSpeed;
+    currentPlaybackSpeed = speed;
+    
+    console.log(`Playback speed changed from ${oldSpeed}x to ${speed}x`);
+    
+    // If currently playing, restart the interval with new speed
+    if (isPlaying && playbackInterval) {
+        clearInterval(playbackInterval);
+        startPlaybackInterval();
+    }
+    
+    // Update UI to show current speed
+    updateSpeedDisplay();
+}
+
+/**
+ * Calculate current playback interval based on speed
+ * @returns {number} Interval in milliseconds
+ */
+function getCurrentPlaybackInterval() {
+    return BASE_PLAYBACK_SPEED_MS / currentPlaybackSpeed;
+}
+
+/**
+ * Update speed display in UI
+ */
+function updateSpeedDisplay() {
+    const speedDisplay = document.getElementById('currentSpeedDisplay');
+    if (speedDisplay) {
+        speedDisplay.textContent = `${currentPlaybackSpeed}x`;
+    }
+    
+    // Update active speed option styling
+    document.querySelectorAll('.speed-option').forEach(btn => {
+        const btnSpeed = parseFloat(btn.dataset.speed);
+        if (btnSpeed === currentPlaybackSpeed) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
 
 /**
  * Get the current polling rate
@@ -101,14 +158,9 @@ function stopFileWatcher() {
 }
 
 /**
- * Start playback from current position
+ * Start the playback interval with current speed
  */
-function startPlayback() {
-    if (playbackInterval) clearInterval(playbackInterval);
-    
-    isPlaying = true;
-    updatePlayPauseButton();
-    
+function startPlaybackInterval() {
     playbackInterval = setInterval(() => {
         if (currentLineIndex < allFileLines.length - 1) {
             currentLineIndex++;
@@ -136,7 +188,19 @@ function startPlayback() {
                 goLive(); // Switch back to live mode when playback ends
             }
         }
-    }, PLAYBACK_SPEED_MS);
+    }, getCurrentPlaybackInterval());
+}
+
+/**
+ * Start playback from current position
+ */
+function startPlayback() {
+    if (playbackInterval) clearInterval(playbackInterval);
+    
+    isPlaying = true;
+    updatePlayPauseButton();
+    
+    startPlaybackInterval();
 }
 
 /**
@@ -266,6 +330,23 @@ function handleTimeSliderChange(event) {
 }
 
 /**
+ * Handle speed option selection
+ */
+function handleSpeedSelection(event) {
+    const speed = parseFloat(event.target.dataset.speed);
+    if (!isNaN(speed) && speed > 0) {
+        setPlaybackSpeed(speed);
+        console.log(`Speed selected: ${speed}x`);
+        
+        // Hide the speed options menu
+        const speedOptions = document.getElementById('speedOptions');
+        if (speedOptions) {
+            speedOptions.classList.remove('show');
+        }
+    }
+}
+
+/**
  * Open and process a file
  * @param {Function} onPlotComplete - Callback when plotting is complete
  * @returns {Promise<boolean>} Success status
@@ -325,6 +406,7 @@ export async function openFile(onPlotComplete) {
         updateTimeSlider();
         updatePlayPauseButton();
         updateGoLiveButton();
+        updateSpeedDisplay();
 
         // Callback with plot metadata for camera positioning
         if (onPlotComplete && plotMetadata) {
@@ -361,11 +443,14 @@ export function closeFile() {
     currentLineIndex = 0;
     totalGpsPoints = [];
     isLiveMode = true;
+    currentPlaybackSpeed = 1.0; // Reset speed
     
     const fileLabel = document.getElementById("fileLabel");
     if (fileLabel) {
         fileLabel.innerHTML = "No file selected";
     }
+    
+    updateSpeedDisplay();
 }
 
 /**
@@ -381,7 +466,8 @@ export function getCurrentFileInfo() {
         totalLines: allFileLines.length,
         currentLine: currentLineIndex,
         isLiveMode: isLiveMode,
-        isPlaying: isPlaying
+        isPlaying: isPlaying,
+        playbackSpeed: currentPlaybackSpeed
     } : null;
 }
 
@@ -450,7 +536,31 @@ export function setupFileManagerListeners() {
         timeSlider.addEventListener("input", handleTimeSliderChange);
     }
 
-    console.log("File manager listeners setup complete with playback controls");
+    // Speed control listeners
+    const adjustSpeedButton = document.getElementById('adjustSpeed');
+    const speedOptions = document.getElementById('speedOptions');
+
+    if (adjustSpeedButton && speedOptions) {
+        // Toggle the speed options menu
+        adjustSpeedButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            speedOptions.classList.toggle('show');
+        });
+
+        // Add event listeners to each speed option button
+        document.querySelectorAll('.speed-option').forEach(button => {
+            button.addEventListener('click', handleSpeedSelection);
+        });
+
+        // Hide the menu if the user clicks anywhere else on the page
+        window.addEventListener('click', (event) => {
+            if (speedOptions.classList.contains('show')) {
+                speedOptions.classList.remove('show');
+            }
+        });
+    }
+
+    console.log("File manager listeners setup complete with playback and speed controls");
 }
 
 /**
@@ -471,13 +581,21 @@ export function getPlaybackState() {
         isPlaying,
         currentLineIndex,
         totalLines: allFileLines.length,
-        progress: allFileLines.length > 0 ? currentLineIndex / (allFileLines.length - 1) : 0
+        progress: allFileLines.length > 0 ? currentLineIndex / (allFileLines.length - 1) : 0,
+        playbackSpeed: currentPlaybackSpeed
     };
 }
 
+// Expose functions globally for non-module usage
+if (typeof window !== 'undefined') {
+    window.setPlaybackSpeed = setPlaybackSpeed;
+    window.getPlaybackSpeed = getPlaybackSpeed;
+    window.getPlaybackState = getPlaybackState;
+}
+
+// Prevent slider and playback controls from moving the scene
 const timeSlider = document.getElementById("timeSlider");
 if (timeSlider) {
-    // Prevent slider events from moving the scene
     ['mousedown', 'mousemove', 'mouseup', 'click'].forEach(eventType => {
         timeSlider.addEventListener(eventType, (e) => {
             e.stopPropagation();
@@ -487,7 +605,7 @@ if (timeSlider) {
     timeSlider.addEventListener("input", handleTimeSliderChange);
 }
 
-// If you have OrbitControls, add this:
+// Prevent playback div interactions from affecting orbit controls
 const playbackDiv = document.getElementById("playback");
 if (playbackDiv && window.orbitControls) {
     playbackDiv.addEventListener('mouseenter', () => {

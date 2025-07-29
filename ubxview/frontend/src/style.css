@@ -304,7 +304,7 @@ input {
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 80vh;
+  width: 90vh;
   height: 20px;
   display: flex;
   flex-direction: row;
@@ -348,7 +348,7 @@ input {
 }
 
 #playback input[type="range"] {
-  width: 100%;
+  width: 90%;
   position: relative;
   z-index: 1000;
   

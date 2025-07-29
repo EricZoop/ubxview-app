@@ -18,7 +18,7 @@
 
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1>UBXView</h1>
-            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v2.0.3</a></p>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v2.0.5</a></p>
         </div>
 
 
@@ -30,7 +30,7 @@
 
         <div class="controls-container">
 
-            <div style="font-weight: 600;">Choose File</div>
+            <div style="font-weight: 600;">Select Capture</div>
             <label id="fileInputLabel" class="custom-file">
                 <span id="fileLabel">
                     .ubx, .txt, .csv, .log&nbsp;
@@ -76,8 +76,8 @@
 
             <div style="font-weight: 600;">Map Opacity</div>
             <div class="slider-wrapper">
-                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.2" />
-                <div id="opacityTooltip" class="slider-tooltip">0.2</div>
+                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
+                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
             <div style="font-weight: 600;">Render Distance</div>
@@ -156,7 +156,7 @@
                     head: '#ffe753',
                     tail: '#4c9cbf',
                     line: '#3a3b3d',
-                    showLines: false
+                    showLines: true
                 },
                 america: {
                     head: '#efefef',
@@ -371,7 +371,7 @@
             <div class="keys">
                 <span class="key">R</span>
             </div>
-            <div class="action">Reorient</div>
+            <div class="action">Reorientate</div>
         </div>
         <div class="control-row">
             <div class="keys">
@@ -382,86 +382,84 @@
     </div>
 
 
-    <div id="playback">
-        <div class="controls">
-            <button id="rewind">
-                <!-- Using a placeholder for your asset -->
-                <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
-            </button>
+<div id="playback">
+    <div class="controls">
+        <button id="rewind">
+            <!-- Using a placeholder for your asset -->
+            <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
+        </button>
 
-            <button id="playPause">
-                <!-- Using placeholders for your assets -->
-                <span id="playIcon"><img src="assets/play.png" title="Play"/></span> 
-                <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
-            </button>
+        <button id="playPause">
+            <!-- Using placeholders for your assets -->
+            <span id="playIcon"><img src="assets/play.png" title="Play"/></span> 
+            <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
+        </button>
 
-            <button id="forward">
-                 <!-- Using a placeholder for your asset -->
-                <img src="assets/seek.png" title="Forward 10s"/>
-            </button>
-        </div>
-
-        <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1"/>
-
-        <!-- This is the new container for the speed button and its options -->
-        <div class="speed-control-container">
-            <!-- The options menu, initially hidden via CSS -->
-            <div id="speedOptions" class="speed-options">
-                <button class="speed-option" data-speed="0.5">0.5x</button>
-                <button class="speed-option" data-speed="1">1x</button>
-                <button class="speed-option" data-speed="2">1.5x</button>
-                <button class="speed-option" data-speed="2.5">2.5x</button>
-                <button class="speed-option" data-speed="5">5x</button>
-            </div>
-
-            <!-- The button that triggers the menu -->
-            <button id="adjustSpeed">
-                <!-- Using a placeholder for your asset -->
-                <img src="/assets/tachometer.png" title="Adjust Speed" />
-            </button>
-        </div>
-
-        <button id="goLive">
+        <button id="forward">
              <!-- Using a placeholder for your asset -->
-            <img src="/assets/stream.png" title="Go to Live" />
+            <img src="assets/seek.png" title="Forward 10s"/>
         </button>
     </div>
 
-        <script>
-        // Wait for the document to be fully loaded before running scripts
-        document.addEventListener('DOMContentLoaded', () => {
-            const adjustSpeedButton = document.getElementById('adjustSpeed');
-            const speedOptions = document.getElementById('speedOptions');
+    <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1"/>
 
-            // --- Toggle the speed options menu ---
-            adjustSpeedButton.addEventListener('click', (event) => {
-                // This stops the click from immediately being caught by the 'window' listener below
-                event.stopPropagation(); 
-                speedOptions.classList.toggle('show');
-            });
+    <!-- Speed control container -->
+    <div class="speed-control-container">
+        <!-- The options menu, initially hidden via CSS -->
+        <div id="speedOptions" class="speed-options">
+            <button class="speed-option" data-speed="0.5">0.5x</button>
+            <button class="speed-option active" data-speed="1">1x</button>
+            <button class="speed-option" data-speed="2.5">2.5x</button>
+            <button class="speed-option" data-speed="5">5x</button>
+            <button class="speed-option" data-speed="10">10x</button>
+        </div>
 
-            // --- Add event listeners to each speed option button ---
-            document.querySelectorAll('.speed-option').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const speed = event.target.dataset.speed;
-                    
-                    // You can add your playback speed logic here
-                    console.log(`Speed selected: ${speed}x`); 
-                    
-                    // Hide the menu after a selection is made
-                    speedOptions.classList.remove('show'); 
-                });
-            });
+        <!-- The button that triggers the menu -->
+        <button id="adjustSpeed">
+            <!-- Using a placeholder for your asset -->
+            <img src="/assets/tachometer.png" title="Adjust Speed" />
+        </button>
+    </div>
 
-            // --- Hide the menu if the user clicks anywhere else on the page ---
-            window.addEventListener('click', (event) => {
-                // Check if the menu is visible and the click was outside of it
-                if (speedOptions.classList.contains('show')) {
-                    speedOptions.classList.remove('show');
+    <button id="goLive">
+         <!-- Using a placeholder for your asset -->
+        <img src="/assets/stream.png" title="Go to Live" />
+    </button>
+</div>
+
+<script>
+    // Wait for the document to be fully loaded before running scripts
+    document.addEventListener('DOMContentLoaded', () => {
+        // The fileManager.js setupFileManagerListeners() should be called from your main script
+        // This script only handles additional speed control features
+        
+        // Optional: Add keyboard shortcuts for speed control
+        document.addEventListener('keydown', (event) => {
+            // Only if not typing in an input field and if setPlaybackSpeed is available
+            if (event.target.tagName !== 'INPUT' && window.setPlaybackSpeed) {
+                switch(event.key) {
+                    case '1':
+                        window.setPlaybackSpeed(0.5);
+                        break;
+                    case '2':
+                        window.setPlaybackSpeed(1);
+                        break;
+                    case '3':
+                        window.setPlaybackSpeed(1.5);
+                        break;
+                    case '4':
+                        window.setPlaybackSpeed(2.5);
+                        break;
+                    case '5':
+                        window.setPlaybackSpeed(5);
+                        break;
                 }
-            });
+            }
         });
-    </script>
+        
+        console.log('Playback speed keyboard shortcuts initialized');
+    });
+</script>
 
     <script>
         const playPauseBtn = document.getElementById('playPause');
