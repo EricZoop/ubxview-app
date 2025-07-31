@@ -1,5 +1,5 @@
 $portName   = "COM4"
-$baudRate   = 115600
+$baudRate   = 115200
 $outputFile = "output.ubx"
 
 $parity     = [System.IO.Ports.Parity]::None
