@@ -37,8 +37,10 @@ export function extractGpsPointsFromText(text) {
                 // Convert iTOW from milliseconds to seconds to be compatible with duration logic
                 const time = iTOW_ms / 1000;
                 const satellites = 0; // Not available in this format
-                // Calculate undulation (Geoid separation) = MSL - Ellipsoid Height
-                const undulation = msl - alt;
+                
+                // *** CORRECTED LOGIC HERE ***
+                // Calculate undulation (Geoid separation) = Ellipsoid Height - MSL Height
+                const undulation = alt - msl;
 
                 if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)) {
                     points.push({ lat, lon, alt, time, satellites, undulation });

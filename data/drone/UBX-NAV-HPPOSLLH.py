@@ -50,12 +50,6 @@ def parse_ubx_nav_hpposllh(data):
         print(f"    Height:    {height_hp:.4f} m (ellipsoid)")
         print(f"    MSL:       {hMSL_hp:.4f} m")
         
-        # Check if coordinates make sense for Maryland
-        if -80 < lon_hp < -75 and 37 < lat_hp < 41:
-            print(f"  ✓ Coordinates look reasonable for Maryland!")
-        else:
-            print(f"  ⚠ Coordinates seem wrong for Maryland (should be ~39°N, ~-77°W)")
-        
         return {
             'iTOW': iTOW,
             'version': version,
@@ -194,4 +188,4 @@ if __name__ == "__main__":
         process_file(sys.argv[1])
 
 # You can also use it directly in code:
-# process_file("seglog00.txt")
+process_file("C:/ubxview-app/data/drone/8-1-2025/SEQLOG00.TXT")
