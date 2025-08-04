@@ -1,11 +1,17 @@
 import * as THREE from "three";
 
 /**
- * Sets up mouse and keyboard controls for a "fly-through" camera.
+ * Sets up mouse and keyboard controls for a "fly-through" camera with birdseye orthographic view.
  * @param {THREE.PerspectiveCamera} camera - The Three.js camera object.
+ * @param {THREE.Scene} scene - The Three.js scene object (needed for orthographic camera setup).
  * @returns {Object} controls - The camera controls object with an update method.
  */
-export function setupCameraControls(camera) {
+export function setupCameraControls(camera, scene) {
+
+    // --- DOM Elements for UI feedback ---
+    const cinematicControlRow = document.getElementById('cinematic-control-row');
+    const birdseyeControlRow = document.getElementById('birdseye-control-row');
+    const reorientControlRow = document.getElementById('reorient-control-row'); // MODIFICATION: Get reorient element
 
     // --- State variables for caching data context for reset ---
     let cachedDataSpan = null;
@@ -25,6 +31,18 @@ export function setupCameraControls(camera) {
     let cinematicTarget = new THREE.Vector3();
     let cachedDistance = null; // To store distance before cinematic mode
 
+    // --- State for birdseye orthographic view ---
+    let isBirdseyeMode = false;
+    let originalCamera = camera; // Store reference to original perspective camera
+    let orthographicCamera = null;
+    let currentCamera = camera; // Track which camera is currently active
+    
+    // Cache original camera state for restoration
+    let cachedPerspectivePosition = new THREE.Vector3();
+    let cachedPerspectiveTarget = new THREE.Vector3();
+    let cachedPerspectiveDistance = 1000;
+    let cachedPerspectiveAngles = { x: Math.PI / 6, y: Math.PI / 4 };
+
     const controls = {
         // --- Camera positioning properties ---
         distance: 1000,
@@ -37,84 +55,160 @@ export function setupCameraControls(camera) {
         lookSpeed: 0.01,
 
         /**
+         * Get the currently active camera (perspective or orthographic)
+         */
+        getCurrentCamera: function() {
+            return currentCamera;
+        },
+
+        /**
          * Recalculates and sets the camera's position and orientation.
          */
         updateCameraPosition: function () {
-            const x = Math.cos(this.angleY) * Math.cos(this.angleX) * this.distance;
-            const y = Math.sin(this.angleX) * this.distance;
-            const z = Math.sin(this.angleY) * Math.cos(this.angleX) * this.distance;
-            
-            camera.position.set(
-                x + this.panOffset.x,
-                y + this.panOffset.y,
-                z + this.panOffset.z
-            );
-            camera.lookAt(this.panOffset);
+            if (isBirdseyeMode && orthographicCamera) {
+                // For orthographic birdseye view, position camera directly above the target
+                // Use a much higher height for better overview
+                const height = Math.max(this.distance * 2, 2000);
+                orthographicCamera.position.set(
+                    this.panOffset.x,
+                    this.panOffset.y + height,
+                    this.panOffset.z
+                );
+                orthographicCamera.lookAt(this.panOffset);
+                
+                // Update orthographic camera size based on distance and window aspect ratio
+                const aspect = window.innerWidth / window.innerHeight;
+                const size = this.distance * 0.8; // This 'size' represents the vertical view extent (half-height)
+                
+                orthographicCamera.left = -size * aspect;
+                orthographicCamera.right = size * aspect;
+                orthographicCamera.top = size;
+                orthographicCamera.bottom = -size;
+                
+                // Adjust near and far planes for the height
+                orthographicCamera.near = 0.1;
+                orthographicCamera.far = height * 2;
+                orthographicCamera.updateProjectionMatrix();
+            } else {
+                // Original perspective camera positioning
+                const x = Math.cos(this.angleY) * Math.cos(this.angleX) * this.distance;
+                const y = Math.sin(this.angleX) * this.distance;
+                const z = Math.sin(this.angleY) * Math.cos(this.angleX) * this.distance;
+                
+                currentCamera.position.set(
+                    x + this.panOffset.x,
+                    y + this.panOffset.y,
+                    z + this.panOffset.z
+                );
+                currentCamera.lookAt(this.panOffset);
+            }
         },
         
         /**
          * This is the core update loop for keyboard controls.
          */
         update: function() {
-            if (isCinematicMode) {
+            if (isCinematicMode && !isBirdseyeMode) {
                 this.updateCinematic();
                 // We still process keyboard movements in cinematic mode for panning
             }
 
-            const dynamicMoveSpeed = this.distance * 0.01;
+            const dynamicMoveSpeed = this.distance * 0.02;
 
             const cameraDir = new THREE.Vector3();
-            camera.getWorldDirection(cameraDir);
+            currentCamera.getWorldDirection(cameraDir);
             
-            const cameraRight = new THREE.Vector3().crossVectors(camera.up, cameraDir).normalize();
-            const cameraUp = new THREE.Vector3().crossVectors(cameraDir, cameraRight).normalize();
+            let cameraRight, cameraUp;
+            
+            if (isBirdseyeMode) {
+                // In birdseye mode, movement is aligned with world axes
+                cameraRight = new THREE.Vector3(1, 0, 0); // East-West
+                cameraUp = new THREE.Vector3(0, 0, -1);   // North-South (negative Z is north)
+            } else {
+                cameraRight = new THREE.Vector3().crossVectors(currentCamera.up, cameraDir).normalize();
+                cameraUp = new THREE.Vector3().crossVectors(cameraDir, cameraRight).normalize();
+            }
 
             let moved = false;
 
-            // --- MODIFIED: Camera Movement checks now use event.code ---
+            // --- Camera Movement checks ---
             if (keyState['KeyW']) {
-                this.panOffset.add(cameraDir.clone().multiplyScalar(dynamicMoveSpeed));
+                if (isBirdseyeMode) {
+                    this.panOffset.add(new THREE.Vector3(0, 0, -dynamicMoveSpeed)); // North
+                } else {
+                    this.panOffset.add(cameraDir.clone().multiplyScalar(dynamicMoveSpeed));
+                }
                 moved = true;
             }
             if (keyState['KeyS']) {
-                this.panOffset.add(cameraDir.clone().multiplyScalar(-dynamicMoveSpeed));
+                if (isBirdseyeMode) {
+                    this.panOffset.add(new THREE.Vector3(0, 0, dynamicMoveSpeed)); // South
+                } else {
+                    this.panOffset.add(cameraDir.clone().multiplyScalar(-dynamicMoveSpeed));
+                }
                 moved = true;
             }
             if (keyState['KeyD']) {
-                this.panOffset.add(cameraRight.clone().multiplyScalar(-dynamicMoveSpeed));
+                if (isBirdseyeMode) {
+                    this.panOffset.add(new THREE.Vector3(dynamicMoveSpeed, 0, 0)); // East
+                } else {
+                    this.panOffset.add(cameraRight.clone().multiplyScalar(-dynamicMoveSpeed));
+                }
                 moved = true;
             }
             if (keyState['KeyA']) {
-                this.panOffset.add(cameraRight.clone().multiplyScalar(dynamicMoveSpeed));
-                moved = true;
-            }
-            if (keyState['KeyE']) { // Up
-                this.panOffset.add(cameraUp.clone().multiplyScalar(dynamicMoveSpeed));
-                moved = true;
-            }
-            if (keyState['KeyQ']) { // Down
-                this.panOffset.add(cameraUp.clone().multiplyScalar(-dynamicMoveSpeed));
+                if (isBirdseyeMode) {
+                    this.panOffset.add(new THREE.Vector3(-dynamicMoveSpeed, 0, 0)); // West
+                } else {
+                    this.panOffset.add(cameraRight.clone().multiplyScalar(dynamicMoveSpeed));
+                }
                 moved = true;
             }
 
-            // --- MODIFIED: Camera Look checks now use event.code for consistency ---
-            if (keyState['ArrowLeft']) {
-                this.angleY -= this.lookSpeed;
-                moved = true;
+            // Handle vertical panning in perspective view and zooming in birdseye view
+            if (isBirdseyeMode) {
+                const zoomSpeed = this.distance * 0.03; // Define a speed for zooming
+                if (keyState['KeyQ']) { // Zoom In
+                    this.distance -= zoomSpeed;
+                    this.distance = Math.max(50, this.distance); // Prevent zooming in too far
+                    moved = true;
+                }
+                if (keyState['KeyE']) { // Zoom Out
+                    this.distance += zoomSpeed;
+                    moved = true;
+                }
+            } else {
+                // Original vertical pan controls for perspective mode
+                if (keyState['KeyE']) { // Up
+                    this.panOffset.add(new THREE.Vector3(0, dynamicMoveSpeed, 0));
+                    moved = true;
+                }
+                if (keyState['KeyQ']) { // Down
+                    this.panOffset.add(new THREE.Vector3(0, -dynamicMoveSpeed, 0));
+                    moved = true;
+                }
             }
-            if (keyState['ArrowRight']) {
-                this.angleY += this.lookSpeed;
-                moved = true;
-            }
-            if (keyState['ArrowUp']) {
-                this.angleX += this.lookSpeed;
-                this.angleX = Math.min(Math.PI / 2 - 0.01, this.angleX);
-                moved = true;
-            }
-            if (keyState['ArrowDown']) {
-                this.angleX -= this.lookSpeed;
-                this.angleX = Math.max(-Math.PI / 2 + 0.01, this.angleX);
-                moved = true;
+
+            // --- Camera Look checks (only for perspective mode) ---
+            if (!isBirdseyeMode) {
+                if (keyState['ArrowLeft']) {
+                    this.angleY -= this.lookSpeed;
+                    moved = true;
+                }
+                if (keyState['ArrowRight']) {
+                    this.angleY += this.lookSpeed;
+                    moved = true;
+                }
+                if (keyState['ArrowUp']) {
+                    this.angleX += this.lookSpeed;
+                    this.angleX = Math.min(Math.PI / 2 - 0.01, this.angleX);
+                    moved = true;
+                }
+                if (keyState['ArrowDown']) {
+                    this.angleX -= this.lookSpeed;
+                    this.angleX = Math.max(-Math.PI / 2 + 0.01, this.angleX);
+                    moved = true;
+                }
             }
             
             if(moved) {
@@ -130,25 +224,76 @@ export function setupCameraControls(camera) {
             const desiredDistance = cachedDistance || 1000;
             this.distance += (desiredDistance - this.distance) * 0.05;
 
-            // Slowly orbit around the target for a more dynamic "cinematic" feel.
-            //this.angleY += 0.0005;
-
             this.updateCameraPosition();
         },
 
         toggleCinematicMode: function () {
+            if (isBirdseyeMode) {
+                this.toggleBirdseyeMode(); // This will also update the UI correctly
+            }
+
             isCinematicMode = !isCinematicMode;
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
             
+            if (cinematicControlRow) {
+                cinematicControlRow.classList.toggle('active-mode', isCinematicMode);
+            }
+
             if (isCinematicMode) {
-                // Cache the current distance to influence the cinematic zoom
                 cachedDistance = this.distance;
             } 
-            // When exiting cinematic mode, we no longer restore the old position.
-            // The camera will simply remain where it was, allowing a seamless
-            // transition to free-look control.
         },
 
+        toggleBirdseyeMode: function() {
+            isBirdseyeMode = !isBirdseyeMode;
+            console.log(`Birdseye mode ${isBirdseyeMode ? 'enabled' : 'disabled'}`);
+            
+            if (birdseyeControlRow) {
+                birdseyeControlRow.classList.toggle('active-mode', isBirdseyeMode);
+            }
+
+            if (isBirdseyeMode) {
+                // Disable cinematic mode and its UI when entering birdseye
+                if (isCinematicMode) {
+                    isCinematicMode = false;
+                    if (cinematicControlRow) {
+                        cinematicControlRow.classList.remove('active-mode');
+                    }
+                }
+                
+                cachedPerspectivePosition.copy(originalCamera.position);
+                cachedPerspectiveTarget.copy(this.panOffset);
+                cachedPerspectiveDistance = this.distance;
+                cachedPerspectiveAngles.x = this.angleX;
+                cachedPerspectiveAngles.y = this.angleY;
+                
+                if (!orthographicCamera) {
+                    const size = this.distance * 0.5;
+                    orthographicCamera = new THREE.OrthographicCamera(
+                        -size, size, size, -size, 0.1, this.distance
+                    );
+                }
+                
+                this.angleX = Math.PI / 2; 
+                this.angleY = 0; 
+                
+                currentCamera = orthographicCamera;
+                this.updateCameraPosition();
+            } else {
+                currentCamera = originalCamera;
+                
+                this.distance = cachedPerspectiveDistance;
+                this.angleX = cachedPerspectiveAngles.x;
+                this.angleY = cachedPerspectiveAngles.y;
+                this.panOffset.copy(cachedPerspectiveTarget);
+                
+                this.updateCameraPosition();
+            }
+        },
+
+        isBirdseyeActive: function() {
+            return isBirdseyeMode;
+        },
 
         setCinematicTarget: function(target) {
             if (target instanceof THREE.Vector3) {
@@ -160,12 +305,11 @@ export function setupCameraControls(camera) {
             return isCinematicMode;
         },
 
-        // --- Utility functions ---
         adjustForNewData: function (dataSpan, centerVec) {
             cachedDataSpan = dataSpan;
             cachedCenterVec = centerVec;
             const newDistance = Math.max(dataSpan * 1.5, 200);
-            if (Math.abs(this.distance - newDistance) > this.distance * 0.5 || this.distance === 2000) {
+            if (Math.abs(this.distance - newDistance) > this.distance * 0.5 || this.distance === 6000) {
                 this.distance = newDistance;
             }
             this.panOffset.lerp(centerVec, 0.3);
@@ -173,7 +317,13 @@ export function setupCameraControls(camera) {
         },
 
         reset: function (dataSpan, centerVec) {
-            isCinematicMode = false; // Ensure cinematic mode is off on reset
+            isCinematicMode = false;
+            isBirdseyeMode = false;
+            currentCamera = originalCamera;
+            
+            if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
+            if (birdseyeControlRow) birdseyeControlRow.classList.remove('active-mode');
+
             cachedDataSpan = dataSpan;
             cachedCenterVec = centerVec;
             this.distance = Math.max(dataSpan * 1.5, 200);
@@ -184,26 +334,42 @@ export function setupCameraControls(camera) {
         },
     };
 
-    // --- MODIFIED: Event Listeners now use event.code ---
+    // --- Event Listeners ---
     document.addEventListener("keydown", (e) => {
-        // Allow cinematic toggle even if other keys are pressed
+        if (e.code === 'KeyB') {
+            controls.toggleBirdseyeMode();
+            return;
+        }
+
         if (e.code === 'KeyC') {
             controls.toggleCinematicMode();
             return;
         }
 
-        // Check for the physical 'R' key
         if (e.code === 'KeyR') {
-            // Always break out of cinematic mode
-            isCinematicMode = false;
+            // --- MODIFICATION START: Add flash effect ---
+            if (reorientControlRow) {
+                reorientControlRow.classList.add('active-mode');
+                setTimeout(() => {
+                    reorientControlRow.classList.remove('active-mode');
+                }, 150); // Duration of the flash in milliseconds
+            }
+            // --- MODIFICATION END ---
 
-            // Reset if cached values are available
+            // Deactivate and reset other modes and their UI
+            isCinematicMode = false;
+            isBirdseyeMode = false;
+            currentCamera = originalCamera;
+
+            if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
+            if (birdseyeControlRow) birdseyeControlRow.classList.remove('active-mode');
+            
+            // Reset camera position if cached values are available
             if (cachedDataSpan !== null && cachedCenterVec !== null) {
                 controls.reset(cachedDataSpan, cachedCenterVec);
             }
             return; 
         }
-        // In cinematic mode, we still want to allow keyboard panning, so we don't return early.
         keyState[e.code] = true;
     });
     
@@ -211,17 +377,13 @@ export function setupCameraControls(camera) {
         keyState[e.code] = false; 
     });
 
-    // --- Sticky key fix for window focus loss ---
     window.addEventListener("blur", () => {
         for (const key in keyState) {
             keyState[key] = false;
         }
     });
 
-    // --- Mouse Listeners ---
     document.addEventListener("mousedown", (e) => {
-        // MODIFIED: This check is removed to allow mouse interaction in cinematic mode.
-        // if (isCinematicMode) return; 
         if (e.target.closest("#info")) return;
         isMouseDown = true;
         isPanning = e.shiftKey || e.button === 1;
@@ -236,21 +398,25 @@ export function setupCameraControls(camera) {
     });
 
     document.addEventListener("mousemove", (e) => {
-        // MODIFIED: This check is removed to allow orbiting in cinematic mode.
         if (!isMouseDown) return; 
         const deltaX = e.clientX - mouseX;
         const deltaY = e.clientY - mouseY;
 
         if (isPanning) {
-            // Note: Panning with Shift + Mouse Drag is now also enabled in cinematic mode.
             const panSpeed = controls.distance * 0.001;
-            const cameraDir = new THREE.Vector3();
-            camera.getWorldDirection(cameraDir);
-            const cameraRight = new THREE.Vector3().crossVectors(cameraDir, camera.up).normalize();
-            const cameraUp = new THREE.Vector3().crossVectors(cameraRight, cameraDir).normalize();
-            controls.panOffset.add(cameraRight.multiplyScalar(-deltaX * panSpeed));
-            controls.panOffset.add(cameraUp.multiplyScalar(deltaY * panSpeed));
-        } else { // Orbiting with Left Mouse
+            
+            if (isBirdseyeMode) {
+                controls.panOffset.x -= deltaX * panSpeed;
+                controls.panOffset.z += deltaY * panSpeed; 
+            } else {
+                const cameraDir = new THREE.Vector3();
+                currentCamera.getWorldDirection(cameraDir);
+                const cameraRight = new THREE.Vector3().crossVectors(cameraDir, currentCamera.up).normalize();
+                const cameraUp = new THREE.Vector3().crossVectors(cameraRight, cameraDir).normalize();
+                controls.panOffset.add(cameraRight.multiplyScalar(-deltaX * panSpeed));
+                controls.panOffset.add(cameraUp.multiplyScalar(deltaY * panSpeed));
+            }
+        } else if (!isBirdseyeMode) { 
             controls.angleY += deltaX * 0.005;
             controls.angleX += deltaY * 0.005;
             controls.angleX = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, controls.angleX));
@@ -262,8 +428,6 @@ export function setupCameraControls(camera) {
     });
 
     document.addEventListener("wheel", (e) => {
-        // MODIFIED: This check is removed to allow zooming in cinematic mode.
-        // if (isCinematicMode) return; 
         if (e.target.closest("#info")) return;
         controls.distance += e.deltaY * 0.5;
         controls.distance = Math.max(50, controls.distance);

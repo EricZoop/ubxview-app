@@ -9,7 +9,7 @@ import { getLatestPoint } from "./plotManager.js";
 let scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper;
 
 /**
- * Initialize the Three.js scene, camera, renderers, and controls.
+ * Initialize the Three.js scene, camera, renderers, abbnd controls.
  */
 export function initializeScene() {
     // Scene and Groups
@@ -36,8 +36,8 @@ export function initializeScene() {
     labelRenderer.domElement.style.pointerEvents = "none";
     document.body.appendChild(labelRenderer.domElement);
 
-    // Controls and Lights
-    controls = setupCameraControls(camera, renderer.domElement);
+    // Controls and Lights - FIXED: Pass scene instead of renderer.domElement
+    controls = setupCameraControls(camera, scene);
     scene.add(new THREE.AmbientLight(0x404040, 1.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(0, 100, 50);
@@ -81,9 +81,12 @@ function animate() {
     }
 
     controls.update();
-    updateCompass(camera);
-    renderer.render(scene, camera);
-    labelRenderer.render(scene, camera);
+    
+    // FIXED: Use the current active camera (could be perspective or orthographic)
+    const currentCamera = controls.getCurrentCamera();
+    updateCompass(currentCamera);
+    renderer.render(scene, currentCamera);
+    labelRenderer.render(scene, currentCamera);
 }
 
 /**
@@ -91,8 +94,10 @@ function animate() {
  */
 export function onWindowResize() {
     if (camera && renderer) {
+        // Update perspective camera
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
+        
         renderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
     }

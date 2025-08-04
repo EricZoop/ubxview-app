@@ -13,7 +13,7 @@ body {
 #playback {
     position: absolute;
     padding: 12px 18px;
-    background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29,31,33,0.4));
+    background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29, 31, 33, 0.4));
     border-radius: 4px;
     font-size: .85rem;
     color: white;
@@ -136,8 +136,8 @@ a:hover {
 
 .polling-input::-webkit-outer-spin-button,
 .polling-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .polling-input:focus {
@@ -299,59 +299,59 @@ input {
 
 #playback {
     pointer-events: auto !important;
-      user-select: none;
-       z-index: 1000;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90vh;
-  height: 20px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
+    user-select: none;
+    z-index: 1000;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vh;
+    height: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
 
 
 }
 
 #playback .controls {
-  display: flex;
-  gap: 10px;
+    display: flex;
+    gap: 10px;
 
-  align-items: center;
+    align-items: center;
 }
 
 #playback button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
 }
 
 /* This new rule fixes the alignment glitch */
 #playback button svg {
-  display: block;
+    display: block;
 }
 
 #playback button:hover {
-  background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 #playback img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  display: block;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    display: block;
 }
 
 #playback input[type="range"] {
-  width: 90%;
-  position: relative;
-  z-index: 1000;
-  
+    width: 90%;
+    position: relative;
+    z-index: 1000;
+
 }
 
 #timeSlider {
@@ -360,82 +360,87 @@ input {
 }
 
 #goLive {
-  font-size: 0.8rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid #ffffff40;
-  padding: 4px 10px;
-  border-radius: 4px;
-  
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid #ffffff40;
+    padding: 4px 10px;
+    border-radius: 4px;
+
 }
 
-        #goLive {
-            font-size: 0.8rem;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid #ffffff40;
-            padding: 6px 12px;
-            border-radius: 4px;
-        }
+#goLive {
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid #ffffff40;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
 
-        /* --- NEW STYLES FOR SPEED CONTROL --- */
+/* --- NEW STYLES FOR SPEED CONTROL --- */
 
-        /* Container to position the options menu relative to the button */
-        .speed-control-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* Container to position the options menu relative to the button */
+.speed-control-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        /* The pop-up menu for speed options */
-        .speed-options {
-            visibility: hidden; /* Use visibility to allow transitions */
-            opacity: 0;
-            position: absolute;
-            bottom: 120%; /* Position above the button with a gap */
-            left: 50%;
-            transform: translateX(-50%) translateY(10px); /* Start slightly lower for transition */
-            background: linear-gradient(180deg, rgba(25, 25, 25, 0.8), rgba(39,41,43,0.7));
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid #ffffff23;
-            border-radius: 6px;
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            z-index: 5001; /* Ensure it's above other controls */
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-        }
+/* The pop-up menu for speed options */
+.speed-options {
+    visibility: hidden;
+    /* Use visibility to allow transitions */
+    opacity: 0;
+    position: absolute;
+    bottom: 120%;
+    /* Position above the button with a gap */
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    /* Start slightly lower for transition */
+    background: linear-gradient(180deg, rgba(25, 25, 25, 0.8), rgba(39, 41, 43, 0.7));
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid #ffffff23;
+    border-radius: 6px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 5001;
+    /* Ensure it's above other controls */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
 
-        /* Class to show the menu */
-        .speed-options.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+/* Class to show the menu */
+.speed-options.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
 
-        /* Individual speed option buttons */
-        .speed-option {
-            background: none;
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            text-align: center;
-            transition: background 0.2s ease;
-            width: 100%;
-        }
+/* Individual speed option buttons */
+.speed-option {
+    background: none;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: center;
+    transition: background 0.2s ease;
+    width: 100%;
+}
 
-        .speed-option:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
+.speed-option:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 .control-row {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -507,12 +512,14 @@ select:hover {
 .compass-text {
     font-family: monospace;
     font-size: 32px;
-    color: white; /* or any base text color */
+    color: white;
+    /* or any base text color */
     text-shadow:
         -1px -1px 0 black,
-         1px -1px 0 black,
-        -1px  1px 0 black,
-         1px  1px 0 black; /* creates a black border around the text */
+        1px -1px 0 black,
+        -1px 1px 0 black,
+        1px 1px 0 black;
+    /* creates a black border around the text */
 }
 
 .plus-minus-selector {
@@ -596,7 +603,8 @@ select:hover {
 .view-option {
     flex: 1;
     padding: 0.6em 0.8em;
-    background: #2a2a2a; /* now lighter by default */
+    background: #2a2a2a;
+    /* now lighter by default */
     color: #fff;
     border: none;
     cursor: pointer;
@@ -609,6 +617,30 @@ select:hover {
 }
 
 .view-option.active {
-    background-color: #1a1a1a; /* darker when active */
+    background-color: #1a1a1a;
+    /* darker when active */
     color: #eee;
+}
+
+
+
+.control-row.active-mode::before {
+    content: '';
+    position: absolute;
+    /* These negative values make the background 6px bigger on all sides */
+    top: -5px;
+    bottom: -5px;
+    left: -7px;
+    right: -7px;
+    
+    /* The actual background color */
+    background-color: rgba(255, 255, 255, 0.103);
+    
+    /* Place the background behind the text and key elements */
+    z-index: -1;
+    
+    /* Optional: Add rounded corners to the new, larger background */
+    border-radius: 3px;
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 6px 20px;;
 }
