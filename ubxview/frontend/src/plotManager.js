@@ -293,29 +293,6 @@ function createThreeJsObjects(geometryData) {
     };
 }
 
-// Create a circular texture for better point appearance
-function createCircularTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Create a radial gradient for a nice circular effect
-    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 32, 32);
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    
-    return texture;
-}
-
 export function plotGpsData(points, append = false) {
     if (!points) {
         points = [];
