@@ -109,7 +109,7 @@
                         <option value="">Custom</option>
                         <option value="elevation">Elevation</option>
                         <option value="neon">Neon</option>
-                        <option value="america">1776&#129413;</option>
+                        <option value="america">1776&nbsp;&#129413;</option>
                         <option value="invincible">Invincible</option>
 
                     </select>
@@ -395,7 +395,7 @@
 
         <button id="forward">
              <!-- Using a placeholder for your asset -->
-            <img src="assets/seek.png" title="Forward 10s"/>
+            <img src="assets/seek.png" title="Seek 10s"/>
         </button>
     </div>
 
@@ -425,56 +425,6 @@
     </button>
 </div>
 
-<script>
-    // Wait for the document to be fully loaded before running scripts
-    document.addEventListener('DOMContentLoaded', () => {
-        // The fileManager.js setupFileManagerListeners() should be called from your main script
-        // This script only handles additional speed control features
-        
-        // Optional: Add keyboard shortcuts for speed control
-        document.addEventListener('keydown', (event) => {
-            // Only if not typing in an input field and if setPlaybackSpeed is available
-            if (event.target.tagName !== 'INPUT' && window.setPlaybackSpeed) {
-                switch(event.key) {
-                    case '1':
-                        window.setPlaybackSpeed(0.5);
-                        break;
-                    case '2':
-                        window.setPlaybackSpeed(1);
-                        break;
-                    case '3':
-                        window.setPlaybackSpeed(1.5);
-                        break;
-                    case '4':
-                        window.setPlaybackSpeed(2.5);
-                        break;
-                    case '5':
-                        window.setPlaybackSpeed(5);
-                        break;
-                }
-            }
-        });
-        
-        console.log('Playback speed keyboard shortcuts initialized');
-    });
-</script>
-
-    <script>
-        const playPauseBtn = document.getElementById('playPause');
-        const playIcon = document.getElementById('playIcon');
-        const pauseIcon = document.getElementById('pauseIcon');
-
-        let isPlaying = false;
-        playPauseBtn.addEventListener('click', () => {
-            isPlaying = !isPlaying;
-            playIcon.style.display = isPlaying ? 'none' : 'block';
-            pauseIcon.style.display = isPlaying ? 'block' : 'none';
-            // Add your playback logic here
-        });
-    </script>
-
-
-
     <!--
     <div id="credits" >
         <h3 style="margin: 0;">Test Pilots</h3>
@@ -483,7 +433,7 @@
 
         <h3 style="margin: 2px 0 2px 0;">Authors</h3>
         <a href="mailto:ji.park@drs.com">ji.park@drs.com</a><br>
-        <a href="mailto:eric.zipor@drs.com">Eric Zipor</a>
+        <a href="mailto:eric.zipor@drs.com">eric.zipor@drs.com</a>
     </div>
     -->
 
