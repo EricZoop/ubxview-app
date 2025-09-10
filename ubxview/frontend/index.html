@@ -18,7 +18,7 @@
 
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1>UBXView</h1>
-            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v2.0.5</a></p>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v2.0.6</a></p>
         </div>
 
 
@@ -425,17 +425,69 @@
     </button>
 </div>
 
+<script>
+    // Wait for the document to be fully loaded before running scripts
+    document.addEventListener('DOMContentLoaded', () => {
+        // The fileManager.js setupFileManagerListeners() should be called from your main script
+        // This script only handles additional speed control features
+        
+        // Optional: Add keyboard shortcuts for speed control
+        document.addEventListener('keydown', (event) => {
+            // Only if not typing in an input field and if setPlaybackSpeed is available
+            if (event.target.tagName !== 'INPUT' && window.setPlaybackSpeed) {
+                switch(event.key) {
+                    case '1':
+                        window.setPlaybackSpeed(0.5);
+                        break;
+                    case '2':
+                        window.setPlaybackSpeed(1);
+                        break;
+                    case '3':
+                        window.setPlaybackSpeed(1.5);
+                        break;
+                    case '4':
+                        window.setPlaybackSpeed(2.5);
+                        break;
+                    case '5':
+                        window.setPlaybackSpeed(5);
+                        break;
+                }
+            }
+        });
+        
+        console.log('Playback speed keyboard shortcuts initialized');
+    });
+</script>
+
+    <script>
+        const playPauseBtn = document.getElementById('playPause');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+
+        let isPlaying = false;
+        playPauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            playIcon.style.display = isPlaying ? 'none' : 'block';
+            pauseIcon.style.display = isPlaying ? 'block' : 'none';
+            // Add your playback logic here
+        });
+    </script>
+
+
+
+    
     <!--
     <div id="credits" >
         <h3 style="margin: 0;">Test Pilots</h3>
-        <a href="mailto:marc.issa@drs.com">marc.issa@drs.com</a><br>
-        <a href="mailto:max.koerner@drs.com">max.koerner@drs.com</a>
+        <a href="mailto:marc.issa@drs.com">Marc Isaa</a>, 
+        <a href="mailto:max.koerner@drs.com">Max Koerner</a>
 
-        <h3 style="margin: 2px 0 2px 0;">Authors</h3>
-        <a href="mailto:ji.park@drs.com">ji.park@drs.com</a><br>
-        <a href="mailto:eric.zipor@drs.com">eric.zipor@drs.com</a>
+        <h3 style="margin: 2px 0 2px 0;">Developers</h3>
+        <a href="mailto:ji.park@drs.com">Ji Park</a>, 
+        <a href="mailto:eric.zipor@drs.com">Eric Zipor</a>
     </div>
     -->
+    
 
 </body>
 

@@ -1,5 +1,5 @@
 /**
- * Parses text content to find and convert GNGGA/GPGGA or custom $HPPOSLLH sentences into structured points.
+ * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
  * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
@@ -16,44 +16,7 @@ export function extractGpsPointsFromText(text) {
     const lines = cleanedText.split('\n');
     if (lines.length === 0) return points;
 
-    // --- The CSV parsing block has been removed. ---
-
-    // Check for custom $HPPOSLLH format
-    if (lines[0].startsWith('$HPPOSLLH')) {
-        for (const line of lines) {
-            if (!line.startsWith('$HPPOSLLH')) continue;
-
-            const parts = line.split(',');
-            // Expected format: $HPPOSLLH,lat,lon,iTOW,height_ellipsoid,height_msl,...
-            if (parts.length < 6) continue;
-
-            try {
-                const lat = parseFloat(parts[1]);
-                const lon = parseFloat(parts[2]);
-                const iTOW_ms = parseInt(parts[3]);
-                const alt = parseFloat(parts[4]); // Use ellipsoid height for 'alt'
-                const msl = parseFloat(parts[5]); // MSL height
-
-                // Convert iTOW from milliseconds to seconds to be compatible with duration logic
-                const time = iTOW_ms / 1000;
-                const satellites = 0; // Not available in this format
-                
-                // *** CORRECTED LOGIC HERE ***
-                // Calculate undulation (Geoid separation) = Ellipsoid Height - MSL Height
-                const undulation = alt - msl;
-
-                if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)) {
-                    points.push({ lat, lon, alt, time, satellites, undulation });
-                }
-            } catch {
-                continue;
-            }
-        }
-        return points;
-    }
-
-
-    // --- FALLBACK: original NMEA parser ---
+    // NMEA GGA parser only
     const ggaRegex = /\$(?:GPGGA|GNGGA),[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
     const matches = cleanedText.match(ggaRegex);
     if (!matches) return points;
@@ -68,41 +31,75 @@ export function extractGpsPointsFromText(text) {
             const latDir = parts[3];
             const lonStr = parts[4];
             const lonDir = parts[5];
-            const fixQuality = parseInt(parts[6]);
-            const numSatellites = parseInt(parts[7]);
+            const fixQuality = parseInt(parts[6], 10);
+            const numSatellites = parseInt(parts[7], 10);
             const altStr = parts[9];
             const altUnits = parts[10];
             const undulationStr = parts[11];
 
+            // Strict validation
             if (
-                !latStr || !lonStr || !latDir || !lonDir || !altStr ||
+                !latStr || !lonStr || !latDir || !lonDir || !altStr || !UTCstr ||
                 latStr.length < 4 || lonStr.length < 5 ||
                 altUnits !== 'M' ||
                 isNaN(fixQuality) || fixQuality === 0 ||
-                isNaN(numSatellites) || numSatellites < 3
+                isNaN(numSatellites) || numSatellites < 3 ||
+                UTCstr.length < 6
             ) continue;
 
-            const latDeg = parseFloat(latStr.substring(0, 2));
-            const latMin = parseFloat(latStr.substring(2));
-            if (isNaN(latDeg) || isNaN(latMin)) continue;
+            // Parse coordinates with proper precision handling
+            const latDegStr = latStr.substring(0, 2);
+            const latMinStr = latStr.substring(2);
+            const latDeg = parseInt(latDegStr, 10);
+            const latMin = parseFloat(latMinStr);
+            
+            if (isNaN(latDeg) || isNaN(latMin) || latDeg < 0 || latDeg > 90 || latMin < 0 || latMin >= 60) continue;
+            
             let lat = latDeg + latMin / 60;
             if (latDir === 'S') lat = -lat;
 
-            const lonDeg = parseFloat(lonStr.substring(0, 3));
-            const lonMin = parseFloat(lonStr.substring(3));
-            if (isNaN(lonDeg) || isNaN(lonMin)) continue;
+            const lonDegStr = lonStr.substring(0, 3);
+            const lonMinStr = lonStr.substring(3);
+            const lonDeg = parseInt(lonDegStr, 10);
+            const lonMin = parseFloat(lonMinStr);
+            
+            if (isNaN(lonDeg) || isNaN(lonMin) || lonDeg < 0 || lonDeg > 180 || lonMin < 0 || lonMin >= 60) continue;
+            
             let lon = lonDeg + lonMin / 60;
             if (lonDir === 'W') lon = -lon;
 
+            // Validate coordinate bounds
+            if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+
             const alt = parseFloat(altStr);
+            if (isNaN(alt)) continue;
+
             const undulation = parseFloat(undulationStr) || 0;
 
-            const h = parseInt(UTCstr.slice(0, 2)) || 0;
-            const m = parseInt(UTCstr.slice(2, 4)) || 0;
-            const s = parseFloat(UTCstr.slice(4)) || 0;
+            // Parse time with consistent precision
+            const timeStr = UTCstr.padEnd(9, '0'); // Ensure minimum length for parsing
+            const h = parseInt(timeStr.slice(0, 2), 10);
+            const m = parseInt(timeStr.slice(2, 4), 10);
+            const s = parseFloat(timeStr.slice(4));
+
+            if (isNaN(h) || isNaN(m) || isNaN(s) || h > 23 || m > 59 || s >= 60) continue;
+
             const time = h * 3600 + m * 60 + s;
 
-            points.push({ lat, lon, alt, time, satellites: numSatellites, undulation });
+            // Round coordinates to appropriate precision (7 decimal places ≈ 1cm accuracy)
+            const precision = 1e7;
+            const roundedLat = Math.round(lat * precision) / precision;
+            const roundedLon = Math.round(lon * precision) / precision;
+            const roundedAlt = Math.round(alt * 100) / 100; // 2 decimal places for altitude
+
+            points.push({ 
+                lat: roundedLat, 
+                lon: roundedLon, 
+                alt: roundedAlt, 
+                time: Math.round(time * 1000) / 1000, // 3 decimal places for time
+                satellites: numSatellites, 
+                undulation: Math.round(undulation * 100) / 100 
+            });
         } catch {
             continue;
         }
@@ -110,8 +107,6 @@ export function extractGpsPointsFromText(text) {
 
     return points;
 }
-
-
 
 /**
  * Calculates distance between two lat/lon points using Haversine formula.
@@ -127,17 +122,6 @@ function haversine(lat1, lon1, lat2, lon2) {
               Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-function parseTimeToSeconds(timestampStr) {
-    // Example input: '2025-07-25 14:01:36.908'
-    const timePart = timestampStr.split(' ')[1]; // '14:01:36.908'
-    if (!timePart) return NaN;
-
-    const [h, m, s] = timePart.split(':');
-    const sec = parseFloat(s);
-    return parseInt(h) * 3600 + parseInt(m) * 60 + sec;
-}
-
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.
@@ -156,7 +140,6 @@ export function updateStats(points) {
     const longEl = document.getElementById('long-stat');
     const satellitesEl = document.getElementById('satellites-stat');
     const startEl = document.getElementById('start-stat');
-    // Get the end time element
     const endEl = document.getElementById('end-stat');
 
     // Handle the case where there are no points by resetting the stats
@@ -168,11 +151,10 @@ export function updateStats(points) {
         if (speedEl) speedEl.textContent = '0.00';
         if (altitudeEl) altitudeEl.textContent = '0.00';
         if (altWsg84El) altWsg84El.textContent = '0.00';
-        if (latEl) latEl.textContent = '0.000000';
-        if (longEl) longEl.textContent = '0.000000';
+        if (latEl) latEl.textContent = '0';
+        if (longEl) longEl.textContent = '0';
         if (satellitesEl) satellitesEl.textContent = '0';
         if (startEl) startEl.textContent = 'HH:mm:ss';
-        // Reset the end time stat
         if (endEl) endEl.textContent = 'HH:mm:ss';
         return;
     }
@@ -205,16 +187,33 @@ export function updateStats(points) {
     const endSeconds = Math.floor(endTime % 60);
     const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:${endSeconds.toString().padStart(2, '0')}`;
 
-
-    // Speed (based on last 2 points' 2D distance)
+    // Improved speed calculation with better error handling
     let latestSpeed = 0;
     if (points.length >= 2) {
-        const p1 = points[points.length - 2];
-        const p2 = lastPoint;
-        const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
-        const timeDelta = p2.time - p1.time;
-        if (timeDelta > 0) {
+        // Look back further to find a meaningful time difference
+        let p1 = null;
+        let p2 = lastPoint;
+        
+        for (let i = points.length - 2; i >= 0; i--) {
+            const candidate = points[i];
+            const timeDelta = p2.time - candidate.time;
+            
+            // Use a minimum time threshold to avoid division by very small numbers
+            if (timeDelta > 0.1) { // At least 0.1 second difference
+                p1 = candidate;
+                break;
+            }
+        }
+        
+        if (p1) {
+            const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+            const timeDelta = p2.time - p1.time;
             latestSpeed = distance2D / timeDelta;
+            
+            // Cap unrealistic speeds (over 100 m/s = 360 km/h)
+            if (latestSpeed > 100) {
+                latestSpeed = 0;
+            }
         }
     }
 
@@ -227,8 +226,16 @@ export function updateStats(points) {
         const p1 = points[i - 1];
         const p2 = points[i];
 
+        // Skip if points are identical or very close in time
+        const timeDelta = p2.time - p1.time;
+        if (timeDelta <= 0) continue;
+
         // Calculate 2D distance for this segment
         const segment2DDistance = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+        
+        // Skip segments with unrealistic distances (over 1km between consecutive points)
+        if (segment2DDistance > 1000) continue;
+        
         total2DDistance += segment2DDistance;
 
         // Calculate altitude change for this segment
@@ -248,10 +255,9 @@ export function updateStats(points) {
     if (speedEl) speedEl.textContent = latestSpeed.toFixed(2);
     if (altitudeEl) altitudeEl.textContent = currentAltitude.toFixed(2);
     if (altWsg84El) altWsg84El.textContent = currentAltWsg84.toFixed(2);
-    if (latEl) latEl.textContent = currentLat.toFixed(7); // More precision for lat/lon
+    if (latEl) latEl.textContent = currentLat.toFixed(7); // 7 decimal places for GPS precision
     if (longEl) longEl.textContent = currentLon.toFixed(7);
     if (satellitesEl) satellitesEl.textContent = currentSatellites;
     if (startEl) startEl.textContent = startTimeFormatted;
-    // Update the end time stat
     if (endEl) endEl.textContent = endTimeFormatted;
 }
