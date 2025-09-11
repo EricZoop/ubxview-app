@@ -101,6 +101,7 @@ a:hover {
     justify-content: space-between;
     flex-wrap: wrap;
     align-content: center;
+    text-overflow: ellipsis;
 }
 
 .controls-container>* {
@@ -175,6 +176,8 @@ a:hover {
     color: #fff;
 }
 
+
+
 .custom-file:active,
 .polling-button:active {
     background-color: #0a0a0a;
@@ -184,9 +187,31 @@ a:hover {
 
 .custom-file svg {
     vertical-align: middle;
-    margin-left: 4.25rem;
+    margin-left: 4.5rem;
     margin-bottom: .05rem;
     display: inline-block;
+}
+
+#fileInputLabel {
+    max-width: 190px;          /* respect container width */
+    overflow: hidden;         /* hide overflow */
+    white-space: nowrap;      /* keep text on one line */
+    text-overflow: ellipsis;  /* add ... when cut */
+}
+
+#fileLabel {
+    display: inline-flex;      /* flex for text + svg */
+    align-items: center;       /* vertically center */
+    gap: 0.5rem;               /* spacing between text and svg */
+    overflow: hidden;          /* ensure cut-off works */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+#fileLabel svg {
+    flex-shrink: 0;            /* keep icon visible */
+    margin-left: 0;            /* remove big fixed margin */
 }
 
 input {
@@ -529,7 +554,7 @@ select:hover {
     overflow: hidden;
     border: 1px solid #333;
     background: #1a1a1a;
-    width: 200px;
+    width: 208px;
     font-family: inherit;
     font-size: 0.85em;
     height: 29px;
@@ -593,7 +618,7 @@ select:hover {
 .view-toggle {
     font-family: inherit;
     display: flex;
-    width: 200px;
+    width: 204px;
     background-color: #1a1a1a;
     border: 2px solid #333;
     border-radius: 2px;
