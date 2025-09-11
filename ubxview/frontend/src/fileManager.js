@@ -1,6 +1,6 @@
 // FILE HANDLING AND WATCHING WITH PLAYBACK CONTROLS
 
-import { extractGpsPointsFromText, updateStats } from "./parser.js";
+import { extractGpsPointsFromText, extractGpsPoints, isUbxData, updateStats } from "./parser.js";
 import { plotGpsData, getMasterGpsPoints, initializeCoordinateSystem, resetCoordinateSystem } from "./plotManager.js";
 
 // Module state
@@ -9,9 +9,11 @@ let readOffset = 0;
 let fileWatcherInterval = null;
 let POLLING_RATE_MS = 10;
 let fileHandle = null;
+let isUbxFile = false; // Track if current file is UBX format
 
 // Playback state
 let allFileLines = [];
+let allFileData = null; // For binary UBX files
 let currentLineIndex = 0;
 let isPlaying = false;
 let isLiveMode = true;
@@ -110,27 +112,49 @@ async function watchFileForChanges() {
         const latestFile = await fileHandle.getFile();
         if (latestFile.size <= readOffset) return; // No new data
 
-        const fileSlice = latestFile.slice(readOffset);
-        const newText = await fileSlice.text();
-        readOffset = latestFile.size;
+        let newPoints = [];
 
-        if (newText.length > 0) {
-            // Update our line cache for playback
-            const newLines = newText.split('\n').filter(line => line.trim());
-            allFileLines.push(...newLines);
-            currentLineIndex = allFileLines.length - 1;
-            updateTimeSlider();
-
-            // Parse only the new text chunk
-            const newPoints = extractGpsPointsFromText(newText);
-
-            if (newPoints && newPoints.length > 0) {
-                totalGpsPoints.push(...newPoints);
-                // Append the new points to the plot
-                plotGpsData(newPoints, true);
-                // Update stats with complete master list
-                updateStats(getMasterGpsPoints());
+        if (isUbxFile) {
+            // For UBX files, read the entire file and parse
+            // Note: UBX files are typically complete datasets, live updating is less common
+            const arrayBuffer = await latestFile.arrayBuffer();
+            const binaryData = new Uint8Array(arrayBuffer);
+            const allPoints = extractGpsPoints(binaryData);
+            
+            // Calculate new points since last read
+            if (allPoints.length > totalGpsPoints.length) {
+                newPoints = allPoints.slice(totalGpsPoints.length);
+                totalGpsPoints = [...allPoints];
             }
+            
+            readOffset = latestFile.size;
+        } else {
+            // For text files, read new content
+            const fileSlice = latestFile.slice(readOffset);
+            const newText = await fileSlice.text();
+            readOffset = latestFile.size;
+
+            if (newText.length > 0) {
+                // Update our line cache for playback
+                const newLines = newText.split('\n').filter(line => line.trim());
+                allFileLines.push(...newLines);
+                currentLineIndex = allFileLines.length - 1;
+                updateTimeSlider();
+
+                // Parse only the new text chunk
+                newPoints = extractGpsPointsFromText(newText);
+
+                if (newPoints && newPoints.length > 0) {
+                    totalGpsPoints.push(...newPoints);
+                }
+            }
+        }
+
+        if (newPoints && newPoints.length > 0) {
+            // Append the new points to the plot
+            plotGpsData(newPoints, true);
+            // Update stats with complete master list
+            updateStats(getMasterGpsPoints());
         }
     } catch (error) {
         console.error("Error watching file for changes:", error);
@@ -162,30 +186,50 @@ function stopFileWatcher() {
  */
 function startPlaybackInterval() {
     playbackInterval = setInterval(() => {
-        if (currentLineIndex < allFileLines.length - 1) {
-            currentLineIndex++;
-            updateTimeSlider();
-            
-            // Process the current line
-            const currentLine = allFileLines[currentLineIndex];
-            const points = extractGpsPointsFromText(currentLine);
-            
-            if (points && points.length > 0) {
-                // Plot points up to current position
-                const pointsUpToCurrent = [];
-                for (let i = 0; i <= currentLineIndex; i++) {
-                    const linePoints = extractGpsPointsFromText(allFileLines[i]);
-                    if (linePoints) pointsUpToCurrent.push(...linePoints);
-                }
+        if (isUbxFile) {
+            // For UBX files, playback is based on point index rather than lines
+            if (currentLineIndex < totalGpsPoints.length - 1) {
+                currentLineIndex++;
+                updateTimeSlider();
                 
+                // Plot points up to current position
+                const pointsUpToCurrent = totalGpsPoints.slice(0, currentLineIndex + 1);
                 plotGpsData(pointsUpToCurrent, false);
                 updateStats(pointsUpToCurrent);
+            } else {
+                // Reached end of data
+                pausePlayback();
+                if (!isLiveMode) {
+                    goLive(); // Switch back to live mode when playback ends
+                }
             }
         } else {
-            // Reached end of file
-            pausePlayback();
-            if (!isLiveMode) {
-                goLive(); // Switch back to live mode when playback ends
+            // For text files, playback is based on lines
+            if (currentLineIndex < allFileLines.length - 1) {
+                currentLineIndex++;
+                updateTimeSlider();
+                
+                // Process the current line
+                const currentLine = allFileLines[currentLineIndex];
+                const points = extractGpsPointsFromText(currentLine);
+                
+                if (points && points.length > 0) {
+                    // Plot points up to current position
+                    const pointsUpToCurrent = [];
+                    for (let i = 0; i <= currentLineIndex; i++) {
+                        const linePoints = extractGpsPointsFromText(allFileLines[i]);
+                        if (linePoints) pointsUpToCurrent.push(...linePoints);
+                    }
+                    
+                    plotGpsData(pointsUpToCurrent, false);
+                    updateStats(pointsUpToCurrent);
+                }
+            } else {
+                // Reached end of file
+                pausePlayback();
+                if (!isLiveMode) {
+                    goLive(); // Switch back to live mode when playback ends
+                }
             }
         }
     }, getCurrentPlaybackInterval());
@@ -216,27 +260,29 @@ function pausePlayback() {
 }
 
 /**
- * Rewind by specified number of lines
+ * Rewind by specified number of lines/points
  */
 function rewind() {
     if (isLiveMode) {
         enterPlaybackMode();
     }
     
+    const maxIndex = isUbxFile ? totalGpsPoints.length - 1 : allFileLines.length - 1;
     currentLineIndex = Math.max(0, currentLineIndex - SEEK_LINES);
     updateTimeSlider();
     updatePlotToCurrentPosition();
 }
 
 /**
- * Forward by specified number of lines
+ * Forward by specified number of lines/points
  */
 function forward() {
     if (isLiveMode) {
         enterPlaybackMode();
     }
     
-    currentLineIndex = Math.min(allFileLines.length - 1, currentLineIndex + SEEK_LINES);
+    const maxIndex = isUbxFile ? totalGpsPoints.length - 1 : allFileLines.length - 1;
+    currentLineIndex = Math.min(maxIndex, currentLineIndex + SEEK_LINES);
     updateTimeSlider();
     updatePlotToCurrentPosition();
 }
@@ -256,7 +302,13 @@ function enterPlaybackMode() {
 function goLive() {
     isLiveMode = true;
     pausePlayback();
-    currentLineIndex = allFileLines.length - 1;
+    
+    if (isUbxFile) {
+        currentLineIndex = totalGpsPoints.length - 1;
+    } else {
+        currentLineIndex = allFileLines.length - 1;
+    }
+    
     updateTimeSlider();
     startFileWatcher();
     updateGoLiveButton();
@@ -269,14 +321,22 @@ function goLive() {
  * Update plot to show data up to current position
  */
 function updatePlotToCurrentPosition() {
-    const pointsUpToCurrent = [];
-    for (let i = 0; i <= currentLineIndex; i++) {
-        const linePoints = extractGpsPointsFromText(allFileLines[i] || '');
-        if (linePoints) pointsUpToCurrent.push(...linePoints);
+    if (isUbxFile) {
+        // For UBX files, use point index
+        const pointsUpToCurrent = totalGpsPoints.slice(0, currentLineIndex + 1);
+        plotGpsData(pointsUpToCurrent, false);
+        updateStats(pointsUpToCurrent);
+    } else {
+        // For text files, parse lines up to current position
+        const pointsUpToCurrent = [];
+        for (let i = 0; i <= currentLineIndex; i++) {
+            const linePoints = extractGpsPointsFromText(allFileLines[i] || '');
+            if (linePoints) pointsUpToCurrent.push(...linePoints);
+        }
+        
+        plotGpsData(pointsUpToCurrent, false);
+        updateStats(pointsUpToCurrent);
     }
-    
-    plotGpsData(pointsUpToCurrent, false);
-    updateStats(pointsUpToCurrent);
 }
 
 /**
@@ -284,9 +344,14 @@ function updatePlotToCurrentPosition() {
  */
 function updateTimeSlider() {
     const slider = document.getElementById("timeSlider");
-    if (slider && allFileLines.length > 0) {
-        slider.max = allFileLines.length - 1;
-        slider.value = currentLineIndex;
+    if (slider) {
+        if (isUbxFile && totalGpsPoints.length > 0) {
+            slider.max = totalGpsPoints.length - 1;
+            slider.value = currentLineIndex;
+        } else if (!isUbxFile && allFileLines.length > 0) {
+            slider.max = allFileLines.length - 1;
+            slider.value = currentLineIndex;
+        }
     }
 }
 
@@ -347,6 +412,32 @@ function handleSpeedSelection(event) {
 }
 
 /**
+ * Detect file type based on extension and content
+ * @param {File} file - The file to check
+ * @returns {Promise<boolean>} True if file is UBX format
+ */
+async function detectFileType(file) {
+    // Check file extension first
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.ubx')) {
+        return true;
+    }
+    
+    // For files without .ubx extension, check content
+    try {
+        // Read first few bytes to check for UBX sync bytes
+        const sampleSize = Math.min(1024, file.size);
+        const sampleBuffer = await file.slice(0, sampleSize).arrayBuffer();
+        const sampleData = new Uint8Array(sampleBuffer);
+        
+        return isUbxData(sampleData);
+    } catch (error) {
+        console.error("Error detecting file type:", error);
+        return false;
+    }
+}
+
+/**
  * Open and process a file
  * @param {Function} onPlotComplete - Callback when plotting is complete
  * @returns {Promise<boolean>} Success status
@@ -357,7 +448,8 @@ export async function openFile(onPlotComplete) {
             types: [
                 {
                     accept: {
-                        "text/plain": [".txt", ".log", ".csv", ".ubx"],
+                        "text/plain": [".txt", ".log", ".csv"],
+                        "application/octet-stream": [".ubx"]
                     },
                 },
             ],
@@ -370,25 +462,45 @@ export async function openFile(onPlotComplete) {
         currentFile = file;
         readOffset = 0;
 
+        // Detect file type
+        isUbxFile = await detectFileType(file);
+        console.log(`File type detected: ${isUbxFile ? 'UBX' : 'Text'}`);
+
         // Update file label
         const fileLabel = document.getElementById("fileLabel");
         if (fileLabel) {
             fileLabel.innerHTML = `${file.name}`;
         }
 
-        // Read and parse initial file content
-        const initialText = await file.text();
-        
-        // Split into lines for playback control
-        allFileLines = initialText.split('\n').filter(line => line.trim());
-        currentLineIndex = allFileLines.length - 1;
-        
-        const masterGpsPoints = extractGpsPointsFromText(initialText);
+        let masterGpsPoints = [];
+
+        if (isUbxFile) {
+            // Process UBX file
+            const arrayBuffer = await file.arrayBuffer();
+            allFileData = new Uint8Array(arrayBuffer);
+            masterGpsPoints = extractGpsPoints(allFileData);
+            
+            // For UBX files, we use point count for playback control
+            currentLineIndex = masterGpsPoints.length - 1;
+            allFileLines = []; // Not used for UBX files
+        } else {
+            // Process text file
+            const initialText = await file.text();
+            
+            // Split into lines for playback control
+            allFileLines = initialText.split('\n').filter(line => line.trim());
+            currentLineIndex = allFileLines.length - 1;
+            
+            masterGpsPoints = extractGpsPointsFromText(initialText);
+            allFileData = null; // Not used for text files
+        }
+
         totalGpsPoints = [...masterGpsPoints];
         readOffset = file.size;
 
         if (masterGpsPoints.length === 0) {
-            alert("No valid GPS points found in the file.");
+            const fileType = isUbxFile ? "UBX" : "text";
+            alert(`No valid GPS points found in the ${fileType} file.`);
             plotGpsData([]);
             updateStats([]);
             return false;
@@ -413,11 +525,14 @@ export async function openFile(onPlotComplete) {
             onPlotComplete(plotMetadata);
         }
 
-        // Start in live mode
+        // Start in live mode (though for UBX files, live updates are less common)
         isLiveMode = true;
         startFileWatcher();
 
-        console.log(`File opened successfully: ${file.name} (${masterGpsPoints.length} points, ${allFileLines.length} lines)`);
+        const fileType = isUbxFile ? "UBX" : "text";
+        const unitCount = isUbxFile ? "points" : "lines";
+        const units = isUbxFile ? masterGpsPoints.length : allFileLines.length;
+        console.log(`${fileType} file opened successfully: ${file.name} (${masterGpsPoints.length} GPS points, ${units} ${unitCount})`);
         return true;
 
     } catch (err) {
@@ -440,9 +555,11 @@ export function closeFile() {
     readOffset = 0;
     fileHandle = null;
     allFileLines = [];
+    allFileData = null;
     currentLineIndex = 0;
     totalGpsPoints = [];
     isLiveMode = true;
+    isUbxFile = false;
     currentPlaybackSpeed = 1.0; // Reset speed
     
     const fileLabel = document.getElementById("fileLabel");
@@ -463,8 +580,10 @@ export function getCurrentFileInfo() {
         size: currentFile.size,
         lastModified: currentFile.lastModified,
         readOffset: readOffset,
-        totalLines: allFileLines.length,
+        fileType: isUbxFile ? 'UBX' : 'Text',
+        totalLines: isUbxFile ? totalGpsPoints.length : allFileLines.length,
         currentLine: currentLineIndex,
+        totalGpsPoints: totalGpsPoints.length,
         isLiveMode: isLiveMode,
         isPlaying: isPlaying,
         playbackSpeed: currentPlaybackSpeed
@@ -560,7 +679,7 @@ export function setupFileManagerListeners() {
         });
     }
 
-    console.log("File manager listeners setup complete with playback and speed controls");
+    console.log("File manager listeners setup complete with UBX support and playback controls");
 }
 
 /**
@@ -576,12 +695,15 @@ export function isWatchingFile() {
  * @returns {Object} Current playback state
  */
 export function getPlaybackState() {
+    const totalUnits = isUbxFile ? totalGpsPoints.length : allFileLines.length;
     return {
         isLiveMode,
         isPlaying,
+        isUbxFile,
         currentLineIndex,
-        totalLines: allFileLines.length,
-        progress: allFileLines.length > 0 ? currentLineIndex / (allFileLines.length - 1) : 0,
+        totalLines: totalUnits,
+        totalGpsPoints: totalGpsPoints.length,
+        progress: totalUnits > 0 ? currentLineIndex / (totalUnits - 1) : 0,
         playbackSpeed: currentPlaybackSpeed
     };
 }

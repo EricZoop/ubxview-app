@@ -175,13 +175,6 @@ a:hover {
     color: #fff;
 }
 
-#fileLabel {
-  display: flex;
-  justify-content: space-between; /* This is the key property */
-  align-items: center; /* This vertically centers the text */
-  width: 100%; /* Ensures it uses the available space */
-}
-
 .custom-file:active,
 .polling-button:active {
     background-color: #0a0a0a;

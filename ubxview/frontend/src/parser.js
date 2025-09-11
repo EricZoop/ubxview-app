@@ -86,7 +86,7 @@ export function extractGpsPointsFromText(text) {
 
             const time = h * 3600 + m * 60 + s;
 
-            // Round coordinates to appropriate precision (7 decimal places ≈ 1cm accuracy)
+            // Round coordinates to appropriate precision (7 decimal places â‰ˆ 1cm accuracy)
             const precision = 1e7;
             const roundedLat = Math.round(lat * precision) / precision;
             const roundedLon = Math.round(lon * precision) / precision;
@@ -108,6 +108,198 @@ export function extractGpsPointsFromText(text) {
     return points;
 }
 
+// --- UBX HPPOSLLH Parsing Functions ---
+
+/**
+ * Time conversion helper - gets start of GPS week
+ */
+function getStartOfGpsWeek() {
+    const today = new Date();
+    // GPS week starts on Sunday. weekday() is Monday=0, Sunday=6
+    const daysSinceSunday = (today.getDay()) % 7; // Sunday is 0 in JS
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - daysSinceSunday);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
+}
+
+/**
+ * Converts iTOW (GPS time of week in milliseconds) to seconds since start of day
+ * @param {number} itowMs iTOW in milliseconds
+ * @returns {number} Time in seconds since start of day
+ */
+function itowToTimeOfDay(itowMs) {
+    const startOfWeek = getStartOfGpsWeek();
+    const timestamp = new Date(startOfWeek.getTime() + itowMs);
+    const hours = timestamp.getHours();
+    const minutes = timestamp.getMinutes();
+    const seconds = timestamp.getSeconds();
+    const milliseconds = timestamp.getMilliseconds();
+    
+    return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+}
+
+/**
+ * Parses a single UBX NAV-HPPOSLLH message
+ * @param {Uint8Array} data The payload data
+ * @returns {Object|null} Parsed GPS point or null if invalid
+ */
+function parseUbxNavHpposllh(data) {
+    if (data.length < 36) return null;
+
+    try {
+        const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const flags = view.getUint8(3);
+        const iTOW = view.getUint32(4, true);
+        const lon = view.getInt32(8, true);
+        const lat = view.getInt32(12, true);
+        const hMSL = view.getInt32(20, true);
+        const lonHp = view.getInt8(24);
+        const latHp = view.getInt8(25);
+        const hMSLHp = view.getInt8(27);
+
+        const lonHp_final = (lon * 1e-7) + (lonHp * 1e-9);
+        const latHp_final = (lat * 1e-7) + (latHp * 1e-9);
+        const hMSLHp_final = (hMSL * 1e-3) + (hMSLHp * 1e-4);
+
+        const isValid = (flags & 0x01) === 0;
+        if (!isValid) return null;
+
+        // Validate coordinate bounds
+        if (Math.abs(latHp_final) > 90 || Math.abs(lonHp_final) > 180) return null;
+
+        const timeOfDay = itowToTimeOfDay(iTOW);
+
+        // Round coordinates to appropriate precision (9 decimal places for high precision)
+        const precision = 1e9;
+        const roundedLat = Math.round(latHp_final * precision) / precision;
+        const roundedLon = Math.round(lonHp_final * precision) / precision;
+        const roundedAlt = Math.round(hMSLHp_final * 10000) / 10000; // 4 decimal places for high precision altitude
+
+        return { 
+            lat: roundedLat, 
+            lon: roundedLon, 
+            alt: roundedAlt, 
+            time: Math.round(timeOfDay * 1000) / 1000, // 3 decimal places for time
+            satellites: 'N/A', // Not available in HPPOSLLH messages
+            undulation: 0 // HPPOSLLH provides MSL height directly
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Finds and extracts UBX messages from binary data
+ * @param {Uint8Array} data Binary data
+ * @returns {Array} Array of [msgClass, msgId, payload] tuples
+ */
+function findUbxMessages(data) {
+    const messages = [];
+    let i = 0;
+    while (i < data.length - 8) {
+        if (data[i] === 0xB5 && data[i + 1] === 0x62) {
+            try {
+                if (i + 6 > data.length) { i++; continue; }
+                const msgClass = data[i + 2];
+                const msgId = data[i + 3];
+                const length = data[i + 4] | (data[i + 5] << 8);
+                if (i + 8 + length > data.length) { i++; continue; }
+
+                const payload = data.slice(i + 6, i + 6 + length);
+                const ckARcvd = data[i + 6 + length];
+                const ckBRcvd = data[i + 7 + length];
+                let calcCkA = 0, calcCkB = 0;
+                for (let j = i + 2; j < i + 6 + length; j++) {
+                    calcCkA = (calcCkA + data[j]) & 0xFF;
+                    calcCkB = (calcCkB + calcCkA) & 0xFF;
+                }
+
+                if (ckARcvd === calcCkA && ckBRcvd === calcCkB) {
+                    messages.push([msgClass, msgId, payload]);
+                    i += 8 + length;
+                } else { i++; }
+            } catch (error) { i++; }
+        } else { i++; }
+    }
+    return messages;
+}
+
+/**
+ * Extracts GPS points from UBX binary data containing HPPOSLLH messages
+ * @param {Uint8Array} binaryData The binary UBX data
+ * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: string, undulation: number}>} Array of GPS points
+ */
+export function extractGpsPointsFromUbxData(binaryData) {
+    const points = [];
+    
+    try {
+        const allMessages = findUbxMessages(binaryData);
+        const navHpposllhPayloads = allMessages
+            .filter(([msgClass, msgId]) => msgClass === 0x01 && msgId === 0x14)
+            .map(([, , payload]) => payload);
+
+        if (navHpposllhPayloads.length === 0) {
+            return points; // Return empty array if no valid messages found
+        }
+
+        for (const payload of navHpposllhPayloads) {
+            const parsedPoint = parseUbxNavHpposllh(payload);
+            if (parsedPoint) {
+                points.push(parsedPoint);
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing UBX data:', error);
+    }
+
+    return points;
+}
+
+/**
+ * Determines if data is likely UBX binary format
+ * @param {Uint8Array} data The data to check
+ * @returns {boolean} True if data appears to be UBX format
+ */
+export function isUbxData(data) {
+    // Look for UBX sync characters (0xB5 0x62) in the first few bytes
+    for (let i = 0; i < Math.min(data.length - 1, 100); i++) {
+        if (data[i] === 0xB5 && data[i + 1] === 0x62) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Main function to extract GPS points from either text (NMEA) or binary (UBX) data
+ * @param {string|Uint8Array} data The data to parse
+ * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number|string, undulation: number}>} Array of GPS points
+ */
+export function extractGpsPoints(data) {
+    if (data instanceof Uint8Array) {
+        // Binary data - check if it's UBX format
+        if (isUbxData(data)) {
+            return extractGpsPointsFromUbxData(data);
+        } else {
+            // Try to convert to text and parse as NMEA
+            try {
+                const textData = new TextDecoder('utf-8').decode(data);
+                return extractGpsPointsFromText(textData);
+            } catch (error) {
+                console.error('Error decoding binary data as text:', error);
+                return [];
+            }
+        }
+    } else if (typeof data === 'string') {
+        // Text data - parse as NMEA
+        return extractGpsPointsFromText(data);
+    } else {
+        console.error('Unsupported data type for GPS parsing');
+        return [];
+    }
+}
+
 /**
  * Calculates distance between two lat/lon points using Haversine formula.
  * @returns {number} Distance in meters.
@@ -125,7 +317,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.
- * @param {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} points The complete array of GPS points.
+ * @param {Array<{lat: number, lon: number, alt: number, time: number, satellites: number|string, undulation: number}>} points The complete array of GPS points.
  */
 export function updateStats(points) {
     // Get all DOM elements by their ID
@@ -171,7 +363,7 @@ export function updateStats(points) {
     const currentAltWsg84 = lastPoint.alt + (lastPoint.undulation || 0);
     const currentLat = lastPoint.lat;
     const currentLon = lastPoint.lon;
-    const currentSatellites = lastPoint.satellites || 0;
+    const currentSatellites = lastPoint.satellites;
 
     // Format start time as HH:mm:ss
     const startTime = firstPoint.time;
@@ -188,9 +380,9 @@ export function updateStats(points) {
     const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:${endSeconds.toString().padStart(2, '0')}`;
 
     // Improved speed calculation with better error handling
+    // Improved speed calculation with 3D distance
     let latestSpeed = 0;
     if (points.length >= 2) {
-        // Look back further to find a meaningful time difference
         let p1 = null;
         let p2 = lastPoint;
         
@@ -198,8 +390,7 @@ export function updateStats(points) {
             const candidate = points[i];
             const timeDelta = p2.time - candidate.time;
             
-            // Use a minimum time threshold to avoid division by very small numbers
-            if (timeDelta > 0.1) { // At least 0.1 second difference
+            if (timeDelta > 0.1) { // Avoid division by tiny time deltas
                 p1 = candidate;
                 break;
             }
@@ -207,9 +398,16 @@ export function updateStats(points) {
         
         if (p1) {
             const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+            const altitudeChange = p2.alt - p1.alt;
+
+            // Compute 3D distance
+            const distance3D = Math.sqrt(
+                Math.pow(distance2D, 2) + Math.pow(altitudeChange, 2)
+            );
+
             const timeDelta = p2.time - p1.time;
-            latestSpeed = distance2D / timeDelta;
-            
+            latestSpeed = distance3D / timeDelta;
+
             // Cap unrealistic speeds (over 100 m/s = 360 km/h)
             if (latestSpeed > 100) {
                 latestSpeed = 0;
@@ -257,7 +455,7 @@ export function updateStats(points) {
     if (altWsg84El) altWsg84El.textContent = currentAltWsg84.toFixed(2);
     if (latEl) latEl.textContent = currentLat.toFixed(7); // 7 decimal places for GPS precision
     if (longEl) longEl.textContent = currentLon.toFixed(7);
-    if (satellitesEl) satellitesEl.textContent = currentSatellites;
+    if (satellitesEl) satellitesEl.textContent = currentSatellites === 'N/A' ? 'N/A' : currentSatellites;
     if (startEl) startEl.textContent = startTimeFormatted;
     if (endEl) endEl.textContent = endTimeFormatted;
 }
