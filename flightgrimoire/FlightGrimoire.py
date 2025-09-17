@@ -6,6 +6,7 @@ import threading
 import time
 import os
 from datetime import datetime
+import ctypes
 
 # Import the UBX parser (will be created separately)
 try:
@@ -372,4 +373,5 @@ class SerialReaderApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = SerialReaderApp(root)
+    
     root.mainloop()
