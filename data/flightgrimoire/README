@@ -1,0 +1,28 @@
+# Compilation Commands
+
+Make sure your current directory is ubxview-app/data/flightgrimoire
+
+Initialize Virtual Enviorment
+```
+python -m venv venv
+```
+
+Activate Virtual Enviorment
+```
+.\venv\Scripts\Activate.ps1
+```
+
+Install Dependencies
+```
+pip install -r requirements.txt
+```
+
+Make Build
+```cmd
+pyinstaller --onefile --windowed --icon="icon.ico" --add-data="HPPOSLLH_to_CSV.py:." FlightGrimoire.py
+```
+
+Deactivate venv
+```
+deactivate
+```
