@@ -1,0 +1,32 @@
+## Compilation Instructions
+
+Make sure your current directory is ubxview-app/data/flightgrimoire
+
+Initialize Virtual Environment
+
+```powershell
+python -m venv venv
+```
+
+Activate Virtual Environment
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Install Dependencies
+
+```powershell
+pip install -r requirements.txt
+```
+
+Build Executable
+
+```cmd
+pyinstaller --onefile --windowed --icon="icon.ico" --add-data="HPPOSLLH_to_CSV.py;." FlightGrimoire.py
+```
+
+Quit venv
+```
+deactivate
+```
