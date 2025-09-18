@@ -3,7 +3,7 @@
   UBXView
 </h1>
 
-*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
+*Model real-time kinematic (RTK) GNSS mounted sensors for radar calibration workflows, powered by u-center.*
 
 ## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
@@ -63,3 +63,10 @@ ubxview-app/
                 ├── lib.rs
                 └── main.rs               # Backend runtime
 ```
+
+<h1 style="display: flex; align-items: center; gap: 10px;">
+  <img src="flightgrimoire/icon.ico" alt="Logo" height="32">
+  FlightGrimoire
+</h1>
+
+*Serial COM Reader + GPS Track Translator*
