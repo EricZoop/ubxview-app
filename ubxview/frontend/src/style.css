@@ -26,9 +26,16 @@ body {
     border: 1px solid #ffffff23;
 }
 
+#stats table {
+    table-layout: fixed;   /* Fixes the column widths */
+    width: 180px;           /* Table will stay inside parent */
+    border-collapse: collapse;
+}
+
 #stats table td:nth-child(2) {
     text-align: right;
 }
+
 
 h1 {
     margin: 0;
@@ -101,6 +108,7 @@ a:hover {
     justify-content: space-between;
     flex-wrap: wrap;
     align-content: center;
+    text-overflow: ellipsis;
 }
 
 .controls-container>* {
@@ -175,6 +183,8 @@ a:hover {
     color: #fff;
 }
 
+
+
 .custom-file:active,
 .polling-button:active {
     background-color: #0a0a0a;
@@ -184,9 +194,31 @@ a:hover {
 
 .custom-file svg {
     vertical-align: middle;
-    margin-left: 4.25rem;
+    margin-left: 4.5rem;
     margin-bottom: .05rem;
     display: inline-block;
+}
+
+#fileInputLabel {
+    max-width: 190px;          /* respect container width */
+    overflow: hidden;         /* hide overflow */
+    white-space: nowrap;      /* keep text on one line */
+    text-overflow: ellipsis;  /* add ... when cut */
+}
+
+#fileLabel {
+    display: inline-flex;      /* flex for text + svg */
+    align-items: center;       /* vertically center */
+    gap: 0.5rem;               /* spacing between text and svg */
+    overflow: hidden;          /* ensure cut-off works */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+#fileLabel svg {
+    flex-shrink: 0;            /* keep icon visible */
+    margin-left: 0;            /* remove big fixed margin */
 }
 
 input {
@@ -529,7 +561,7 @@ select:hover {
     overflow: hidden;
     border: 1px solid #333;
     background: #1a1a1a;
-    width: 200px;
+    width: 208px;
     font-family: inherit;
     font-size: 0.85em;
     height: 29px;
@@ -593,7 +625,7 @@ select:hover {
 .view-toggle {
     font-family: inherit;
     display: flex;
-    width: 200px;
+    width: 204px;
     background-color: #1a1a1a;
     border: 2px solid #333;
     border-radius: 2px;
@@ -631,16 +663,19 @@ select:hover {
     top: -5px;
     bottom: -5px;
     left: -7px;
-    right: -7px;
+    right: -8px;
     
     /* The actual background color */
-    background-color: rgba(221, 221, 221, 0.507);
+    background-color: rgba(221, 221, 221, 0.281);
     
-    /* Place the background behind the text and key elements */
+    /* Shorthand for border: width style color */
+    border: 1px solid #f5faff18; /* Example: 2px thick, solid, red border */
+    
+    /* Place the background behind the text and key elementcs */
     z-index: -1;
     
     /* Optional: Add rounded corners to the new, larger background */
-    border-radius: 3px;
+    border-radius: 4px;
     transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
-    box-shadow: rgba(37, 37, 37, 0.2) 0px 6px 20px;;
+    box-shadow: rgba(37, 37, 37, 0.2) 0px 6px 20px;
 }

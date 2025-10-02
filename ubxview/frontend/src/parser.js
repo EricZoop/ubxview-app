@@ -1,5 +1,5 @@
 /**
- * Parses text content to find and convert GNGGA/GPGGA or custom $HPPOSLLH sentences into structured points.
+ * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
  * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
@@ -16,47 +16,13 @@ export function extractGpsPointsFromText(text) {
     const lines = cleanedText.split('\n');
     if (lines.length === 0) return points;
 
-    // --- The CSV parsing block has been removed. ---
-
-    // Check for custom $HPPOSLLH format
-    if (lines[0].startsWith('$HPPOSLLH')) {
-        for (const line of lines) {
-            if (!line.startsWith('$HPPOSLLH')) continue;
-
-            const parts = line.split(',');
-            // Expected format: $HPPOSLLH,lat,lon,iTOW,height_ellipsoid,height_msl,...
-            if (parts.length < 6) continue;
-
-            try {
-                const lat = parseFloat(parts[1]);
-                const lon = parseFloat(parts[2]);
-                const iTOW_ms = parseInt(parts[3]);
-                const alt = parseFloat(parts[4]); // Use ellipsoid height for 'alt'
-                const msl = parseFloat(parts[5]); // MSL height
-
-                // Convert iTOW from milliseconds to seconds to be compatible with duration logic
-                const time = iTOW_ms / 1000;
-                const satellites = 0; // Not available in this format
-                
-                // *** CORRECTED LOGIC HERE ***
-                // Calculate undulation (Geoid separation) = Ellipsoid Height - MSL Height
-                const undulation = alt - msl;
-
-                if (!isNaN(lat) && !isNaN(lon) && !isNaN(alt) && !isNaN(time)) {
-                    points.push({ lat, lon, alt, time, satellites, undulation });
-                }
-            } catch {
-                continue;
-            }
-        }
-        return points;
-    }
-
-
-    // --- FALLBACK: original NMEA parser ---
-    const ggaRegex = /\$(?:GPGGA|GNGGA),[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
+    const ggaRegex = /\$(?:GP|GN|GA|GB|GL)GGA,[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
     const matches = cleanedText.match(ggaRegex);
     if (!matches) return points;
+    
+    // --- ENHANCEMENT: Variables for outlier detection ---
+    let lastValidPoint = null;
+    const MAX_REASONABLE_SPEED_MS = 250; // Max speed in meters/sec (~900 km/h or 560 mph)
 
     for (const sentence of matches) {
         const parts = sentence.split(',');
@@ -70,6 +36,7 @@ export function extractGpsPointsFromText(text) {
             const lonDir = parts[5];
             const fixQuality = parseInt(parts[6]);
             const numSatellites = parseInt(parts[7]);
+            const hdopStr = parts[8]; // <-- NEW: Read HDOP string
             const altStr = parts[9];
             const altUnits = parts[10];
             const undulationStr = parts[11];
@@ -81,6 +48,12 @@ export function extractGpsPointsFromText(text) {
                 isNaN(fixQuality) || fixQuality === 0 ||
                 isNaN(numSatellites) || numSatellites < 3
             ) continue;
+            
+            // --- ENHANCEMENT: HDOP Check ---
+            const hdop = parseFloat(hdopStr);
+            if (isNaN(hdop) || hdop > 5.0) {
+                continue; // Skip points with poor satellite geometry
+            }
 
             const latDeg = parseFloat(latStr.substring(0, 2));
             const latMin = parseFloat(latStr.substring(2));
@@ -101,8 +74,25 @@ export function extractGpsPointsFromText(text) {
             const m = parseInt(UTCstr.slice(2, 4)) || 0;
             const s = parseFloat(UTCstr.slice(4)) || 0;
             const time = h * 3600 + m * 60 + s;
+            
+            const currentPoint = { lat, lon, alt, time, satellites: numSatellites, undulation };
 
-            points.push({ lat, lon, alt, time, satellites: numSatellites, undulation });
+            // --- ENHANCEMENT: Speed-based outlier check ---
+            if (lastValidPoint) {
+                const timeDelta = currentPoint.time - lastValidPoint.time;
+                // Check for valid time progression to avoid division by zero or negative time
+                if (timeDelta > 0) {
+                    const distance = haversine(lastValidPoint.lat, lastValidPoint.lon, currentPoint.lat, currentPoint.lon);
+                    const speed = distance / timeDelta;
+                    if (speed > MAX_REASONABLE_SPEED_MS) {
+                        continue; // Skip this point as it's an outlier
+                    }
+                }
+            }
+
+            points.push(currentPoint);
+            lastValidPoint = currentPoint; // Update the last known good point
+
         } catch {
             continue;
         }
