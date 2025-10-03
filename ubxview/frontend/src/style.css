@@ -26,9 +26,15 @@ body {
     border: 1px solid #ffffff23;
 }
 
+#stats {
+    max-height: 55vh;
+    overflow-y: auto;
+    z-index: 5000;
+}
+
 #stats table {
     table-layout: fixed;   /* Fixes the column widths */
-    width: 180px;           /* Table will stay inside parent */
+    width: 190px;           /* Table will stay inside parent */
     border-collapse: collapse;
 }
 
@@ -36,6 +42,61 @@ body {
     text-align: right;
 }
 
+/* Scrollbar styling for webkit browsers */
+#stats::-webkit-scrollbar {
+    width: 6px;
+}
+
+#stats::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+#stats::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+#stats::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Add this to your existing CSS file */
+
+.stats-group {
+    margin-bottom: 10px; /* Adds space between rover panels */
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-group:first-child {
+    margin-top: 0.2rem;
+
+}
+
+/* Don't add a border to the very last panel */
+.stats-group:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.stats-group h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.15rem; /* Base font size */
+    font-weight: 500;
+    
+    display: flex;          /* Align text and SVG horizontally */
+    align-items: center;    /* Vertically center SVG with text */
+    gap: 0.25em;             /* Space between SVG and text */
+}
+
+.stats-group h3 svg {
+    height: 1.25rem;  /* Match SVG height to font size */
+    width: auto;  /* Keep aspect ratio */
+    flex-shrink: 0; /* Prevent shrinking if text is too long */
+}
 
 h1 {
     margin: 0;
@@ -50,9 +111,10 @@ h2 {
 }
 
 h3 {
-    margin: 0.3em 0 0.3em 0;
-    padding: 0;
-    text-align: left;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .logo-title {

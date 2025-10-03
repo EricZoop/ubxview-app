@@ -11,7 +11,7 @@ export function setupCameraControls(camera, scene) {
     // --- DOM Elements for UI feedback ---
     const cinematicControlRow = document.getElementById('cinematic-control-row');
     const birdseyeControlRow = document.getElementById('birdseye-control-row');
-    const reorientControlRow = document.getElementById('reorient-control-row'); // MODIFICATION: Get reorient element
+    const reorientControlRow = document.getElementById('reorient-control-row');
 
     // --- State variables for caching data context for reset ---
     let cachedDataSpan = null;

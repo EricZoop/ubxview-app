@@ -6,7 +6,7 @@ import {
     enterPlaybackMode, goLive, setPlaybackLines,
     handleTimeSliderChange, handleSpeedSelection,
     getPlaybackSpeed, setPlaybackSpeed, getPlaybackState,
-    protectSliderFromOrbitControls 
+    protectSliderFromOrbitControls
 } from "./playback.js";
 
 // File state

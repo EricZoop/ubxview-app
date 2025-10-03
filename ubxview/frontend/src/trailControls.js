@@ -16,7 +16,7 @@ let elevationColorData = null;
  * @param {number} index The index of the track, used to determine the hue shift amount.
  * @returns {THREE.Color} The new, modified color.
  */
-function getTrackVariantColor(baseColor, index) {
+export function getTrackVariantColor(baseColor, index) {
     if (index === 0) {
         return baseColor.clone(); // Use the original color for the first track
     }
@@ -24,8 +24,8 @@ function getTrackVariantColor(baseColor, index) {
     const hsl = {};
     baseColor.getHSL(hsl);
 
-    // Shift the hue by a noticeable amount (e.g., 15% around the color wheel) for each track
-    const hueShiftAmount = 0.20;
+    // Shift the hue by a noticeable amount (e.g., 17% around the color wheel) for each track
+    const hueShiftAmount = 0.17;
     hsl.h = (hsl.h + hueShiftAmount * index) % 1.0; // Use modulo to wrap around the color wheel
 
     return new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
@@ -64,7 +64,6 @@ function calculateElevationColorData() {
     const elevationRange = maxElevation - minElevation;
 
     if (elevationRange === 0) {
-        console.warn('All points are at the same elevation, cannot create elevation gradient');
         return null;
     }
 
@@ -78,17 +77,18 @@ function getElevationColor(elevation, elevationData) {
     const { minElevation, elevationRange } = elevationData;
     const ratio = Math.max(0, Math.min(1, (elevation - minElevation) / elevationRange));
 
+    // Blue -> Cyan -> Green -> Yellow -> Red gradient
     let r, g, b;
-    if (ratio < 0.25) { // Blue to Cyan
+    if (ratio < 0.25) {
         const localRatio = ratio / 0.25;
         r = 0; g = localRatio * 0.8; b = 1;
-    } else if (ratio < 0.5) { // Cyan to Green
+    } else if (ratio < 0.5) {
         const localRatio = (ratio - 0.25) / 0.25;
         r = 0; g = 0.8 + localRatio * 0.2; b = 1 - localRatio;
-    } else if (ratio < 0.75) { // Green to Yellow
+    } else if (ratio < 0.75) {
         const localRatio = (ratio - 0.5) / 0.25;
         r = localRatio; g = 1; b = 0;
-    } else { // Yellow to Red
+    } else {
         const localRatio = (ratio - 0.75) / 0.25;
         r = 1; g = 1 - localRatio; b = 0;
     }
@@ -116,7 +116,6 @@ function updateElevationPointColors() {
 
         geometry.attributes.color.needsUpdate = true;
     });
-    console.log(`Updated all tracks with elevation-based colors.`);
 }
 
 
@@ -141,6 +140,7 @@ export function updatePointColors() {
     plotObjects.forEach(({ points: pointsObject, gpsPoints }) => {
         if (!pointsObject || gpsPoints.length === 0) return;
         
+        // --- THIS SECTION APPLIES THE HUE SHIFT TO BOTH HEAD AND TAIL ---
         // Generate unique color variants for this track
         const trailHeadColor = getTrackVariantColor(baseTrailHeadColor, trackIndex);
         const trailTailColor = getTrackVariantColor(baseTrailTailColor, trackIndex);
@@ -153,7 +153,7 @@ export function updatePointColors() {
         const geometry = pointsObject.geometry;
         const colors = geometry.attributes.color.array;
         const totalPoints = gpsPoints.length;
-        const gradientPoints = 10;
+        const gradientPoints = 15;
         const gradientStartIndex = Math.max(0, totalPoints - gradientPoints);
 
         gpsPoints.forEach((point, index) => {
@@ -186,12 +186,10 @@ export function updatePointColors() {
 export function enableElevationMode() {
     elevationColorData = calculateElevationColorData();
     if (!elevationColorData) {
-        console.warn('Cannot enable elevation mode: insufficient elevation data');
         return false;
     }
     isElevationMode = true;
     updateElevationPointColors();
-    console.log(`Elevation mode enabled. Range: ${elevationColorData.minElevation.toFixed(1)}m - ${elevationColorData.maxElevation.toFixed(1)}m`);
     return true;
 }
 
@@ -202,7 +200,6 @@ export function disableElevationMode() {
     isElevationMode = false;
     elevationColorData = null;
     updatePointColors();
-    console.log('Elevation mode disabled');
 }
 
 export function isElevationModeActive() {
@@ -243,7 +240,6 @@ export function toggleLineVisibility() {
             lineObject.visible = showLines;
         }
     });
-    console.log(`Line visibility set to: ${showLines}`);
 }
 
 export function getCurrentTrailColors() {
@@ -265,6 +261,13 @@ export function setupTrailControlListeners() {
     const lineColorInput = document.getElementById("trail-line-color");
     const lineToggle = document.getElementById("show-lines-toggle");
 
+    const statsPanel = document.getElementById("stats");
+    if (statsPanel) {
+        statsPanel.addEventListener("wheel", (event) => {
+            event.stopPropagation();
+        });
+    }
+
     const disableElevationAndResetPreset = () => {
         if (isElevationMode) {
             disableElevationMode();
@@ -279,8 +282,6 @@ export function setupTrailControlListeners() {
     if (tailColorInput) tailColorInput.addEventListener("input", disableElevationAndResetPreset);
     if (lineColorInput) lineColorInput.addEventListener("input", disableElevationAndResetPreset);
     if (lineToggle) lineToggle.addEventListener("change", toggleLineVisibility);
-
-    console.log("Trail control listeners setup complete");
 }
 
 /**
