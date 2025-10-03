@@ -2,7 +2,7 @@
  * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
  * @param {string} text The raw text content from the file.
- * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} An array of GPS points.
+ * @returns {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number, talkerId: string}>} An array of GPS points.
  */
 export function extractGpsPointsFromText(text) {
     const points = [];
@@ -29,6 +29,9 @@ export function extractGpsPointsFromText(text) {
         if (parts.length < 15) continue;
 
         try {
+            // --- NEW: Capture the Talker ID from the sentence prefix ---
+            const talkerId = sentence.substring(1, 3);
+
             const UTCstr = parts[1];
             const latStr = parts[2];
             const latDir = parts[3];
@@ -36,7 +39,7 @@ export function extractGpsPointsFromText(text) {
             const lonDir = parts[5];
             const fixQuality = parseInt(parts[6]);
             const numSatellites = parseInt(parts[7]);
-            const hdopStr = parts[8]; // <-- NEW: Read HDOP string
+            const hdopStr = parts[8]; 
             const altStr = parts[9];
             const altUnits = parts[10];
             const undulationStr = parts[11];
@@ -49,7 +52,6 @@ export function extractGpsPointsFromText(text) {
                 isNaN(numSatellites) || numSatellites < 3
             ) continue;
             
-            // --- ENHANCEMENT: HDOP Check ---
             const hdop = parseFloat(hdopStr);
             if (isNaN(hdop) || hdop > 5.0) {
                 continue; // Skip points with poor satellite geometry
@@ -75,12 +77,12 @@ export function extractGpsPointsFromText(text) {
             const s = parseFloat(UTCstr.slice(4)) || 0;
             const time = h * 3600 + m * 60 + s;
             
-            const currentPoint = { lat, lon, alt, time, satellites: numSatellites, undulation };
+            // --- MODIFIED: Added talkerId to the point object ---
+            const currentPoint = { lat, lon, alt, time, satellites: numSatellites, undulation, talkerId };
 
             // --- ENHANCEMENT: Speed-based outlier check ---
             if (lastValidPoint) {
                 const timeDelta = currentPoint.time - lastValidPoint.time;
-                // Check for valid time progression to avoid division by zero or negative time
                 if (timeDelta > 0) {
                     const distance = haversine(lastValidPoint.lat, lastValidPoint.lon, currentPoint.lat, currentPoint.lon);
                     const speed = distance / timeDelta;
@@ -131,7 +133,7 @@ function parseTimeToSeconds(timestampStr) {
 
 /**
  * Calculates statistics from the full list of points and updates the DOM.
- * @param {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number}>} points The complete array of GPS points.
+ * @param {Array<{lat: number, lon: number, alt: number, time: number, satellites: number, undulation: number, talkerId: string}>} points The complete array of GPS points.
  */
 export function updateStats(points) {
     // Get all DOM elements by their ID

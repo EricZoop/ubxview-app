@@ -1,23 +1,24 @@
+// plotManager.js
+
 import * as THREE from "three";
 import {
     initializeTrailControls,
     getCurrentTrailColors,
-    getLineVisibility,
     updatePointColors,
 } from "./trailControls.js";
 
-let latestPoint = null;
-
+// Module state
 let dataGroup = null;
 let gpsToCartesian = null;
 let center = null;
 let bounds = null;
 let baselineAltitude = null;
-let pointsObject = null;
-let lineObject = null;
 let masterGpsPoints = [];
 
-// Add these variables to maintain stable coordinate system
+// Store plot objects (points and line) for each talker ID
+let plotObjects = new Map();
+
+// Global coordinate system state
 let globalBounds = null;
 let globalCenter = null;
 let globalBaselineAltitude = null;
@@ -31,11 +32,7 @@ export function getLatestPoint() {
     if (!masterGpsPoints || masterGpsPoints.length === 0 || !gpsToCartesian) {
         return null;
     }
-    
-    // Get the last point from the master GPS points array
     const lastGpsPoint = masterGpsPoints[masterGpsPoints.length - 1];
-    
-    // Convert to cartesian coordinates and return
     return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
 }
 
@@ -60,8 +57,7 @@ export function getMasterGpsPoints() {
 }
 
 /**
- * Initialize the global coordinate system based on the complete dataset
- * This should be called once when the file is first loaded with all data
+ * Initialize the global coordinate system based on the complete dataset.
  */
 export function initializeCoordinateSystem(allPoints) {
     if (!allPoints || allPoints.length === 0) return;
@@ -97,7 +93,7 @@ export function initializeCoordinateSystem(allPoints) {
 }
 
 /**
- * Reset the coordinate system (call when loading a new file)
+ * Reset the coordinate system.
  */
 export function resetCoordinateSystem() {
     globalBounds = null;
@@ -106,53 +102,49 @@ export function resetCoordinateSystem() {
     isCoordinateSystemInitialized = false;
 }
 
+/**
+ * Clears all plotted data from the scene.
+ */
 function clearPlotData() {
     if (!dataGroup) return;
 
-    // Specifically remove the points and line objects if they exist
-    if (pointsObject) {
-        if (pointsObject.geometry) {
-            pointsObject.geometry.dispose();
-        }
-        if (pointsObject.material) {
-            // Check if material is an array before disposing
-            if (Array.isArray(pointsObject.material)) {
-                pointsObject.material.forEach(m => m.dispose());
-            } else {
-                pointsObject.material.dispose();
+    // Iterate over the map and remove all objects
+    plotObjects.forEach(({ points, line }) => {
+        if (points) {
+            if (points.geometry) points.geometry.dispose();
+            if (points.material) {
+                if (Array.isArray(points.material)) {
+                    points.material.forEach(m => m.dispose());
+                } else {
+                    points.material.dispose();
+                }
             }
+            dataGroup.remove(points);
         }
-        dataGroup.remove(pointsObject);
-    }
-    
-    if (lineObject) {
-        // The line shares geometry with points, so no need to dispose it again
-        if (lineObject.material) {
-            if (Array.isArray(lineObject.material)) {
-                lineObject.material.forEach(m => m.dispose());
-            } else {
-                lineObject.material.dispose();
+        if (line) {
+            // Geometry is shared, so it's already disposed with points
+            if (line.material) {
+                if (Array.isArray(line.material)) {
+                    line.material.forEach(m => m.dispose());
+                } else {
+                    line.material.dispose();
+                }
             }
+            dataGroup.remove(line);
         }
-        dataGroup.remove(lineObject);
-    }
+    });
 
-    // Reset plot-specific variables but keep global coordinate system
-    pointsObject = null;
-    lineObject = null;
+    plotObjects.clear();
     masterGpsPoints = [];
-    
-    // Only reset local bounds/center, keep global ones for coordinate system stability
     center = null;
     bounds = null;
     baselineAltitude = null;
-    latestPoint = null;
 }
+
 
 function calculateBoundsAndCenter(points) {
     if (!points || points.length === 0) return;
 
-    // Calculate bounds for the current subset of points
     bounds = points.reduce(
         (acc, p) => ({
             minLat: Math.min(acc.minLat, p.lat),
@@ -184,28 +176,22 @@ function createCoordinateConverter() {
     gpsToCartesian = (p1, p2, p3) => {
         let lat, lon, alt;
 
-        // Check if the first argument is an object with lat/lon properties
         if (typeof p1 === 'object' && p1 !== null && 'lat' in p1 && 'lon' in p1) {
             lat = p1.lat;
             lon = p1.lon;
-            // Use the object's altitude if it exists, otherwise default to the baseline
             alt = p1.alt !== undefined ? p1.alt : (globalBaselineAltitude || baselineAltitude);
         } else {
-            // Otherwise, assume the original (lat, lon, alt) signature
             lat = p1;
             lon = p2;
-            // Use the provided altitude if it exists, otherwise default to the baseline
             alt = p3 !== undefined ? p3 : (globalBaselineAltitude || baselineAltitude);
         }
 
-        // Use global coordinate system if initialized, otherwise fall back to local
         const useCenter = isCoordinateSystemInitialized ? globalCenter : center;
         const useBaselineAlt = isCoordinateSystemInitialized ? globalBaselineAltitude : baselineAltitude;
 
-        // Defensive check to prevent NaN if data is still bad
         if (lat === undefined || lon === undefined || alt === undefined || useCenter === null || useBaselineAlt === null) {
             console.error("Invalid arguments or context for gpsToCartesian", { lat, lon, alt, useCenter });
-            return new THREE.Vector3(0, 0, 0); // Return a default vector to prevent crashes
+            return new THREE.Vector3(0, 0, 0);
         }
 
         const centerLatRad = (useCenter.lat * Math.PI) / 180;
@@ -219,54 +205,32 @@ function createCoordinateConverter() {
 
 function createGeometryFromPoints(points) {
     const positions = [];
-    const indices = [];
-    
-    points.forEach((p, index) => {
+    points.forEach((p) => {
         const pos = gpsToCartesian(p.lat, p.lon, p.alt);
-        positions.push(pos.x, pos.y, pos.z);
-        
-        // Add a small random offset to prevent z-fighting
         const offset = (Math.random() - 0.5) * 0.01;
-        positions[positions.length - 1] += offset; // Offset z-coordinate slightly
-        
-        indices.push(index);
+        positions.push(pos.x, pos.y, pos.z + offset);
     });
-
-    return {
-        positions,
-        indices
-    };
+    return { positions };
 }
 
 function createThreeJsObjects(geometryData) {
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(geometryData.positions, 3)
-    );
-
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(geometryData.positions, 3));
     const colorArray = new Float32Array(geometryData.positions.length);
-    geometry.setAttribute(
-        "color",
-        new THREE.Float32BufferAttribute(colorArray, 3)
-    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colorArray, 3));
 
-    // Fixed points material to match line rendering behavior
     const pointsMaterial = new THREE.PointsMaterial({
         size: 5,
         vertexColors: true,
         sizeAttenuation: false,
-        transparent: false,  // Changed from true to match lines
+        transparent: false,
         opacity: 1,
         depthTest: true,
-        depthWrite: true,    // Changed from false to match lines
+        depthWrite: true,
         blending: THREE.NormalBlending,
     });
-
     const pointsObj = new THREE.Points(geometry, pointsMaterial);
-    
-    // Set same render order as lines for consistency
-    pointsObj.renderOrder = 0;  // Changed from 1 to match lines
+    pointsObj.renderOrder = 0;
 
     const colors = getCurrentTrailColors();
     const lineMaterial = new THREE.LineBasicMaterial({
@@ -277,111 +241,80 @@ function createThreeJsObjects(geometryData) {
         depthWrite: true,
         linewidth: 10000,
     });
-
     const lineObj = new THREE.Line(geometry, lineMaterial);
     lineObj.renderOrder = 0;
 
-    // Check current line visibility setting before adding to scene
     const lineToggle = document.getElementById('show-lines-toggle');
-    lineObj.visible = lineToggle ? lineToggle.checked : false; // Default to false
+    lineObj.visible = lineToggle ? lineToggle.checked : false;
 
     dataGroup.add(lineObj, pointsObj);
-
-    return {
-        points: pointsObj,
-        line: lineObj
-    };
+    return { points: pointsObj, line: lineObj };
 }
 
 export function plotGpsData(points, append = false) {
-    if (!points) {
-        points = [];
-    }
-
-    const allMasterPoints = getMasterGpsPoints();
-    if ((!allMasterPoints || allMasterPoints.length === 0) && points.length === 0) {
-        clearPlotData();
-        return null;
-    }
-
-    if (!points || points.length === 0) {
-        if (!append) clearPlotData();
-        return null;
-    }
-
-    if (append && pointsObject && gpsToCartesian) {
-        // When appending, add new points to the master list
+    let effectivePoints;
+    if (append) {
         masterGpsPoints.push(...points);
-
-        const newPositions = [];
-        points.forEach((p) => {
-            const pos = gpsToCartesian(p.lat, p.lon, p.alt);
-            // Add small random offset to prevent z-fighting
-            const offset = (Math.random() - 0.5) * 0.01;
-            newPositions.push(pos.x, pos.y, pos.z + offset);
-        });
-
-        const geometry = pointsObject.geometry;
-        const oldPositions = geometry.attributes.position.array;
-
-        const combinedPositions = new Float32Array(
-            oldPositions.length + newPositions.length
-        );
-        combinedPositions.set(oldPositions);
-        combinedPositions.set(newPositions, oldPositions.length);
-
-        const combinedColors = new Float32Array(combinedPositions.length);
-
-        geometry.setAttribute(
-            "position",
-            new THREE.Float32BufferAttribute(combinedPositions, 3)
-        );
-        geometry.setAttribute(
-            "color",
-            new THREE.Float32BufferAttribute(combinedColors, 3)
-        );
-
-        geometry.attributes.position.needsUpdate = true;
-        geometry.attributes.color.needsUpdate = true;
-        geometry.computeBoundingBox();
-        geometry.computeBoundingSphere();
-
-        if (lineObject) {
-            lineObject.geometry.dispose();
-            lineObject.geometry = pointsObject.geometry;
-        }
-
-        console.log(`Appended ${points.length} points.`);
+        effectivePoints = masterGpsPoints;
     } else {
-        // When not appending (full replot), use the global coordinate system
-        clearPlotData();
         masterGpsPoints = [...points];
-        
-        // Calculate local bounds for the current subset
-        calculateBoundsAndCenter(points);
-        
-        // Create coordinate converter (will use global system if initialized)
-        createCoordinateConverter();
-
-        const geometryData = createGeometryFromPoints(points);
-        const objects = createThreeJsObjects(geometryData);
-        pointsObject = objects.points;
-        lineObject = objects.line;
-        console.log(`Successfully plotted ${points.length} points using ${isCoordinateSystemInitialized ? 'global' : 'local'} coordinate system.`);
-
-        // Use global bounds for trail controls if available, otherwise use local bounds
-        const boundsForTrailControls = isCoordinateSystemInitialized ? globalBounds : bounds;
-        initializeTrailControls(pointsObject, lineObject, masterGpsPoints, boundsForTrailControls);
+        effectivePoints = masterGpsPoints;
     }
 
-    if (pointsObject) {
-        updatePointColors();
+    if (effectivePoints.length === 0) {
+        clearPlotData();
+        return null;
     }
+    
+    // Always clear previous objects for a full replot
+    plotObjects.forEach(({ points, line }) => {
+        if(points) dataGroup.remove(points);
+        if(line) dataGroup.remove(line);
+    });
+    plotObjects.clear();
+    
+    // <<< FIX IS HERE >>>
+    // Always calculate the local bounds for the current set of points.
+    // This ensures getBoundingBox() has the correct data for tile loading.
+    calculateBoundsAndCenter(effectivePoints);
+    createCoordinateConverter();
 
-    // Return metadata using global bounds if available
+    // Group points by talkerId
+    const pointsByTalker = effectivePoints.reduce((acc, point) => {
+        const talker = point.talkerId || 'default'; // Group points without a talkerId
+        if (!acc[talker]) {
+            acc[talker] = [];
+        }
+        acc[talker].push(point);
+        return acc;
+    }, {});
+
+    // Create and plot objects for each talker
+    for (const talkerId in pointsByTalker) {
+        const talkerPoints = pointsByTalker[talkerId];
+        if (talkerPoints.length > 1) { // Only draw lines for tracks with more than one point
+            const geometryData = createGeometryFromPoints(talkerPoints);
+            const objects = createThreeJsObjects(geometryData);
+            
+            // Store the new objects and the corresponding GPS data
+            plotObjects.set(talkerId, {
+                points: objects.points,
+                line: objects.line,
+                gpsPoints: talkerPoints
+            });
+        }
+    }
+    
+    console.log(`Successfully plotted ${effectivePoints.length} points across ${plotObjects.size} tracks.`);
+
+    const boundsForTrailControls = isCoordinateSystemInitialized ? globalBounds : bounds;
+    initializeTrailControls(plotObjects, masterGpsPoints, boundsForTrailControls);
+    
+    updatePointColors();
+
     const returnBounds = isCoordinateSystemInitialized ? globalBounds : bounds;
     const returnCenter = isCoordinateSystemInitialized ? globalCenter : center;
-    
+
     return {
         dataSpan: Math.max(
             (returnBounds.maxLat - returnBounds.minLat) * 111320,

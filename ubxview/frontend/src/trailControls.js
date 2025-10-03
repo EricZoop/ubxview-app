@@ -1,43 +1,62 @@
-// TRAIL COLOR AND VISIBILITY CONTROLS WITH ELEVATION SUPPORT
+// trailControls.js
 
 import * as THREE from "three";
 
 // Module state
-let pointsObject = null;
-let lineObject = null;
+let plotObjects = new Map(); // Will store {points, line, gpsPoints} for each talkerId
 let masterGpsPoints = [];
 let bounds = null;
 let isElevationMode = false;
 let elevationColorData = null;
 
 /**
- * Initialize the trail controls module with references to the objects
- * @param {THREE.Points} points - The points object
- * @param {THREE.Line} line - The line object
- * @param {Array} gpsPoints - Array of GPS points
- * @param {Object} dataBounds - Data bounds object
+ * Generates a color variant by shifting its hue.
+ * The first track (index 0) gets the original color. Subsequent tracks get shifted colors.
+ * @param {THREE.Color} baseColor The original color from the color picker or preset.
+ * @param {number} index The index of the track, used to determine the hue shift amount.
+ * @returns {THREE.Color} The new, modified color.
  */
-export function initializeTrailControls(points, line, gpsPoints, dataBounds) {
-    pointsObject = points;
-    lineObject = line;
+function getTrackVariantColor(baseColor, index) {
+    if (index === 0) {
+        return baseColor.clone(); // Use the original color for the first track
+    }
+
+    const hsl = {};
+    baseColor.getHSL(hsl);
+
+    // Shift the hue by a noticeable amount (e.g., 15% around the color wheel) for each track
+    const hueShiftAmount = 0.20;
+    hsl.h = (hsl.h + hueShiftAmount * index) % 1.0; // Use modulo to wrap around the color wheel
+
+    return new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
+}
+
+
+/**
+ * Initialize the trail controls module with references to the plot objects.
+ * @param {Map<string, {points: THREE.Points, line: THREE.Line, gpsPoints: Array}>} objects - Map of plot objects.
+ * @param {Array} gpsPoints - The complete array of all GPS points.
+ * @param {Object} dataBounds - Data bounds object.
+ */
+export function initializeTrailControls(objects, gpsPoints, dataBounds) {
+    plotObjects = objects;
     masterGpsPoints = gpsPoints;
     bounds = dataBounds;
     
-    // Apply current line visibility setting to the new line object
-    if (lineObject) {
-        const toggle = document.getElementById('show-lines-toggle');
-        lineObject.visible = toggle ? toggle.checked : false;
-    }
+    const toggle = document.getElementById('show-lines-toggle');
+    const isVisible = toggle ? toggle.checked : false;
+    plotObjects.forEach(({ line: lineObject }) => {
+        if (lineObject) {
+            lineObject.visible = isVisible;
+        }
+    });
 }
 
 /**
- * Calculate elevation-based color data
- * @returns {Object|null} Elevation data object or null if invalid
+ * Calculate elevation-based color data from all master points.
  */
 function calculateElevationColorData() {
-    if (!masterGpsPoints || masterGpsPoints.length === 0) {
-        return null;
-    }
+    if (!masterGpsPoints || masterGpsPoints.length === 0) return null;
 
     const elevations = masterGpsPoints.map(point => point.alt);
     const minElevation = Math.min(...elevations);
@@ -49,204 +68,184 @@ function calculateElevationColorData() {
         return null;
     }
 
-    return {
-        minElevation,
-        maxElevation,
-        elevationRange
-    };
+    return { minElevation, maxElevation, elevationRange };
 }
 
 /**
- * Get color for a specific elevation using a smooth gradient
- * @param {number} elevation - The elevation value
- * @param {Object} elevationData - Elevation range data
- * @returns {THREE.Color} The computed color
+ * Get color for a specific elevation using a smooth gradient.
  */
 function getElevationColor(elevation, elevationData) {
     const { minElevation, elevationRange } = elevationData;
     const ratio = Math.max(0, Math.min(1, (elevation - minElevation) / elevationRange));
 
-    // Create a smooth gradient from blue (low) through green to red/yellow (high)
     let r, g, b;
-
-    if (ratio < 0.25) {
-        // Blue to Cyan (0-0.25)
+    if (ratio < 0.25) { // Blue to Cyan
         const localRatio = ratio / 0.25;
-        r = 0;
-        g = localRatio * 0.8;
-        b = 1;
-    } else if (ratio < 0.5) {
-        // Cyan to Green (0.25-0.5)
+        r = 0; g = localRatio * 0.8; b = 1;
+    } else if (ratio < 0.5) { // Cyan to Green
         const localRatio = (ratio - 0.25) / 0.25;
-        r = 0;
-        g = 0.8 + localRatio * 0.2;
-        b = 1 - localRatio;
-    } else if (ratio < 0.75) {
-        // Green to Yellow (0.5-0.75)
+        r = 0; g = 0.8 + localRatio * 0.2; b = 1 - localRatio;
+    } else if (ratio < 0.75) { // Green to Yellow
         const localRatio = (ratio - 0.5) / 0.25;
-        r = localRatio;
-        g = 1;
-        b = 0;
-    } else {
-        // Yellow to Red (0.75-1.0)
+        r = localRatio; g = 1; b = 0;
+    } else { // Yellow to Red
         const localRatio = (ratio - 0.75) / 0.25;
-        r = 1;
-        g = 1 - localRatio;
-        b = 0;
+        r = 1; g = 1 - localRatio; b = 0;
     }
-
     return new THREE.Color(r, g, b);
 }
 
 /**
- * Update point colors based on elevation data
+ * Update point colors for all tracks based on elevation data.
  */
 function updateElevationPointColors() {
-    if (!pointsObject || !elevationColorData || !masterGpsPoints.length) return;
+    if (!plotObjects || !elevationColorData || !masterGpsPoints.length) return;
 
-    const geometry = pointsObject.geometry;
-    const colors = geometry.attributes.color.array;
+    plotObjects.forEach(({ points: pointsObject, gpsPoints }) => {
+        if (!pointsObject) return;
+        const geometry = pointsObject.geometry;
+        const colors = geometry.attributes.color.array;
 
-    masterGpsPoints.forEach((point, index) => {
-        const color = getElevationColor(point.alt, elevationColorData);
-        
-        const colorIndex = index * 3;
-        colors[colorIndex] = color.r;
-        colors[colorIndex + 1] = color.g;
-        colors[colorIndex + 2] = color.b;
+        gpsPoints.forEach((point, index) => {
+            const color = getElevationColor(point.alt, elevationColorData);
+            const colorIndex = index * 3;
+            colors[colorIndex] = color.r;
+            colors[colorIndex + 1] = color.g;
+            colors[colorIndex + 2] = color.b;
+        });
+
+        geometry.attributes.color.needsUpdate = true;
     });
-
-    geometry.attributes.color.needsUpdate = true;
-    console.log(`Updated ${masterGpsPoints.length} points with elevation-based colors`);
+    console.log(`Updated all tracks with elevation-based colors.`);
 }
 
+
 /**
- * Update point colors live based on current color picker values or elevation mode
+ * Update point colors live based on current color picker values or elevation mode.
  */
 export function updatePointColors() {
-    if (!pointsObject || !bounds || !masterGpsPoints.length) return;
+    if (!plotObjects || plotObjects.size === 0 || !bounds || !masterGpsPoints.length) return;
 
     if (isElevationMode && elevationColorData) {
         updateElevationPointColors();
         return;
     }
 
-    // Standard gradient coloring (existing functionality)
-    const trailHeadColor = new THREE.Color(document.getElementById('trail-head-color').value);
-    const trailTailColor = new THREE.Color(document.getElementById('trail-tail-color').value);
+    // Get the base colors from the UI
+    const baseTrailHeadColor = new THREE.Color(document.getElementById('trail-head-color').value);
+    const baseTrailTailColor = new THREE.Color(document.getElementById('trail-tail-color').value);
+    
+    let trackIndex = 0;
 
-    const geometry = pointsObject.geometry;
-    const colors = geometry.attributes.color.array;
+    // Apply coloring to each track individually with color variations
+    plotObjects.forEach(({ points: pointsObject, gpsPoints }) => {
+        if (!pointsObject || gpsPoints.length === 0) return;
+        
+        // Generate unique color variants for this track
+        const trailHeadColor = getTrackVariantColor(baseTrailHeadColor, trackIndex);
+        const trailTailColor = getTrackVariantColor(baseTrailTailColor, trackIndex);
 
-    const totalPoints = masterGpsPoints.length;
-    const gradientPoints = 50;
-    const gradientStartIndex = Math.max(0, totalPoints - gradientPoints);
+        const tailHSL = {};
+        const headHSL = {};
+        trailTailColor.getHSL(tailHSL);
+        trailHeadColor.getHSL(headHSL);
 
-    // Get HSL values of start and end colors
-    const tailHSL = {};
-    const headHSL = {};
-    trailTailColor.getHSL(tailHSL);
-    trailHeadColor.getHSL(headHSL);
+        const geometry = pointsObject.geometry;
+        const colors = geometry.attributes.color.array;
+        const totalPoints = gpsPoints.length;
+        const gradientPoints = 10;
+        const gradientStartIndex = Math.max(0, totalPoints - gradientPoints);
 
-    masterGpsPoints.forEach((point, index) => {
-        let color;
-
-        if (index < gradientStartIndex) {
-            color = trailTailColor.clone();
-        } else {
-            const progressInGradient = index - gradientStartIndex;
-            const ratio = progressInGradient / (gradientPoints > 1 ? gradientPoints - 1 : 1);
-
-            // Interpolate HSL manually
-            const h = tailHSL.h + (headHSL.h - tailHSL.h) * ratio;
-            const s = tailHSL.s + (headHSL.s - tailHSL.s) * ratio;
-            const l = tailHSL.l + (headHSL.l - tailHSL.l) * ratio;
-
-            color = new THREE.Color().setHSL(h, s, l);
-        }
-
-        const colorIndex = index * 3;
-        colors[colorIndex] = color.r;
-        colors[colorIndex + 1] = color.g;
-        colors[colorIndex + 2] = color.b;
+        gpsPoints.forEach((point, index) => {
+            let color;
+            if (index < gradientStartIndex) {
+                color = trailTailColor.clone();
+            } else {
+                const progressInGradient = index - gradientStartIndex;
+                const ratio = progressInGradient / (gradientPoints > 1 ? gradientPoints - 1 : 1);
+                const h = tailHSL.h + (headHSL.h - tailHSL.h) * ratio;
+                const s = tailHSL.s + (headHSL.s - tailHSL.s) * ratio;
+                const l = tailHSL.l + (headHSL.l - tailHSL.l) * ratio;
+                color = new THREE.Color().setHSL(h, s, l);
+            }
+            const colorIndex = index * 3;
+            colors[colorIndex] = color.r;
+            colors[colorIndex + 1] = color.g;
+            colors[colorIndex + 2] = color.b;
+        });
+        geometry.attributes.color.needsUpdate = true;
+        
+        trackIndex++; // Increment for the next track
     });
-
-    geometry.attributes.color.needsUpdate = true;
 }
 
+
 /**
- * Enable elevation-based coloring mode
- * @returns {boolean} True if elevation mode was successfully enabled
+ * Enable elevation-based coloring mode.
  */
 export function enableElevationMode() {
     elevationColorData = calculateElevationColorData();
-    
     if (!elevationColorData) {
         console.warn('Cannot enable elevation mode: insufficient elevation data');
         return false;
     }
-
     isElevationMode = true;
     updateElevationPointColors();
-    
     console.log(`Elevation mode enabled. Range: ${elevationColorData.minElevation.toFixed(1)}m - ${elevationColorData.maxElevation.toFixed(1)}m`);
     return true;
 }
 
 /**
- * Disable elevation-based coloring mode
+ * Disable elevation-based coloring mode.
  */
 export function disableElevationMode() {
     isElevationMode = false;
     elevationColorData = null;
-    
-    // Revert to standard coloring
     updatePointColors();
     console.log('Elevation mode disabled');
 }
 
-/**
- * Check if elevation mode is currently active
- * @returns {boolean} True if elevation mode is active
- */
 export function isElevationModeActive() {
     return isElevationMode;
 }
 
-/**
- * Get elevation data information
- * @returns {Object|null} Elevation data or null if not available
- */
 export function getElevationData() {
     return elevationColorData;
 }
 
 /**
- * Update line color live based on current color picker value
+ * Update line color live for all tracks, applying a unique shade to each.
  */
 export function updateLineColor() {
-    if (!lineObject) return;
+    if (!plotObjects) return;
+    const baseLineColor = new THREE.Color(document.getElementById('trail-line-color').value);
+    let trackIndex = 0;
 
-    const lineColor = new THREE.Color(document.getElementById('trail-line-color').value);
-    lineObject.material.color.copy(lineColor);
-    lineObject.material.needsUpdate = true;
+    plotObjects.forEach(({ line: lineObject }) => {
+        if (lineObject) {
+            const trackLineColor = getTrackVariantColor(baseLineColor, trackIndex);
+            lineObject.material.color.copy(trackLineColor);
+            lineObject.material.needsUpdate = true;
+        }
+        trackIndex++;
+    });
 }
 
 /**
- * Toggle line visibility based on checkbox state
+ * Toggle line visibility for all tracks.
  */
 export function toggleLineVisibility() {
-    if (!lineObject) return;
-    
+    if (!plotObjects) return;
     const showLines = document.getElementById('show-lines-toggle').checked;
-    lineObject.visible = showLines;
+
+    plotObjects.forEach(({ line: lineObject }) => {
+        if (lineObject) {
+            lineObject.visible = showLines;
+        }
+    });
     console.log(`Line visibility set to: ${showLines}`);
 }
 
-/**
- * Get current trail colors from the UI
- * @returns {Object} Object containing head, tail, and line colors
- */
 export function getCurrentTrailColors() {
     return {
         head: new THREE.Color(document.getElementById('trail-head-color').value),
@@ -255,68 +254,40 @@ export function getCurrentTrailColors() {
     };
 }
 
-/**
- * Get current line visibility state
- * @returns {boolean} Whether lines should be visible
- */
 export function getLineVisibility() {
     const toggle = document.getElementById('show-lines-toggle');
-    return toggle ? toggle.checked : false; // Default to false - lines off by default
+    return toggle ? toggle.checked : false;
 }
 
-/**
- * Setup event listeners for trail controls
- */
 export function setupTrailControlListeners() {
-    // Color update listeners
     const headColorInput = document.getElementById("trail-head-color");
     const tailColorInput = document.getElementById("trail-tail-color");
     const lineColorInput = document.getElementById("trail-line-color");
     const lineToggle = document.getElementById("show-lines-toggle");
 
-    if (headColorInput) {
-        headColorInput.addEventListener("input", () => {
-            // Disable elevation mode when manually changing colors
-            if (isElevationMode) {
-                disableElevationMode();
-                // Reset preset selector
-                const presetSelect = document.getElementById("trail-preset");
-                if (presetSelect) presetSelect.value = "";
-            }
-            updatePointColors();
-        });
-    }
+    const disableElevationAndResetPreset = () => {
+        if (isElevationMode) {
+            disableElevationMode();
+            const presetSelect = document.getElementById("trail-preset");
+            if (presetSelect) presetSelect.value = "";
+        }
+        updatePointColors();
+        updateLineColor(); // Also update line colors when point colors change
+    };
 
-    if (tailColorInput) {
-        tailColorInput.addEventListener("input", () => {
-            // Disable elevation mode when manually changing colors
-            if (isElevationMode) {
-                disableElevationMode();
-                // Reset preset selector
-                const presetSelect = document.getElementById("trail-preset");
-                if (presetSelect) presetSelect.value = "";
-            }
-            updatePointColors();
-        });
-    }
-
-    if (lineColorInput) {
-        lineColorInput.addEventListener("input", updateLineColor);
-    }
-
-    if (lineToggle) {
-        lineToggle.addEventListener("change", toggleLineVisibility);
-    }
+    if (headColorInput) headColorInput.addEventListener("input", disableElevationAndResetPreset);
+    if (tailColorInput) tailColorInput.addEventListener("input", disableElevationAndResetPreset);
+    if (lineColorInput) lineColorInput.addEventListener("input", disableElevationAndResetPreset);
+    if (lineToggle) lineToggle.addEventListener("change", toggleLineVisibility);
 
     console.log("Trail control listeners setup complete");
 }
 
 /**
- * Reset the module state (call when clearing/reloading data)
+ * Reset the module state.
  */
 export function resetTrailControls() {
-    pointsObject = null;
-    lineObject = null;
+    plotObjects = new Map();
     masterGpsPoints = [];
     bounds = null;
     isElevationMode = false;
