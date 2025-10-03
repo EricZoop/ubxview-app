@@ -83,14 +83,14 @@ body {
 
 .stats-group h3 {
     margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1.15rem; /* Base font size */
-    font-weight: 500;
-    
+    margin-bottom: 5px;
+    font-size: 1.1rem; /* Base font size */
+    font-weight: bold; /* Make text bold */
     display: flex;          /* Align text and SVG horizontally */
     align-items: center;    /* Vertically center SVG with text */
-    gap: 0.25em;             /* Space between SVG and text */
+    gap: 0.25em;            /* Space between SVG and text */
 }
+
 
 .stats-group h3 svg {
     height: 1.25rem;  /* Match SVG height to font size */
