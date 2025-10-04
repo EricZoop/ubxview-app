@@ -84,11 +84,33 @@ body {
 .stats-group h3 {
     margin-top: 0;
     margin-bottom: 5px;
-    font-size: 1.1rem; /* Base font size */
-    font-weight: bold; /* Make text bold */
-    display: flex;          /* Align text and SVG horizontally */
-    align-items: center;    /* Vertically center SVG with text */
-    gap: 0.25em;            /* Space between SVG and text */
+    font-size: 1.1rem;
+    font-weight: bold;
+    position: relative; /* Needed for the pseudo-element underline */
+    
+    /* --- NEW/MODIFIED STYLES --- */
+    display: flex;         /* This is the magic! Treats the h3 as a flex container. */
+    align-items: center;   /* Vertically aligns the text and icon. */
+    gap: 0.5em;            /* Adds a nice space between the text and icon. */
+    cursor: pointer;       /* Good practice to have this in CSS, not inline. */
+    user-select: none;
+}
+
+/* Create underline effect (Your existing code, no change needed) */
+.stats-group h3::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px; 
+    width: 0;
+    height: 2px;
+    background-color: currentColor;
+    transition: width 0.3s ease;
+}
+
+/* Expand underline on hover (Your existing code, no change needed) */
+.stats-group h3:hover::after {
+    width: 100%;
 }
 
 

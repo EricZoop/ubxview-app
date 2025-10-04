@@ -30,6 +30,8 @@ export function setupCameraControls(camera, scene) {
     let isCinematicMode = false;
     let cinematicTarget = new THREE.Vector3();
     let cachedDistance = null; // To store distance before cinematic mode
+    let targetTalkerId = null; // null means track latest point across all tracks
+    let talkerIdList = []; // Ordered list of talker IDs discovered in the data
 
     // --- State for birdseye orthographic view ---
     let isBirdseyeMode = false;
@@ -233,6 +235,12 @@ export function setupCameraControls(camera, scene) {
             }
 
             isCinematicMode = !isCinematicMode;
+            
+            // Reset target when toggling off
+            if (!isCinematicMode) {
+                targetTalkerId = null;
+            }
+            
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
             
             if (cinematicControlRow) {
@@ -305,6 +313,15 @@ export function setupCameraControls(camera, scene) {
             return isCinematicMode;
         },
 
+        getTargetTalkerId: function() {
+            return targetTalkerId;
+        },
+
+        setTargetTalkerId: function(talkerId) {
+            targetTalkerId = talkerId;
+            console.log(`Tracking ${talkerId === null ? 'all tracks (latest point)' : 'talker: ' + talkerId}`);
+        },
+
         adjustForNewData: function (dataSpan, centerVec) {
             cachedDataSpan = dataSpan;
             cachedCenterVec = centerVec;
@@ -335,7 +352,33 @@ export function setupCameraControls(camera, scene) {
     };
 
     // --- Event Listeners ---
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", (e) => { // Handle number keys 0-9 for track selection in cinematic mode
+        
+        if (isCinematicMode && e.code.startsWith('Digit')) {
+            const digit = e.code.replace('Digit', '');
+            if (digit === '0') {
+                controls.setTargetTalkerId(null);
+            } else {
+                // Map 1-9 to talker IDs 
+
+                // BILL's EDIT HERE
+
+                const talkerMap = {
+                    '1': 'GP',
+                    '2': 'GN',
+                    '3': 'GA',
+                    '4': 'GB',
+                    '5': 'GL',
+                    '6': 'BD',
+                    '7': 'QZ',
+                    '8': 'IR',
+                    '9': 'GI'
+                };
+                controls.setTargetTalkerId(talkerMap[digit] || null);
+            }
+            return;
+        }
+
         if (e.code === 'KeyB') {
             controls.toggleBirdseyeMode();
             return;
@@ -347,16 +390,12 @@ export function setupCameraControls(camera, scene) {
         }
 
         if (e.code === 'KeyR') {
-            // --- MODIFICATION START: Add flash effect ---
             if (reorientControlRow) {
                 reorientControlRow.classList.add('active-mode');
                 setTimeout(() => {
                     reorientControlRow.classList.remove('active-mode');
-                }, 150); // Duration of the flash in milliseconds
+                }, 150); 
             }
-            // --- MODIFICATION END ---
-
-            // Deactivate and reset other modes and their UI
             isCinematicMode = false;
             isBirdseyeMode = false;
             currentCamera = originalCamera;
@@ -384,7 +423,8 @@ export function setupCameraControls(camera, scene) {
     });
 
     document.addEventListener("mousedown", (e) => {
-        if (e.target.closest("#info")) return;
+        if (e.target.closest("#info") || e.target.closest('.talker-header')) return;
+
         isMouseDown = true;
         isPanning = e.shiftKey || e.button === 1;
         mouseX = e.clientX;
@@ -435,6 +475,23 @@ export function setupCameraControls(camera, scene) {
     });
 
     document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    // Listen for custom event from stats panel to activate cinematic mode for specific talker
+    // ================= CHANGE #2: IMPROVED THIS LOGIC =================
+    window.addEventListener('activateCinematicForTalker', (e) => {
+        const { talkerId } = e.detail;
+        
+        // If cinematic mode is already on and we click the SAME talker, turn it off.
+        if (isCinematicMode && targetTalkerId === talkerId) {
+            controls.toggleCinematicMode();
+        } else {
+            // Otherwise, turn cinematic mode on (if it's off) and set the new target.
+            if (!isCinematicMode) {
+                controls.toggleCinematicMode();
+            }
+            controls.setTargetTalkerId(talkerId);
+        }
+    });
 
     return controls;
 }

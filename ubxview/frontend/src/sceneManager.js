@@ -74,7 +74,8 @@ function animate() {
     requestAnimationFrame(animate);
 
     if (controls.isCinematicActive && controls.isCinematicActive()) {
-        const latestPoint = getLatestPoint();
+        const targetTalkerId = controls.getTargetTalkerId();
+        const latestPoint = getLatestPoint(targetTalkerId);
         if (latestPoint) {
             controls.setCinematicTarget(latestPoint);
         }

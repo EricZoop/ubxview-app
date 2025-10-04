@@ -26,14 +26,27 @@ let isCoordinateSystemInitialized = false;
 
 /**
  * Returns the most recently added data point.
+ * @param {string|null} talkerId - Optional talker ID to filter by. If null, returns the latest point from any track.
  * @returns {THREE.Vector3 | null} The latest point as a Vector3, or null if no points exist.
  */
-export function getLatestPoint() {
+export function getLatestPoint(talkerId = null) {
     if (!masterGpsPoints || masterGpsPoints.length === 0 || !gpsToCartesian) {
         return null;
     }
-    const lastGpsPoint = masterGpsPoints[masterGpsPoints.length - 1];
-    return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
+    
+    if (talkerId === null) {
+        // Return the absolute latest point from all tracks
+        const lastGpsPoint = masterGpsPoints[masterGpsPoints.length - 1];
+        return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
+    } else {
+        // Find the latest point for the specific talker ID
+        const talkerPoints = masterGpsPoints.filter(p => p.talkerId === talkerId);
+        if (talkerPoints.length === 0) {
+            return null;
+        }
+        const lastGpsPoint = talkerPoints[talkerPoints.length - 1];
+        return gpsToCartesian(lastGpsPoint.lat, lastGpsPoint.lon, lastGpsPoint.alt);
+    }
 }
 
 /**

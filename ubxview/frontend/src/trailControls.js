@@ -1,6 +1,7 @@
 // trailControls.js
 
 import * as THREE from "three";
+import { updateStatsHeaderColors } from './parser.js';
 
 // Module state
 let plotObjects = new Map(); // Will store {points, line, gpsPoints} for each talkerId
@@ -190,6 +191,7 @@ export function enableElevationMode() {
     }
     isElevationMode = true;
     updateElevationPointColors();
+    updateStatsHeaderColors();
     return true;
 }
 
@@ -200,6 +202,7 @@ export function disableElevationMode() {
     isElevationMode = false;
     elevationColorData = null;
     updatePointColors();
+    updateStatsHeaderColors();
 }
 
 export function isElevationModeActive() {
@@ -275,7 +278,8 @@ export function setupTrailControlListeners() {
             if (presetSelect) presetSelect.value = "";
         }
         updatePointColors();
-        updateLineColor(); // Also update line colors when point colors change
+        updateLineColor();
+        updateStatsHeaderColors();
     };
 
     if (headColorInput) headColorInput.addEventListener("input", disableElevationAndResetPreset);
