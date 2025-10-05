@@ -9,7 +9,7 @@ import { getLatestPoint } from "./plotManager.js";
 let scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper;
 
 /**
- * Initialize the Three.js scene, camera, renderers, abbnd controls.
+ * Initialize the Three.js scene, camera, renderers, and controls.
  */
 export function initializeScene() {
     // Scene and Groups
@@ -36,8 +36,10 @@ export function initializeScene() {
     labelRenderer.domElement.style.pointerEvents = "none";
     document.body.appendChild(labelRenderer.domElement);
 
-    // Controls and Lights - FIXED: Pass scene instead of renderer.domElement
-    controls = setupCameraControls(camera, scene);
+    // Controls and Lights - FIXED: Pass renderer.domElement for event handling
+    // MODIFIED: This was the line causing the issue.
+    controls = setupCameraControls(camera, renderer.domElement);
+    
     scene.add(new THREE.AmbientLight(0x404040, 1.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(0, 100, 50);
@@ -83,7 +85,6 @@ function animate() {
 
     controls.update();
     
-    // FIXED: Use the current active camera (could be perspective or orthographic)
     const currentCamera = controls.getCurrentCamera();
     updateCompass(currentCamera);
     renderer.render(scene, currentCamera);

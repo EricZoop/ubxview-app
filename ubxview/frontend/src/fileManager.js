@@ -5,8 +5,7 @@ import {
     startPlayback, pausePlayback, rewind, forward,
     enterPlaybackMode, goLive, setPlaybackLines,
     handleTimeSliderChange, handleSpeedSelection,
-    getPlaybackSpeed, setPlaybackSpeed, getPlaybackState,
-    protectSliderFromOrbitControls
+    getPlaybackState, protectSliderFromOrbitControls, getAllFileLines
 } from "./playback.js";
 
 // File state
@@ -15,30 +14,39 @@ let readOffset = 0;
 let fileWatcherInterval = null;
 let POLLING_RATE_MS = 10;
 let fileHandle = null;
+let isWatcherRunning = false;
 
 // --- File Watcher ---
 async function watchFileForChanges() {
-    if (!fileHandle) return;
+    if (!fileHandle || isWatcherRunning) return;
+    
+    isWatcherRunning = true;
+
     try {
         const latestFile = await fileHandle.getFile();
-        if (latestFile.size <= readOffset) return;
-        const fileSlice = latestFile.slice(readOffset);
-        const newText = await fileSlice.text();
-        readOffset = latestFile.size;
+        
+        if (latestFile.size > readOffset) {
+            const fileSlice = latestFile.slice(readOffset);
+            const newText = await fileSlice.text();
+            readOffset = latestFile.size;
 
-        if (newText.length > 0) {
-            const newLines = newText.split('\n').filter(line => line.trim());
-            const masterPoints = extractGpsPointsFromText(newText);
+            if (newText.length > 0) {
+                const newLines = newText.split('\n').filter(line => line.trim());
+                const masterPoints = extractGpsPointsFromText(newText);
 
-            setPlaybackLines([...getPlaybackState().allFileLines, ...newLines]);
+                const currentLines = getAllFileLines();
+                setPlaybackLines([...currentLines, ...newLines]);
 
-            if (masterPoints && masterPoints.length > 0) {
-                plotGpsData(masterPoints, true);
-                updateStats(getMasterGpsPoints());
+                if (masterPoints && masterPoints.length > 0) {
+                    plotGpsData(masterPoints, true);
+                    updateStats(getMasterGpsPoints());
+                }
             }
         }
     } catch (err) {
         console.error("Error watching file:", err);
+    } finally {
+        isWatcherRunning = false;
     }
 }
 
@@ -106,6 +114,7 @@ export function closeFile() {
     currentFile = null;
     readOffset = 0;
     fileHandle = null;
+    isWatcherRunning = false;
 
     const fileLabel = document.getElementById("fileLabel");
     if (fileLabel) fileLabel.innerHTML = "No file selected";
@@ -141,7 +150,10 @@ export function setupFileManagerListeners() {
     if (goLiveBtn) goLiveBtn.addEventListener("click", goLive);
 
     const timeSlider = document.getElementById("timeSlider");
-    if (timeSlider) timeSlider.addEventListener("input", handleTimeSliderChange);
+    if (timeSlider) {
+        timeSlider.addEventListener("input", handleTimeSliderChange);
+        protectSliderFromOrbitControls();
+    }
 
     const adjustSpeedButton = document.getElementById('adjustSpeed');
     const speedOptions = document.getElementById('speedOptions');
@@ -155,10 +167,4 @@ export function setupFileManagerListeners() {
         });
         window.addEventListener('click', () => speedOptions.classList.remove('show'));
     }
-}
-
-const timeSlider = document.getElementById("timeSlider");
-if (timeSlider) {
-    timeSlider.addEventListener("input", handleTimeSliderChange);
-    protectSliderFromOrbitControls(); // ✅ ensures swiping doesn’t move scene
 }

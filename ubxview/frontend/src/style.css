@@ -87,7 +87,7 @@ body {
     font-size: 1.1rem;
     font-weight: bold;
     position: relative; /* Needed for the pseudo-element underline */
-    
+    justify-content: space-between;
     /* --- NEW/MODIFIED STYLES --- */
     display: flex;         /* This is the magic! Treats the h3 as a flex container. */
     align-items: center;   /* Vertically aligns the text and icon. */
