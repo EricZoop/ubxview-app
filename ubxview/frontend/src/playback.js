@@ -1,5 +1,6 @@
 // playback.js
-import { extractGpsPointsFromText, updateStats } from "./parser.js";
+import { extractGpsPointsFromText } from "./parser.js";
+import { updateStats } from "./statsUI.js"
 import { plotGpsData } from "./plotManager.js";
 
 // Playback state

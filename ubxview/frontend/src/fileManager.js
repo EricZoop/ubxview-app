@@ -1,5 +1,6 @@
 // fileManager.js
-import { extractGpsPointsFromText, updateStats } from "./parser.js";
+import { extractGpsPointsFromText } from "./parser.js";
+import { updateStats } from "./statsUI.js"
 import { plotGpsData, getMasterGpsPoints, initializeCoordinateSystem, resetCoordinateSystem } from "./plotManager.js";
 import {
     startPlayback, pausePlayback, rewind, forward,

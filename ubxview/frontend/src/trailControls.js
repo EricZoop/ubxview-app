@@ -1,7 +1,7 @@
 // trailControls.js
 
 import * as THREE from "three";
-import { updateStatsHeaderColors } from './parser.js';
+import { updateStatsHeaderColors } from './statsUI.js';
 
 // Module state
 let plotObjects = new Map(); // Will store {points, line, gpsPoints} for each talkerId
@@ -131,20 +131,19 @@ export function updatePointColors() {
         return;
     }
 
-    // Get the base colors from the UI
     const baseTrailHeadColor = new THREE.Color(document.getElementById('trail-head-color').value);
     const baseTrailTailColor = new THREE.Color(document.getElementById('trail-tail-color').value);
     
-    let trackIndex = 0;
+    // Sort the keys to ensure consistent order for color assignment.
+    const sortedTalkerIds = Array.from(plotObjects.keys()).sort();
 
-    // Apply coloring to each track individually with color variations
-    plotObjects.forEach(({ points: pointsObject, gpsPoints }) => {
+    // Iterate over the sorted keys.
+    sortedTalkerIds.forEach((talkerId, index) => {
+        const { points: pointsObject, gpsPoints } = plotObjects.get(talkerId);
         if (!pointsObject || gpsPoints.length === 0) return;
         
-        // --- THIS SECTION APPLIES THE HUE SHIFT TO BOTH HEAD AND TAIL ---
-        // Generate unique color variants for this track
-        const trailHeadColor = getTrackVariantColor(baseTrailHeadColor, trackIndex);
-        const trailTailColor = getTrackVariantColor(baseTrailTailColor, trackIndex);
+        const trailHeadColor = getTrackVariantColor(baseTrailHeadColor, index);
+        const trailTailColor = getTrackVariantColor(baseTrailTailColor, index);
 
         const tailHSL = {};
         const headHSL = {};
@@ -157,26 +156,24 @@ export function updatePointColors() {
         const gradientPoints = 15;
         const gradientStartIndex = Math.max(0, totalPoints - gradientPoints);
 
-        gpsPoints.forEach((point, index) => {
+        gpsPoints.forEach((point, i) => {
             let color;
-            if (index < gradientStartIndex) {
+            if (i < gradientStartIndex) {
                 color = trailTailColor.clone();
             } else {
-                const progressInGradient = index - gradientStartIndex;
+                const progressInGradient = i - gradientStartIndex;
                 const ratio = progressInGradient / (gradientPoints > 1 ? gradientPoints - 1 : 1);
                 const h = tailHSL.h + (headHSL.h - tailHSL.h) * ratio;
                 const s = tailHSL.s + (headHSL.s - tailHSL.s) * ratio;
                 const l = tailHSL.l + (headHSL.l - tailHSL.l) * ratio;
                 color = new THREE.Color().setHSL(h, s, l);
             }
-            const colorIndex = index * 3;
+            const colorIndex = i * 3;
             colors[colorIndex] = color.r;
             colors[colorIndex + 1] = color.g;
             colors[colorIndex + 2] = color.b;
         });
         geometry.attributes.color.needsUpdate = true;
-        
-        trackIndex++; // Increment for the next track
     });
 }
 
@@ -191,7 +188,7 @@ export function enableElevationMode() {
     }
     isElevationMode = true;
     updateElevationPointColors();
-    updateStatsHeaderColors();
+    updateStatsHeaderColors(plotObjects);
     return true;
 }
 
@@ -202,7 +199,7 @@ export function disableElevationMode() {
     isElevationMode = false;
     elevationColorData = null;
     updatePointColors();
-    updateStatsHeaderColors();
+    updateStatsHeaderColors(plotObjects);
 }
 
 export function isElevationModeActive() {
@@ -219,15 +216,18 @@ export function getElevationData() {
 export function updateLineColor() {
     if (!plotObjects) return;
     const baseLineColor = new THREE.Color(document.getElementById('trail-line-color').value);
-    let trackIndex = 0;
+    
+    // Sort the keys to ensure consistent order.
+    const sortedTalkerIds = Array.from(plotObjects.keys()).sort();
 
-    plotObjects.forEach(({ line: lineObject }) => {
+    // Iterate over sorted keys.
+    sortedTalkerIds.forEach((talkerId, index) => {
+        const { line: lineObject } = plotObjects.get(talkerId);
         if (lineObject) {
-            const trackLineColor = getTrackVariantColor(baseLineColor, trackIndex);
+            const trackLineColor = getTrackVariantColor(baseLineColor, index);
             lineObject.material.color.copy(trackLineColor);
             lineObject.material.needsUpdate = true;
         }
-        trackIndex++;
     });
 }
 
@@ -279,7 +279,7 @@ export function setupTrailControlListeners() {
         }
         updatePointColors();
         updateLineColor();
-        updateStatsHeaderColors();
+        updateStatsHeaderColors(plotObjects);
     };
 
     if (headColorInput) headColorInput.addEventListener("input", disableElevationAndResetPreset);
@@ -297,4 +297,17 @@ export function resetTrailControls() {
     bounds = null;
     isElevationMode = false;
     elevationColorData = null;
+}
+
+export function refreshColorsFromUI() {
+    // If we are in elevation mode, changing colors should disable it.
+    // disableElevationMode() already handles a full visual refresh.
+    if (isElevationModeActive()) {
+        disableElevationMode();
+    } else {
+        // Otherwise, just update everything based on the current picker values.
+        updatePointColors();
+        updateLineColor();
+        updateStatsHeaderColors(plotObjects);
+    }
 }

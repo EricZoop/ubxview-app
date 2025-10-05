@@ -1,8 +1,5 @@
 // parser.js
-
-import * as THREE from 'three';
-// Import the necessary functions from trailControls.js
-import { getTrackVariantColor, isElevationModeActive } from './trailControls.js';
+// Pure parsing logic - no DOM manipulation
 
 /**
  * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
@@ -96,15 +93,13 @@ export function extractGpsPointsFromText(text) {
 
             const lastValidPoint = lastValidPoints[talkerId];
             if (lastValidPoint) {
-                // ===== START: ADDED DEGREE JUMP CHECK =====
+                // Degree jump check
                 const latJump = Math.abs(currentPoint.lat - lastValidPoint.lat);
                 const lonJump = Math.abs(currentPoint.lon - lastValidPoint.lon);
 
                 if (latJump > MAX_DEGREE_JUMP || lonJump > MAX_DEGREE_JUMP) {
                     continue; // Skip point if it's too far from the previous one
                 }
-                // ===== END: ADDED DEGREE JUMP CHECK =====
-
 
                 // Speed-based outlier check (per talker)
                 const timeDelta = currentPoint.time - lastValidPoint.time;
@@ -128,8 +123,15 @@ export function extractGpsPointsFromText(text) {
     return points;
 }
 
-
-function haversine(lat1, lon1, lat2, lon2) {
+/**
+ * Calculates the distance between two GPS coordinates using the Haversine formula.
+ * @param {number} lat1 Latitude of first point
+ * @param {number} lon1 Longitude of first point
+ * @param {number} lat2 Latitude of second point
+ * @param {number} lon2 Longitude of second point
+ * @returns {number} Distance in meters
+ */
+export function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Earth radius in meters
     const toRad = deg => deg * (Math.PI / 180);
     const dLat = toRad(lat2 - lat1);
@@ -140,86 +142,13 @@ function haversine(lat1, lon1, lat2, lon2) {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-
-function createTalkerStatsHTML(talkerId, headerColor) {
-    return `
-        <div class="stats-group">
-            <h3 style="color: ${headerColor};"
-                class="talker-header"
-                data-talker-id="${talkerId}"
-                tabindex="0"
-                role="button"
-                title="Click to follow">
-                <span>Rover${talkerId}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
-                    <path d="M259-80q-75 0-127-53T80-261q0-75 52-127t127-52q22 0 42.5 5t38.5 14q14-29 15-60t-11-60q-19 10-40 15t-44 5q-75 0-127.5-52.5T80-701q0-75 52.5-127T260-880q75 0 127.5 52T440-701q0 23-5.5 44T419-617q29 12 60 11.5t60-14.5q-9-18-14-38.5t-5-42.5q0-75 52-127t127-52q75 0 128 52t53 127q0 75-53 128t-128 53q-24 0-45.5-6T612-543q-13 30-12 61.5t15 62.5q19-10 40-15.5t44-5.5q75 0 128 52t53 127q0 75-53 128T699-80q-75 0-127-53t-52-128q0-23 5.5-44t15.5-40q-31-14-62.5-15.5T417-349q11 20 17 42t6 46q0 75-53 128T259-80Zm440-520q42 0 71.5-29.5T800-701q0-42-29.5-70.5T699-800q-42 0-70.5 28.5T600-701q0 8 1.5 16.5T605-668l60-60q12-12 28-12t28 12q12 12 12 28t-12 28l-62 63q9 5 19 7t21 2Zm-439-1q10 0 19-2t17-5l-64-64q-12-12-12-28t12-28q12-12 28-12t28 12l65 64q3-8 5-17.5t2-19.5q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Zm439 441q42 0 71.5-29.5T800-261q0-42-29.5-70.5T699-360q-10 0-19 1.5t-17 4.5l66 66q12 12 12 28t-12 28q-13 12-29 12t-28-12l-65-65q-3 8-5 17t-2 19q0 42 28.5 71.5T699-160Zm-440 0q42 0 71.5-29.5T360-261q0-11-2-21.5t-7-19.5l-70 70q-12 12-28.5 12T224-232q-12-12-12-28t12-28l67-67q-8-2-16-3.5t-16-1.5q-42 0-70.5 28.5T160-261q0 42 28.5 71.5T259-160Zm221-280q17 0 28.5-11.5T520-480q0-17-11.5-28.5T480-520q-17 0-28.5 11.5T440-480q0 17 11.5 28.5T480-440Z"/>
-                </svg>
-            </h3>
-            <table>
-                <tbody>
-                    <tr><td>Points:</td><td><span id="${talkerId}-points-stat">0</span></td></tr>
-                    <tr><td>Latitude:</td><td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td></tr>
-                    <tr><td>Longitude:</td><td><span id="${talkerId}-long-stat">0.0</span>&deg;</td></tr>
-                    <tr><td>Alt (MSL):</td><td><span id="${talkerId}-altitude-stat">0.0</span> m</td></tr>
-                    <tr><td>Alt (WGS84):</td><td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td></tr>
-                    <tr><td>Speed:</td><td><span id="${talkerId}-speed-stat">0.0</span> m/s</td></tr>
-                    <tr><td>2D Distance:</td><td><span id="${talkerId}-twod-stat">0.0</span> m</td></tr>
-                    <tr><td>3D Distance:</td><td><span id="${talkerId}-threed-stat">0.0</span> m</td></tr>
-                    <tr><td>Satellites:</td><td><span id="${talkerId}-satellites-stat">0</span></td></tr>
-                    <tr><td>Start Time:</td><td><span id="${talkerId}-start-stat">--</span></td></tr>
-                    <tr><td>End Time:</td><td><span id="${talkerId}-end-stat">--</span></td></tr>
-                    <tr><td>Duration:</td><td><span id="${talkerId}-duration-stat">0.0</span> s</td></tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
 /**
- * Updates the color of the H3 talker headers in the stats panel.
- * This is called when the color palette changes to keep them in sync.
+ * Groups GPS points by their talker ID.
+ * @param {Array} points Array of GPS points
+ * @returns {Object} Object with talker IDs as keys and arrays of points as values
  */
-export function updateStatsHeaderColors() {
-    // When elevation mode is active, all headers should be a neutral white.
-    if (isElevationModeActive()) {
-        document.querySelectorAll('.talker-header').forEach(header => {
-            header.style.color = '#ffffff';
-        });
-        return;
-    }
-    
-    // Otherwise, calculate colors based on the current trail tail color.
-    const tailColorPicker = document.getElementById('trail-tail-color');
-    const baseColor = new THREE.Color(tailColorPicker ? tailColorPicker.value : '#00ffaa');
-
-    // Get all talker IDs and sort them to match the order used in updateStats
-    const allHeaders = document.querySelectorAll('.talker-header');
-    const talkerIds = Array.from(allHeaders).map(header => header.dataset.talkerId).sort();
-    
-    allHeaders.forEach((header) => {
-        const talkerId = header.dataset.talkerId;
-        // Find the index of this talkerId in the sorted list
-        const index = talkerIds.indexOf(talkerId);
-        
-        // Generate the unique color variant for this track's index
-        const trackColor = getTrackVariantColor(baseColor, index);
-        const headerColorHex = `#${trackColor.getHexString()}`;
-
-        // Apply the new color directly to the element's style attribute
-        header.style.color = headerColorHex;
-    });
-}
-
-export function updateStats(points) {
-    const statsContainer = document.getElementById('stats');
-    if (!statsContainer) return;
-
-    if (!points || points.length === 0) {
-        return;
-    }
-
-    // Group points by talker ID
-    const pointsByTalker = points.reduce((acc, point) => {
+export function groupPointsByTalker(points) {
+    return points.reduce((acc, point) => {
         const { talkerId } = point;
         if (!acc[talkerId]) {
             acc[talkerId] = [];
@@ -227,128 +156,66 @@ export function updateStats(points) {
         acc[talkerId].push(point);
         return acc;
     }, {});
-    
-    const currentTalkerIds = Object.keys(pointsByTalker);
-
-    // --- NEW: Logic to remove stale talker panels ---
-    const existingPanels = statsContainer.querySelectorAll('.stats-group');
-    existingPanels.forEach(panel => {
-        const header = panel.querySelector('.talker-header');
-        // Check if header exists before trying to read its properties
-        if (header) {
-            const panelTalkerId = header.dataset.talkerId;
-            if (!currentTalkerIds.includes(panelTalkerId)) {
-                panel.remove();
-            }
-        } else {
-            // If a panel is malformed (no header), remove it
-            panel.remove();
-        }
-    });
-
-    const tailColorPicker = document.getElementById('trail-tail-color');
-    const baseColor = new THREE.Color(tailColorPicker ? tailColorPicker.value : '#00ffaa');
-
-    // --- REFACTORED: Loop to create or update panels ---
-    currentTalkerIds.forEach((talkerId, index) => {
-        const talkerPoints = pointsByTalker[talkerId];
-
-        // 1. CREATE the panel structure if it's not already in the DOM
-        if (!document.getElementById(`${talkerId}-points-stat`)) {
-            let headerColorHex;
-            if (isElevationModeActive()) {
-                headerColorHex = '#ffffff'; 
-            } else {
-                const trackColor = getTrackVariantColor(baseColor, index);
-                headerColorHex = `#${trackColor.getHexString()}`;
-            }
-            statsContainer.insertAdjacentHTML('beforeend', createTalkerStatsHTML(talkerId, headerColorHex));
-        }
-
-        // 2. UPDATE the stats regardless of whether the panel was just created or already existed
-        const lastPoint = talkerPoints[talkerPoints.length - 1];
-        const firstPoint = talkerPoints[0];
-
-        const totalPoints = talkerPoints.length;
-        const totalDuration = lastPoint.time - firstPoint.time;
-        const currentAltitude = lastPoint.alt;
-        const currentAltWsg84 = lastPoint.alt + (lastPoint.undulation || 0);
-        const currentLat = lastPoint.lat;
-        const currentLon = lastPoint.lon;
-        const currentSatellites = lastPoint.satellites || 0;
-
-        const formatTime = (timeInSeconds) => {
-            const hours = Math.floor(timeInSeconds / 3600).toString().padStart(2, '0');
-            const minutes = Math.floor((timeInSeconds % 3600) / 60).toString().padStart(2, '0');
-            const seconds = Math.floor(timeInSeconds % 60).toString().padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
-        };
-
-        const startTimeFormatted = formatTime(firstPoint.time);
-        const endTimeFormatted = formatTime(lastPoint.time);
-
-        let latestSpeed = 0;
-        if (talkerPoints.length >= 2) {
-            const p1 = talkerPoints[talkerPoints.length - 2];
-            const p2 = lastPoint;
-            const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
-            const timeDelta = p2.time - p1.time;
-            if (timeDelta > 0) {
-                latestSpeed = distance2D / timeDelta;
-            }
-        }
-
-        let total2DDistance = 0;
-        let total3DDistance = 0;
-        for (let i = 1; i < talkerPoints.length; i++) {
-            const p1 = talkerPoints[i - 1];
-            const p2 = talkerPoints[i];
-            const segment2DDistance = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
-            total2DDistance += segment2DDistance;
-            const altitudeChange = p2.alt - p1.alt;
-            const segment3DDistance = Math.sqrt(Math.pow(segment2DDistance, 2) + Math.pow(altitudeChange, 2));
-            total3DDistance += segment3DDistance;
-        }
-
-        // Update the DOM elements' text content
-        document.getElementById(`${talkerId}-points-stat`).textContent = totalPoints;
-        document.getElementById(`${talkerId}-duration-stat`).textContent = totalDuration.toFixed(1);
-        document.getElementById(`${talkerId}-twod-stat`).textContent = total2DDistance.toFixed(1);
-        document.getElementById(`${talkerId}-threed-stat`).textContent = total3DDistance.toFixed(1);
-        document.getElementById(`${talkerId}-speed-stat`).textContent = latestSpeed.toFixed(2);
-        document.getElementById(`${talkerId}-altitude-stat`).textContent = currentAltitude.toFixed(2);
-        document.getElementById(`${talkerId}-altwsg84-stat`).textContent = currentAltWsg84.toFixed(2);
-        document.getElementById(`${talkerId}-lat-stat`).textContent = currentLat.toFixed(7);
-        document.getElementById(`${talkerId}-long-stat`).textContent = currentLon.toFixed(7);
-        document.getElementById(`${talkerId}-satellites-stat`).textContent = currentSatellites;
-        document.getElementById(`${talkerId}-start-stat`).textContent = startTimeFormatted;
-        document.getElementById(`${talkerId}-end-stat`).textContent = endTimeFormatted;
-    });
 }
 
+/**
+ * Calculates statistics for a set of GPS points from a single talker.
+ * @param {Array} talkerPoints Array of GPS points for one talker
+ * @returns {Object} Statistics object
+ */
+export function calculateTalkerStats(talkerPoints) {
+    if (!talkerPoints || talkerPoints.length === 0) {
+        return null;
+    }
 
-// --- EVENT DELEGATION LOGIC ---
-// This single, persistent listener handles clicks reliably, even when stats are updating.
+    const lastPoint = talkerPoints[talkerPoints.length - 1];
+    const firstPoint = talkerPoints[0];
 
-const statsContainer = document.getElementById('stats');
-if (statsContainer) {
-    statsContainer.addEventListener('click', (e) => {
-        // Use .closest() to find the talker-header that was clicked,
-        // even if the user clicked on text inside the H3.
-        const header = e.target.closest('.talker-header');
+    const totalPoints = talkerPoints.length;
+    const totalDuration = lastPoint.time - firstPoint.time;
+    const currentAltitude = lastPoint.alt;
+    const currentAltWsg84 = lastPoint.alt + (lastPoint.undulation || 0);
+    const currentLat = lastPoint.lat;
+    const currentLon = lastPoint.lon;
+    const currentSatellites = lastPoint.satellites || 0;
 
-        // If a header was not the target of the click, do nothing.
-        if (!header) {
-            return;
+    // Calculate latest speed
+    let latestSpeed = 0;
+    if (talkerPoints.length >= 2) {
+        const p1 = talkerPoints[talkerPoints.length - 2];
+        const p2 = lastPoint;
+        const distance2D = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+        const timeDelta = p2.time - p1.time;
+        if (timeDelta > 0) {
+            latestSpeed = distance2D / timeDelta;
         }
+    }
 
-        const talkerId = header.dataset.talkerId;
-        if (talkerId) {
-            // Dispatch the custom event that cameraControls.js is listening for.
-            const event = new CustomEvent('activateCinematicForTalker', {
-                detail: { talkerId: talkerId }
-            });
-            window.dispatchEvent(event);
-        }
-    });
+    // Calculate total distances
+    let total2DDistance = 0;
+    let total3DDistance = 0;
+    for (let i = 1; i < talkerPoints.length; i++) {
+        const p1 = talkerPoints[i - 1];
+        const p2 = talkerPoints[i];
+        const segment2DDistance = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+        total2DDistance += segment2DDistance;
+        const altitudeChange = p2.alt - p1.alt;
+        const segment3DDistance = Math.sqrt(Math.pow(segment2DDistance, 2) + Math.pow(altitudeChange, 2));
+        total3DDistance += segment3DDistance;
+    }
+
+    return {
+        totalPoints,
+        totalDuration,
+        currentAltitude,
+        currentAltWsg84,
+        currentLat,
+        currentLon,
+        currentSatellites,
+        latestSpeed,
+        total2DDistance,
+        total3DDistance,
+        startTime: firstPoint.time,
+        endTime: lastPoint.time
+    };
 }

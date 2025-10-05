@@ -141,133 +141,118 @@
             </div>
         </div>
 
-        <script type="module">
-            import {
-                updatePointColors,
-                updateLineColor,
-                toggleLineVisibility,
-                enableElevationMode,
-                disableElevationMode,
-                isElevationModeActive
-            } from './src/trailControls.js';
-
-            const presets = {
-                invincible: {
-                    head: '#ffe753',
-                    tail: '#4c9cbf',
-                    line: '#3a3b3d',
-                    showLines: true
-                },
-                america: {
-                    head: '#efefef',
-                    tail: '#ff0022',
-                    line: '#0432ff',
-                    showLines: true
-                },
-                neon: {
-                    head: '#00FFFF',
-                    tail: '#FF00FF',
-                    line: '#00FF00',
-                    showLines: true
-                },
-                elevation: {
-                    head: '#FF4444',
-                    tail: '#4444FF',
-                    line: '#888888',
-                    showLines: true,
-                    isElevationBased: true
-                }
-            };
-
-            // Store custom values
-            const customValues = {
-                head: document.getElementById('trail-head-color').value,
-                tail: document.getElementById('trail-tail-color').value,
-                line: document.getElementById('trail-line-color').value,
-                showLines: document.getElementById('show-lines-toggle').checked
-            };
-
-            function applyValues({ head, tail, line, showLines }) {
-                document.getElementById('trail-head-color').value = head;
-                document.getElementById('trail-tail-color').value = tail;
-                document.getElementById('trail-line-color').value = line;
-                document.getElementById('show-lines-toggle').checked = showLines;
-
-                if (isElevationModeActive()) {
-                    disableElevationMode();
-                }
-
-                updatePointColors();
-                updateLineColor();
-                toggleLineVisibility();
+    <script type="module">
+        import {
+            refreshColorsFromUI,
+            enableElevationMode,
+            disableElevationMode,
+            isElevationModeActive,
+            toggleLineVisibility
+        } from './src/trailControls.js';
+        
+        const presets = {
+            invincible: {
+                head: '#ffe753',
+                tail: '#4c9cbf',
+                line: '#3a3b3d',
+                showLines: true
+            },
+            america: {
+                head: '#efefef',
+                tail: '#ff0022',
+                line: '#0432ff',
+                showLines: true
+            },
+            neon: {
+                head: '#00FFFF',
+                tail: '#FF00FF',
+                line: '#00FF00',
+                showLines: true
+            },
+            elevation: {
+                head: '#FF4444',
+                tail: '#4444FF',
+                line: '#888888',
+                showLines: true,
+                isElevationBased: true
             }
+        };
 
-            function applyPreset(presetName) {
-                const preset = presets[presetName];
-                if (!preset) return;
+        // Store custom values
+        const customValues = {
+            head: document.getElementById('trail-head-color').value,
+            tail: document.getElementById('trail-tail-color').value,
+            line: document.getElementById('trail-line-color').value,
+            showLines: document.getElementById('show-lines-toggle').checked
+        };
 
-                applyValues(preset);
+        /**
+         * Sets the color picker values on the UI and triggers a full visual refresh.
+         */
+        function applyValues(values) {
+            document.getElementById('trail-head-color').value = values.head;
+            document.getElementById('trail-tail-color').value = values.tail;
+            document.getElementById('trail-line-color').value = values.line;
+            document.getElementById('show-lines-toggle').checked = values.showLines;
 
-                if (preset.isElevationBased) {
-                    const success = enableElevationMode();
-                    if (!success) {
-                        console.warn('Elevation mode failed, falling back to standard gradient');
-                        updatePointColors();
-                    }
-                } else {
-                    if (isElevationModeActive()) {
-                        disableElevationMode();
-                    }
-                    updatePointColors();
+            // Trigger the single, consolidated refresh function from trailControls
+            refreshColorsFromUI();
+        }
+
+        /**
+         * Applies a named preset.
+         */
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            if (preset.isElevationBased) {
+                const success = enableElevationMode();
+                if (!success) {
+                    console.warn('Elevation mode failed, falling back to preset colors.');
+                    applyValues(preset); // Apply colors normally if elevation fails
                 }
-
-                updateLineColor();
-                toggleLineVisibility();
+            } else {
+                applyValues(preset); // For all non-elevation presets
             }
+        }
 
-            // Handle preset changes
-            document.getElementById('trail-preset').addEventListener('change', function () {
-                const selectedPreset = this.value;
+        // Handle preset changes
+        document.getElementById('trail-preset').addEventListener('change', function () {
+            const selectedPreset = this.value;
 
-                if (selectedPreset) {
-                    applyPreset(selectedPreset);
-                } else {
-                    // User chose "Custom" — reapply custom settings
-                    applyValues(customValues);
-                }
+            if (selectedPreset) {
+                applyPreset(selectedPreset);
+            } else {
+                // User chose "Custom" — reapply custom settings
+                applyValues(customValues);
+            }
+        });
+
+        // Save changes and trigger refresh when any color input changes
+        ['trail-head-color', 'trail-tail-color', 'trail-line-color'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function () {
+                document.getElementById('trail-preset').value = ''; // Force Custom mode
+
+                // Save to custom values
+                customValues.head = document.getElementById('trail-head-color').value;
+                customValues.tail = document.getElementById('trail-tail-color').value;
+                customValues.line = document.getElementById('trail-line-color').value;
+
+                // Trigger the refresh with the new custom values
+                refreshColorsFromUI();
             });
+        });
 
-            // Save changes and set to custom when any color input changes
-            ['trail-head-color', 'trail-tail-color', 'trail-line-color'].forEach(id => {
-                document.getElementById(id).addEventListener('input', function () {
-                    const presetSelect = document.getElementById('trail-preset');
-                    presetSelect.value = ''; // Force Custom mode
+        // Save toggle state as well
+        document.getElementById('show-lines-toggle').addEventListener('change', function () {
+            document.getElementById('trail-preset').value = ''; // Custom mode
+            customValues.showLines = this.checked;
+            toggleLineVisibility(); // This is a simple toggle, no full refresh needed
+        });
 
-                    // Save to custom values
-                    customValues.head = document.getElementById('trail-head-color').value;
-                    customValues.tail = document.getElementById('trail-tail-color').value;
-                    customValues.line = document.getElementById('trail-line-color').value;
-
-                    if (isElevationModeActive()) {
-                        disableElevationMode();
-                    }
-
-                    updatePointColors();
-                    updateLineColor();
-                });
-            });
-
-            // Save toggle state as well
-            document.getElementById('show-lines-toggle').addEventListener('change', function () {
-                const presetSelect = document.getElementById('trail-preset');
-                presetSelect.value = ''; // Custom mode
-                customValues.showLines = this.checked;
-
-                toggleLineVisibility();
-            });
-
-            console.log('Trail controls with dynamic custom preset management initialized');
-        </script>
+        console.log('Trail controls with centralized refresh logic initialized');
+    </script>
 
 
 
