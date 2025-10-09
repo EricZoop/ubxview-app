@@ -9,6 +9,7 @@
 
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/ui.js"></script>
+    <script type="module" src="/src/readcom.js"></script>
 </head>
 
 <body>
@@ -18,7 +19,7 @@
 
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1>UBXView</h1>
-            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v3.0.1</a></p>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank">v3.0.2</a></p>
         </div>
 
 
@@ -39,7 +40,7 @@
                     .ubx, .txt, .csv,
                     .log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
-                        <path fill="#eee"
+                        <path fill="#fff"
                             d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
                     </svg>
                 </span>
@@ -101,14 +102,13 @@
                     <select id="trail-preset" style="
             width: 100%;
             padding: 0.6em .8em;
-            background: #1a1a1a url('data:image/svg+xml;utf8,<svg fill=\'%23e0e0e0\' height=\'16\' viewBox=\'0 0 24 24\' width=\'16\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>') no-repeat right 5px center;
             color: #e0e0e0;
             border: 1px solid #333;
             border-radius: 2px;
             appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
-            background-size: 24px;
+            background-size: 14px;
         ">
                         <option value="">Custom</option>
                         <option value="elevation">Elevation</option>
@@ -407,6 +407,41 @@
             <img src="/assets/stream.png" title="Go to Live" />
         </button>
     </div>
+
+<div id="com-reader" style="user-select: none; -webkit-user-select: none; -moz-user-select: none;">
+  <div style="font-weight: 600;">Serial Reader</div>
+
+  <!-- Top Row -->
+  <div class="com-reader-row top-row">
+    <button id="select-port-button">Select Port</button>
+    <select id="baud-rate" style="
+      width: 100%;
+      padding: 0.6em .8em;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      border-radius: 2px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-size: 14px;
+    ">
+      <option>9600</option>
+      <option>19200</option>
+      <option>38400</option>
+      <option>57600</option>
+      <option selected>115200</option>
+    </select>
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="com-reader-row bottom-row">
+    <button id="start-button">Start</button>
+    <button id="end-button" disabled>Stop</button>
+    <span id="status-message">Disconnected</span>
+  </div>
+</div>
+
+
 
     <!--
     <div id="credits" >

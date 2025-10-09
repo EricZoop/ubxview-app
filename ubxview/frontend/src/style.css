@@ -9,7 +9,7 @@ body {
 #info,
 #stats,
 #controls,
-#credits,
+#com-reader,
 #playback {
     position: absolute;
     padding: 12px 18px;
@@ -171,7 +171,7 @@ a:hover {
 }
 
 #info {
-    padding-bottom: 1rem;
+    padding-bottom: .75rem;
     width: 200px;
     top: 10px;
     left: 10px;
@@ -401,10 +401,10 @@ input {
     right: 10px;
 }
 
-#credits {
+#com-reader {
     bottom: 10px;
     left: 10px;
-    width: 160px
+    width: 240px
 }
 
 #controls {
@@ -554,6 +554,7 @@ input {
 .speed-option:hover {
     background: rgba(255, 255, 255, 0.15);
 }
+
 
 .control-row {
     position: relative;
@@ -762,4 +763,105 @@ select:hover {
     border-radius: 4px;
     transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
     box-shadow: rgba(37, 37, 37, 0.2) 0px 6px 20px;
+}
+
+
+/* General spacing */
+#com-reader > div {
+  margin-bottom: 0.8rem;
+}
+
+/* Flex layout for each row */
+.com-reader-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Top row: button + select side by side */
+.top-row {
+  justify-content: space-between;
+}
+
+.top-row select {
+  flex: 1;
+}
+
+.top-row button#select-port-button {
+  flex: 2;            /* Make button longer */
+  min-width: 140px;
+}
+
+/* Bottom row: start, stop, and status spaced neatly */
+.bottom-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.bottom-row button {
+  flex: 0 0 auto;      /* Keep buttons compact */
+}
+
+.bottom-row #status-message {
+  margin-left: auto;   /* Push status text to far right */
+  text-align: right;
+  color: #aaacaa;
+}
+
+/* Buttons */
+#com-reader button {
+  display: inline-flex;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  color: #eee;
+  padding: 0.6em 0.8em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 0.85em;
+}
+
+#com-reader button:hover {
+  background-color: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+#com-reader button:active {
+  background-color: #0a0a0a;
+  border-color: #555;
+  transform: translateY(1px);
+}
+
+#com-reader button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Dropdown */
+#com-reader select {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  color: #eee;
+  padding: 0.6em 0.8em;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#com-reader select:hover {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+/* Status text */
+#status-message {
+  font-weight: 400;
+  color: #aaacaa;
+  font-family: monospace;
 }
