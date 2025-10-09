@@ -30,10 +30,14 @@
 
         <div class="controls-container">
 
-            <div style="font-weight: 600;">Select Capture</div>
+            <a href="readcom.html" style="font-weight: 600; text-decoration: none; color: inherit;" target="_blank">
+                Select Capture
+            </a>
+
             <label id="fileInputLabel" class="custom-file">
                 <span id="fileLabel">
-                    .ubx, .txt, .csv, .log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    .ubx, .txt, .csv,
+                    .log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
                         <path fill="#eee"
                             d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
@@ -141,118 +145,118 @@
             </div>
         </div>
 
-    <script type="module">
-        import {
-            refreshColorsFromUI,
-            enableElevationMode,
-            disableElevationMode,
-            isElevationModeActive,
-            toggleLineVisibility
-        } from './src/trailControls.js';
-        
-        const presets = {
-            invincible: {
-                head: '#ffe753',
-                tail: '#4c9cbf',
-                line: '#3a3b3d',
-                showLines: true
-            },
-            america: {
-                head: '#efefef',
-                tail: '#ff0022',
-                line: '#0432ff',
-                showLines: true
-            },
-            neon: {
-                head: '#00FFFF',
-                tail: '#FF00FF',
-                line: '#00FF00',
-                showLines: true
-            },
-            elevation: {
-                head: '#FF4444',
-                tail: '#4444FF',
-                line: '#888888',
-                showLines: true,
-                isElevationBased: true
-            }
-        };
+        <script type="module">
+            import {
+                refreshColorsFromUI,
+                enableElevationMode,
+                disableElevationMode,
+                isElevationModeActive,
+                toggleLineVisibility
+            } from './src/trailControls.js';
 
-        // Store custom values
-        const customValues = {
-            head: document.getElementById('trail-head-color').value,
-            tail: document.getElementById('trail-tail-color').value,
-            line: document.getElementById('trail-line-color').value,
-            showLines: document.getElementById('show-lines-toggle').checked
-        };
-
-        /**
-         * Sets the color picker values on the UI and triggers a full visual refresh.
-         */
-        function applyValues(values) {
-            document.getElementById('trail-head-color').value = values.head;
-            document.getElementById('trail-tail-color').value = values.tail;
-            document.getElementById('trail-line-color').value = values.line;
-            document.getElementById('show-lines-toggle').checked = values.showLines;
-
-            // Trigger the single, consolidated refresh function from trailControls
-            refreshColorsFromUI();
-        }
-
-        /**
-         * Applies a named preset.
-         */
-        function applyPreset(presetName) {
-            const preset = presets[presetName];
-            if (!preset) return;
-
-            if (preset.isElevationBased) {
-                const success = enableElevationMode();
-                if (!success) {
-                    console.warn('Elevation mode failed, falling back to preset colors.');
-                    applyValues(preset); // Apply colors normally if elevation fails
+            const presets = {
+                invincible: {
+                    head: '#ffe753',
+                    tail: '#4c9cbf',
+                    line: '#3a3b3d',
+                    showLines: true
+                },
+                america: {
+                    head: '#efefef',
+                    tail: '#ff0022',
+                    line: '#0432ff',
+                    showLines: true
+                },
+                neon: {
+                    head: '#00FFFF',
+                    tail: '#FF00FF',
+                    line: '#00FF00',
+                    showLines: true
+                },
+                elevation: {
+                    head: '#FF4444',
+                    tail: '#4444FF',
+                    line: '#888888',
+                    showLines: true,
+                    isElevationBased: true
                 }
-            } else {
-                applyValues(preset); // For all non-elevation presets
-            }
-        }
+            };
 
-        // Handle preset changes
-        document.getElementById('trail-preset').addEventListener('change', function () {
-            const selectedPreset = this.value;
+            // Store custom values
+            const customValues = {
+                head: document.getElementById('trail-head-color').value,
+                tail: document.getElementById('trail-tail-color').value,
+                line: document.getElementById('trail-line-color').value,
+                showLines: document.getElementById('show-lines-toggle').checked
+            };
 
-            if (selectedPreset) {
-                applyPreset(selectedPreset);
-            } else {
-                // User chose "Custom" — reapply custom settings
-                applyValues(customValues);
-            }
-        });
+            /**
+             * Sets the color picker values on the UI and triggers a full visual refresh.
+             */
+            function applyValues(values) {
+                document.getElementById('trail-head-color').value = values.head;
+                document.getElementById('trail-tail-color').value = values.tail;
+                document.getElementById('trail-line-color').value = values.line;
+                document.getElementById('show-lines-toggle').checked = values.showLines;
 
-        // Save changes and trigger refresh when any color input changes
-        ['trail-head-color', 'trail-tail-color', 'trail-line-color'].forEach(id => {
-            document.getElementById(id).addEventListener('input', function () {
-                document.getElementById('trail-preset').value = ''; // Force Custom mode
-
-                // Save to custom values
-                customValues.head = document.getElementById('trail-head-color').value;
-                customValues.tail = document.getElementById('trail-tail-color').value;
-                customValues.line = document.getElementById('trail-line-color').value;
-
-                // Trigger the refresh with the new custom values
+                // Trigger the single, consolidated refresh function from trailControls
                 refreshColorsFromUI();
+            }
+
+            /**
+             * Applies a named preset.
+             */
+            function applyPreset(presetName) {
+                const preset = presets[presetName];
+                if (!preset) return;
+
+                if (preset.isElevationBased) {
+                    const success = enableElevationMode();
+                    if (!success) {
+                        console.warn('Elevation mode failed, falling back to preset colors.');
+                        applyValues(preset); // Apply colors normally if elevation fails
+                    }
+                } else {
+                    applyValues(preset); // For all non-elevation presets
+                }
+            }
+
+            // Handle preset changes
+            document.getElementById('trail-preset').addEventListener('change', function () {
+                const selectedPreset = this.value;
+
+                if (selectedPreset) {
+                    applyPreset(selectedPreset);
+                } else {
+                    // User chose "Custom" — reapply custom settings
+                    applyValues(customValues);
+                }
             });
-        });
 
-        // Save toggle state as well
-        document.getElementById('show-lines-toggle').addEventListener('change', function () {
-            document.getElementById('trail-preset').value = ''; // Custom mode
-            customValues.showLines = this.checked;
-            toggleLineVisibility(); // This is a simple toggle, no full refresh needed
-        });
+            // Save changes and trigger refresh when any color input changes
+            ['trail-head-color', 'trail-tail-color', 'trail-line-color'].forEach(id => {
+                document.getElementById(id).addEventListener('input', function () {
+                    document.getElementById('trail-preset').value = ''; // Force Custom mode
 
-        console.log('Trail controls with centralized refresh logic initialized');
-    </script>
+                    // Save to custom values
+                    customValues.head = document.getElementById('trail-head-color').value;
+                    customValues.tail = document.getElementById('trail-tail-color').value;
+                    customValues.line = document.getElementById('trail-line-color').value;
+
+                    // Trigger the refresh with the new custom values
+                    refreshColorsFromUI();
+                });
+            });
+
+            // Save toggle state as well
+            document.getElementById('show-lines-toggle').addEventListener('change', function () {
+                document.getElementById('trail-preset').value = ''; // Custom mode
+                customValues.showLines = this.checked;
+                toggleLineVisibility(); // This is a simple toggle, no full refresh needed
+            });
+
+            console.log('Trail controls with centralized refresh logic initialized');
+        </script>
 
 
 
@@ -265,18 +269,54 @@
             </h3>-->
             <table>
                 <tbody>
-                    <tr><td>Points:</td><td><span id="${talkerId}-points-stat">0</span></td></tr>
-                    <tr><td>Latitude:</td><td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td></tr>
-                    <tr><td>Longitude:</td><td><span id="${talkerId}-long-stat">0.0</span>&deg;</td></tr>
-                    <tr><td>Alt (MSL):</td><td><span id="${talkerId}-altitude-stat">0.0</span> m</td></tr>
-                    <tr><td>Alt (WGS84):</td><td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td></tr>
-                    <tr><td>Speed:</td><td><span id="${talkerId}-speed-stat">0.0</span> m/s</td></tr>
-                    <tr><td>2D Distance:</td><td><span id="${talkerId}-twod-stat">0.0</span> m</td></tr>
-                    <tr><td>3D Distance:</td><td><span id="${talkerId}-threed-stat">0.0</span> m</td></tr>
-                    <tr><td>Satellites:</td><td><span id="${talkerId}-satellites-stat">0</span></td></tr>
-                    <tr><td>Start Time:</td><td><span id="${talkerId}-start-stat">HH:mm:ss</span></td></tr>
-                    <tr><td>End Time:</td><td><span id="${talkerId}-end-stat">HH:mm:ss</span></td></tr>
-                    <tr><td>Duration:</td><td><span id="${talkerId}-duration-stat">0.0</span> s</td></tr>
+                    <tr>
+                        <td>Points:</td>
+                        <td><span id="${talkerId}-points-stat">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Latitude:</td>
+                        <td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td>
+                    </tr>
+                    <tr>
+                        <td>Longitude:</td>
+                        <td><span id="${talkerId}-long-stat">0.0</span>&deg;</td>
+                    </tr>
+                    <tr>
+                        <td>Alt (MSL):</td>
+                        <td><span id="${talkerId}-altitude-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Alt (WGS84):</td>
+                        <td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Speed:</td>
+                        <td><span id="${talkerId}-speed-stat">0.0</span> m/s</td>
+                    </tr>
+                    <tr>
+                        <td>2D Distance:</td>
+                        <td><span id="${talkerId}-twod-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>3D Distance:</td>
+                        <td><span id="${talkerId}-threed-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Satellites:</td>
+                        <td><span id="${talkerId}-satellites-stat">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Start Time:</td>
+                        <td><span id="${talkerId}-start-stat">HH:mm:ss</span></td>
+                    </tr>
+                    <tr>
+                        <td>End Time:</td>
+                        <td><span id="${talkerId}-end-stat">HH:mm:ss</span></td>
+                    </tr>
+                    <tr>
+                        <td>Duration:</td>
+                        <td><span id="${talkerId}-duration-stat">0.0</span> s</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -284,96 +324,89 @@
 
 
 
-<div id="controls">
-    <div class="control-row">
-        <div class="keys">
-            <span class="key">&larr;</span>
-            <span class="key">&uarr;</span>
-            <span class="key">&rarr;</span>
-            <span class="key">&darr;</span>
+    <div id="controls">
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">&larr;</span>
+                <span class="key">&uarr;</span>
+                <span class="key">&rarr;</span>
+                <span class="key">&darr;</span>
+            </div>
+            <div class="action">Look</div>
         </div>
-        <div class="action">Look</div>
-    </div>
-    <div class="control-row">
-        <div class="keys">
-            <span class="key">W</span>
-            <span class="key">S</span>
-            <span class="key">A</span>
-            <span class="key">D</span>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">W</span>
+                <span class="key">S</span>
+                <span class="key">A</span>
+                <span class="key">D</span>
+            </div>
+            <div class="action">Move</div>
         </div>
-        <div class="action">Move</div>
-    </div>
-    <div class="control-row">
-        <div class="keys">
-            <span class="key">Q</span>
-            <span class="key">E</span>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">Q</span>
+                <span class="key">E</span>
+            </div>
+            <div class="action">Down / Up</div>
         </div>
-        <div class="action">Down / Up</div>
-    </div>
-    <div class="control-row" id="reorient-control-row"> <div class="keys">
-            <span class="key">R</span>
+        <div class="control-row" id="reorient-control-row">
+            <div class="keys">
+                <span class="key">R</span>
+            </div>
+            <div class="action">Reorientate</div>
         </div>
-        <div class="action">Reorientate</div>
-    </div>
-    <div class="control-row" id="cinematic-control-row">
-        <div class="keys">
-            <span class="key">C</span>
+        <div class="control-row" id="cinematic-control-row">
+            <div class="keys">
+                <span class="key">C</span>
+            </div>
+            <div class="action">Cinematic</div>
         </div>
-        <div class="action">Cinematic</div>
-    </div>
-    <div class="control-row" id="birdseye-control-row">
-        <div class="keys">
-            <span class="key">B</span>
+        <div class="control-row" id="birdseye-control-row">
+            <div class="keys">
+                <span class="key">B</span>
+            </div>
+            <div class="action">Bird's-eye</div>
         </div>
-        <div class="action">Bird's-eye</div>
-    </div>
     </div>
 
 
-<div id="playback">
-    <div class="controls">
-        <button id="rewind">
-            <!-- Using a placeholder for your asset -->
-            <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
+    <div id="playback">
+        <div class="controls">
+            <button id="rewind">
+                <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
+            </button>
+
+            <button id="playPause">
+                <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
+                <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
+            </button>
+
+            <button id="forward">
+                <img src="assets/seek.png" title="Seek 10s" />
+            </button>
+        </div>
+
+        <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1" />
+
+        <div class="speed-control-container">
+            <div id="speedOptions" class="speed-options">
+                <button class="speed-option" data-speed="0.5">0.5x</button>
+                <button class="speed-option active" data-speed="1">1x</button>
+                <button class="speed-option" data-speed="2.5">2.5x</button>
+                <button class="speed-option" data-speed="5">5x</button>
+                <button class="speed-option" data-speed="10">10x</button>
+            </div>
+
+            <button id="adjustSpeed">
+                <img src="/assets/tachometer.png" title="Adjust Speed" />
+            </button>
+        </div>
+
+        <button id="goLive">
+            <img src="/assets/stream.png" title="Go to Live" />
         </button>
-
-        <button id="playPause">
-            <!-- Using placeholders for your assets -->
-            <span id="playIcon"><img src="assets/play.png" title="Play"/></span> 
-            <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
-        </button>
-
-        <button id="forward">
-             <!-- Using a placeholder for your asset -->
-            <img src="assets/seek.png" title="Seek 10s"/>
-        </button>
     </div>
-
-    <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1"/>
-
-    <!-- Speed control container -->
-    <div class="speed-control-container">
-        <!-- The options menu, initially hidden via CSS -->
-        <div id="speedOptions" class="speed-options">
-            <button class="speed-option" data-speed="0.5">0.5x</button>
-            <button class="speed-option active" data-speed="1">1x</button>
-            <button class="speed-option" data-speed="2.5">2.5x</button>
-            <button class="speed-option" data-speed="5">5x</button>
-            <button class="speed-option" data-speed="10">10x</button>
-        </div>
-
-        <!-- The button that triggers the menu -->
-        <button id="adjustSpeed">
-            <!-- Using a placeholder for your asset -->
-            <img src="/assets/tachometer.png" title="Adjust Speed" />
-        </button>
-    </div>
-
-    <button id="goLive">
-         <!-- Using a placeholder for your asset -->
-        <img src="/assets/stream.png" title="Go to Live" />
-    </button>
-</div>
 
     <!--
     <div id="credits" >
@@ -385,7 +418,7 @@
         <a href="mailto:ji.park@drs.com">ji.park@drs.com</a><br>
         <a href="mailto:eric.zipor@drs.com">eric.zipor@drs.com</a>
     </div>
-    -->
+    <-->
 
 </body>
 

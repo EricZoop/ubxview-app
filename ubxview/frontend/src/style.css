@@ -105,7 +105,7 @@ body {
     width: 0;
     height: 2px;
     background-color: currentColor;
-    transition: width 0.3s ease;
+    transition: width 0.1s ease;
 }
 
 /* Expand underline on hover (Your existing code, no change needed) */
