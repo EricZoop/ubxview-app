@@ -63,8 +63,12 @@ class SerialRecorder {
 
         // Prompt user to create/save a file at the beginning
         try {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const defaultName = `CaptureRTK_${timestamp}.bin`; // Saving raw bytes is better as .bin
+            const timestamp = new Date().toISOString()
+                .replace('T', '_')        // replace T with underscore
+                .replace(/\..+Z$/, '')    // remove milliseconds and trailing Z
+                .replace(/[:]/g, '-');    // replace colons with dashes
+
+            const defaultName = `BaseRTK_${timestamp}.txt`;
 
             this.fileHandle = await window.showSaveFilePicker({
                 suggestedName: defaultName,

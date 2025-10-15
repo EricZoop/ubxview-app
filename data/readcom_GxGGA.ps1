@@ -1,4 +1,4 @@
-$portName   = "COM4"
+$portName   = "COM5"
 $baudRate   = 115200
 $outputFile = "output.ubx"
 

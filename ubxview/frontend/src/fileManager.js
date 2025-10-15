@@ -65,7 +65,7 @@ function stopFileWatcher() {
 export async function openFile(onPlotComplete) {
     try {
         [fileHandle] = await window.showOpenFilePicker({
-            types: [{ accept: { "text/plain": [".txt", ".log", ".csv", ".ubx"] } }],
+            types: [{ accept: { "text/plain": [".txt", ".log", ".csv", ".ubx", ".crswap", ".bin"] } }],
             multiple: false,
         });
 
