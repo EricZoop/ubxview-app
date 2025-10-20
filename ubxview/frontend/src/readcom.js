@@ -17,6 +17,7 @@ class SerialRecorder {
         this.fileHandle = null;
         this.writableStream = null;
         this.outputDirHandle = null;
+        this.currentSubDirHandle = null; // --- ADDED --- Handle for the timestamped folder
 
         // Rate and file size tracking
         this.bytesReceived = 0;
@@ -42,13 +43,11 @@ class SerialRecorder {
         this.endButton.addEventListener('click', () => this.endRecording());
         this.selectPortButton.addEventListener('click', () => this.selectPort());
 
-        // --- ADDED ---
         // Warn user before they leave the page if recording is active
         window.addEventListener('beforeunload', (event) => this.handleBeforeUnload(event));
 
         // Attempt a best-effort cleanup if the page is hidden/unloaded
         window.addEventListener('pagehide', () => this.handlePageHide());
-        // --- END ADDED ---
     }
 
     handleUnsupportedBrowser() {
@@ -105,17 +104,34 @@ class SerialRecorder {
             .replace(/[:]/g, '-');
 
         this.currentTimestamp = timestamp;
-        const defaultName = `RTK_NMEA_${timestamp}.txt`;
+
+        // --- MODIFIED BLOCK ---
+        // Create the sub-directory for this recording session first
+        const folderName = `NMEAmsgs_${this.currentTimestamp}`;
+        let subDirHandle;
+        try {
+            subDirHandle = await this.outputDirHandle.getDirectoryHandle(folderName, { create: true });
+            this.currentSubDirHandle = subDirHandle; // Store handle for post-processing
+            console.log(`Output sub-directory created: ${folderName}`);
+        } catch (error) {
+            console.error('Error creating output sub-directory:', error);
+            alert(`Failed to create output folder "${folderName}": ${error.message}`);
+            return;
+        }
+
+        const defaultName = `RTKx_${timestamp}.txt`;
 
         try {
-            // Create recording file in the chosen directory
-            this.fileHandle = await this.outputDirHandle.getFileHandle(defaultName, { create: true });
+            // Create recording file in the *new sub-directory*
+            this.fileHandle = await this.currentSubDirHandle.getFileHandle(defaultName, { create: true });
             this.writableStream = await this.fileHandle.createWritable();
         } catch (error) {
             console.error('Error creating recording file:', error);
             alert(`File creation failed: ${error.message}`);
+            this.currentSubDirHandle = null; // Clear handle on failure
             return;
         }
+        // --- END MODIFIED BLOCK ---
 
         // Reset file size and counters
         this.totalBytesWritten = 0;
@@ -129,6 +145,7 @@ class SerialRecorder {
                     await this.writableStream.close();
                     this.fileHandle = null;
                     this.writableStream = null;
+                    this.currentSubDirHandle = null; // Clear handle
                     return;
                 }
             }
@@ -138,7 +155,7 @@ class SerialRecorder {
 
             this.isRecording = true;
             this.capturedData = [];
-            console.log(`Recording to ${this.fileHandle.name}...`);
+            console.log(`Recording to ${this.currentSubDirHandle.name}/${this.fileHandle.name}...`); // Updated log message
 
             // --- UI Updates ---
             this.startButton.disabled = true;
@@ -160,17 +177,16 @@ class SerialRecorder {
             this.endButton.disabled = true;
             this.baudRateSelect.disabled = false;
             this.selectPortButton.disabled = false;
+            this.currentSubDirHandle = null; // Clear handle on error
         }
     }
 
     async endRecording() {
         if (!this.isRecording || !this.port) return;
 
-        // --- MODIFIED ---
         // Clear interval *before* await
         clearInterval(this.rateInterval);
         this.rateInterval = null;
-        // --- END MODIFIED ---
 
         if (this.reader) {
             try {
@@ -190,7 +206,7 @@ class SerialRecorder {
             console.error("Error closing port:", error);
         }
 
-        console.log(`Recording stopped. Data saved to ${this.fileHandle.name}.`);
+        console.log(`Recording stopped. Data saved to ${this.currentSubDirHandle.name}/${this.fileHandle.name}.`); // Updated log
         this.statusMessage.textContent = `Final size: ${this.formatFileSize(this.totalBytesWritten)}`;
 
         // Post-processing phase
@@ -210,6 +226,7 @@ class SerialRecorder {
         this.isRecording = false;
         this.fileHandle = null;
         this.writableStream = null;
+        this.currentSubDirHandle = null; // --- MODIFIED --- Reset sub-directory handle
         this.capturedData = [];
         this.totalBytesWritten = 0; // Reset after finishing
 
@@ -275,6 +292,8 @@ class SerialRecorder {
 
     async saveSortedFiles(sortedData) {
         try {
+            // --- MODIFIED BLOCK ---
+            // We just need to check permissions on the *parent* directory handle
             let permission = await this.outputDirHandle.queryPermission({ mode: 'readwrite' });
             if (permission !== 'granted') {
                 permission = await this.outputDirHandle.requestPermission({ mode: 'readwrite' });
@@ -283,8 +302,13 @@ class SerialRecorder {
                 throw new Error('Permission denied to write post-processed files.');
             }
 
-            const folderName = `RTK_NMEAmsgs_${this.currentTimestamp}`;
-            const subDirHandle = await this.outputDirHandle.getDirectoryHandle(folderName, { create: true });
+            if (!this.currentSubDirHandle) {
+                throw new Error('Current sub-directory handle is missing. Cannot save sorted files.');
+            }
+
+            // Use the handle created during startRecording()
+            const subDirHandle = this.currentSubDirHandle;
+            // --- END MODIFIED BLOCK ---
 
             for (const [talkerId, sentences] of Object.entries(sortedData)) {
                 const filename = `${talkerId}_${this.currentTimestamp}.txt`;
@@ -293,10 +317,10 @@ class SerialRecorder {
                 await writable.write(sentences.join('\n') + '\n');
                 await writable.close();
 
-                console.log(`Saved ${sentences.length} sentences to ${folderName}/${filename}`);
+                console.log(`Saved ${sentences.length} sentences to ${subDirHandle.name}/${filename}`);
             }
 
-            console.log(`All post-processed files saved in: ${folderName}`);
+            console.log(`All post-processed files saved in: ${subDirHandle.name}`);
 
         } catch (error) {
             console.error('Error saving sorted files:', error);
@@ -305,10 +329,8 @@ class SerialRecorder {
     }
 
     updateRateDisplay() {
-        // --- ADDED ---
         // Check if interval is still active
         if (!this.rateInterval) return;
-        // --- END ADDED ---
         
         const now = performance.now();
         const duration = (now - this.lastTime) / 1000;

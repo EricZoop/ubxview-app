@@ -95,7 +95,7 @@ body {
 
 .stats-group h3 {
     margin-top: 0;
-    font-size: 1.4rem;
+    font-size: 1.3em;
     font-weight: bold;
     position: relative;
     justify-content: space-between;
@@ -489,7 +489,7 @@ input {
 }
 
 #goLive {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     background: rgba(255, 255, 255, 0.1);
     color: rgb(255, 255, 255);
     border: 1px solid #ffffff40;
@@ -499,7 +499,7 @@ input {
 }
 
 #goLive {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border: 1px solid #ffffff40;
@@ -558,7 +558,7 @@ input {
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-align: center;
     transition: background 0.2s ease;
     width: 100%;
@@ -575,7 +575,7 @@ input {
     justify-content: space-between;
     align-items: center;
     color: white;
-    margin-bottom: 0.9em;
+    margin-bottom: 0.85em;
 }
 
 .control-row:last-child {
@@ -599,15 +599,15 @@ input {
     border-radius: 5px;
     padding: 0 0.4em;
     font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
-    font-size: .8em;
+    font-size: .75em;
     font-weight: 600;
     color: #eee;
     white-space: nowrap;
 }
 
 .action {
-    font-size: 0.95em;
-    padding-left: 1.5em;
+    font-size: 0.85em;
+
     text-align: right;
 }
 
