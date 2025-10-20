@@ -95,16 +95,14 @@ body {
 
 .stats-group h3 {
     margin-top: 0;
-    margin-bottom: 5px;
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: bold;
-    position: relative; /* Needed for the pseudo-element underline */
+    position: relative;
     justify-content: space-between;
-    /* --- NEW/MODIFIED STYLES --- */
-    display: flex;         /* This is the magic! Treats the h3 as a flex container. */
-    align-items: center;   /* Vertically aligns the text and icon. */
-    gap: 0.5em;            /* Adds a nice space between the text and icon. */
-    cursor: pointer;       /* Good practice to have this in CSS, not inline. */
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5em;
+    cursor: pointer;
     user-select: none;
 }
 
@@ -127,11 +125,12 @@ body {
 
 
 .stats-group h3 svg {
-    height: 1.75rem;  /* Match SVG height to font size */
-    width: auto;  /* Keep aspect ratio */
-    flex-shrink: 0; /* Prevent shrinking if text is too long */
-    transform: translateX(13px);
+    height: 1.75rem;   /* Match SVG height to font size */
+    width: auto;       /* Keep aspect ratio */
+    flex-shrink: 0;    /* Prevent shrinking if text is too long */
+    transform: translateX(13px) translateY(-2px) ;
 }
+
 
 h1 {
     margin: 0;
@@ -320,7 +319,6 @@ a:hover {
 
 input {
     display: block;
-    width: 200pxpx;
     background-color: #171717;
     border: 1px solid #363636;
     color: #fafafa;
@@ -493,7 +491,7 @@ input {
 #goLive {
     font-size: 0.8rem;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
+    color: rgb(255, 255, 255);
     border: 1px solid #ffffff40;
     padding: 4px 10px;
     border-radius: 4px;
@@ -879,5 +877,5 @@ select:hover {
   font-weight: 400;
   font-size: 0.9em;
   color: #aaacaa;
-  font-family: monospace;
+
 }
