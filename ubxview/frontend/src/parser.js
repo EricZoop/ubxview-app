@@ -1,6 +1,8 @@
 // parser.js
 // Pure parsing logic - no DOM manipulation
 
+// edge case fix "$GAGGA,183527.10,3911.7235965,N,0061645,W,1,12,0.74,244.612,M,-34.533,M,,*7B"
+
 /**
  * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
