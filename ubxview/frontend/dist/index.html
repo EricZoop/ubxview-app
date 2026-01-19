@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>UBXView</title>
+    <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
+
+
+  <script type="module" crossorigin src="./assets/index-CzP04cw0.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-COf9-EED.css">
+</head>
+
+<body>
+
+    <div id="info">
+        <div class="logo-title" >
+
+            <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
+            <h1 class="noselect">UBXView</h1>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank" title="Developed by Ji Park & Eric Zipor">v3.0.3</a></p>
+        </div>
+
+
+        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drone-mounted NMEA sensors for radar auto-registration workflows.</div>
+        <hr style="border-width: 0px;">
+
+        <!--<h2>Read Capture </h2>-->
+
+
+        <div class="controls-container">
+
+            <span style="font-weight: 600; text-decoration: none; color: inherit;" target="_blank">
+                Select Capture
+            </span>
+
+            <label id="fileInputLabel" class="custom-file">
+                <span id="fileLabel">
+                    .ubx, .txt, .csv,
+                    .log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
+                        <path fill="#fff"
+                            d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+                    </svg>
+                </span>
+            </label>
+
+            <div style="font-weight: 600;" class="noselect">Poll Rate (ms)</div>
+            <div class="polling-rate-container">
+                <div class="polling-rate-controls">
+                    <input type="number" id="pollRateInput" placeholder="10" min="10" step="10" value="10"
+                        class="polling-input" />
+                    <button id="updatePollRateBtn" class="polling-button">Set</button>
+                </div>
+            </div>
+
+
+
+            <!--<h2>Scene Visuals</h2>-->
+
+            <div style="font-weight: 600;" class="noselect">Canvas</div>
+            <div class="view-toggle">
+                <button class="view-option active" data-view="satellite">Satellite</button>
+                <button class="view-option" data-view="streetview">Streetview</button>
+                <!--<button class="view-option" data-view="terrain">Terrain</button>-->
+            </div>
+
+            <script>
+                document.querySelectorAll('.view-option').forEach(button => {
+                    button.addEventListener('click', () => {
+                        document.querySelectorAll('.view-option').forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+
+                        const selectedView = button.dataset.view;
+                        // 🔁 Replace this line with your logic to switch views
+                        console.log('Selected view:', selectedView);
+                    });
+                });    
+            </script>
+
+            <div style="font-weight: 600;" class="noselect">Map Opacity</div>
+            <div class="slider-wrapper">
+                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
+                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
+            </div>
+
+            <div style="font-weight: 600;" class="noselect">Render Distance</div>
+            <div class="plus-minus-selector">
+                <button id="renderMinus" type="button">&#8722;</button>
+                <div id="renderValue" class="value-display">17</div>
+                <button id="renderPlus" type="button">&#x2b;</button>
+            </div>
+
+
+            <div class="trail-controls" >
+                <!-- Preset selector -->
+                <div style="margin-bottom: 10px;">
+                    <label for="trail-preset"
+                        style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 600;">Plot
+                        Palette</label>
+                    <select id="trail-preset" style="
+            width: 100%;
+            padding: 0.6em .8em;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 2px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-size: 14px;
+        ">
+                        <option value="">Custom</option>
+                        <option value="elevation">Elevation</option>
+                        <option value="neon">Neon</option>
+                        <option value="america">1776&nbsp;&#129413;</option>
+                        <option value="invincible">Invincible</option>
+
+                    </select>
+                </div>
+
+                <!-- Color controls -->
+                <div style="display: flex; justify-content: space-between; margin-top: 0px;">
+                    <span style="text-align: left;">
+                        <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
+                        <input type="color" id="trail-head-color" name="trail-head-color" value="#ff0000"
+                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
+                    </span>
+                    <span style="text-align: left;">
+                        <label for="trail-tail-color" style="display: block; transform: translateX(2px);">Tail</label>
+                        <input type="color" id="trail-tail-color" name="trail-tail-color" value="#37ff00"
+                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
+                    </span>
+                    <span style="text-align: center;">
+                        <label for="trail-line-color" style="display: block; transform: translateX(-19px);">Line</label>
+                        <div style="display: flex; align-items: center; justify-content: center; margin-top: 0px;">
+                            <input type="color" id="trail-line-color" name="trail-line-color" value="#878787"
+                                style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
+                            <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked
+                                style="margin-left: 5px; transform: scale(1.25); border-radius: 0px;">
+                        </div>
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
+
+
+
+    </div>
+
+    <div id="stats">
+        <div class="stats-group">
+            <!--<h3 style="color: ${headerColor};">
+                Capture Stats
+            </h3>-->
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Points:</td>
+                        <td><span id="${talkerId}-points-stat">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Latitude:</td>
+                        <td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td>
+                    </tr>
+                    <tr>
+                        <td>Longitude:</td>
+                        <td><span id="${talkerId}-long-stat">0.0</span>&deg;</td>
+                    </tr>
+                    <tr>
+                        <td>Alt (MSL):</td>
+                        <td><span id="${talkerId}-altitude-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Alt (WGS84):</td>
+                        <td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Speed:</td>
+                        <td><span id="${talkerId}-speed-stat">0.0</span> m/s</td>
+                    </tr>
+                    <tr>
+                        <td>2D Distance:</td>
+                        <td><span id="${talkerId}-twod-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>3D Distance:</td>
+                        <td><span id="${talkerId}-threed-stat">0.0</span> m</td>
+                    </tr>
+                    <tr>
+                        <td>Satellites:</td>
+                        <td><span id="${talkerId}-satellites-stat">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Start Time:</td>
+                        <td><span id="${talkerId}-start-stat">HH:mm:ss</span></td>
+                    </tr>
+                    <tr>
+                        <td>End Time:</td>
+                        <td><span id="${talkerId}-end-stat">HH:mm:ss</span></td>
+                    </tr>
+                    <tr>
+                        <td>Duration:</td>
+                        <td><span id="${talkerId}-duration-stat">0.0</span> s</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <div id="controls" class="noselect">
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">&larr;</span>
+                <span class="key">&uarr;</span>
+                <span class="key">&rarr;</span>
+                <span class="key">&darr;</span>
+            </div>
+            <div class="action">Look</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">W</span>
+                <span class="key">S</span>
+                <span class="key">A</span>
+                <span class="key">D</span>
+            </div>
+            <div class="action">Move</div>
+        </div>
+        <div class="control-row">
+            <div class="keys">
+                <span class="key">Q</span>
+                <span class="key">E</span>
+            </div>
+            <div class="action">Down / Up</div>
+        </div>
+        <div class="control-row" id="reorient-control-row">
+            <div class="keys">
+                <span class="key">R</span>
+            </div>
+            <div class="action">Reorientate</div>
+        </div>
+        <div class="control-row" id="cinematic-control-row">
+            <div class="keys">
+                <span class="key">C</span>
+            </div>
+            <div class="action">Cinematic</div>
+        </div>
+        <div class="control-row" id="birdseye-control-row">
+            <div class="keys">
+                <span class="key">B</span>
+            </div>
+            <div class="action">Bird's-eye</div>
+        </div>
+    </div>
+
+
+    <div id="playback">
+        <div class="controls">
+            <button id="rewind">
+                <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
+            </button>
+
+            <button id="playPause">
+                <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
+                <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
+            </button>
+
+            <button id="forward">
+                <img src="assets/seek.png" title="Seek 10s" />
+            </button>
+        </div>
+
+        <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1" />
+
+        <div class="speed-control-container">
+            <div id="speedOptions" class="speed-options">
+                <button class="speed-option" data-speed="0.5">0.5x</button>
+                <button class="speed-option active" data-speed="1">1x</button>
+                <button class="speed-option" data-speed="2.5">2.5x</button>
+                <button class="speed-option" data-speed="5">5x</button>
+                <button class="speed-option" data-speed="10">10x</button>
+            </div>
+
+            <button id="adjustSpeed">
+                <img src="./assets/tachometer.png" title="Adjust Speed" />
+            </button>
+        </div>
+
+        <button id="goLive">
+            <img src="./assets/stream.png" title="Go to Live" />
+        </button>
+    </div>
+
+<div id="com-reader" style="user-select: none; -webkit-user-select: none; -moz-user-select: none;" >
+  <div style="font-weight: 600;">Serial Reader</div>
+
+  <div class="com-reader-row top-row">
+    <button id="select-port-button">Select Port</button>
+    <select id="baud-rate" style="
+      width: 100%;
+      padding: 0.6em .8em;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      border-radius: 2px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-size: 14px;
+    ">
+      <option>9600</option>
+      <option>19200</option>
+      <option>38400</option>
+      <option>57600</option>
+      <option selected>115200</option>
+    </select>
+  </div>
+
+  <div class="com-reader-row bottom-row">
+    <button id="start-button">Record</button>
+    <button id="end-button" disabled>Stop</button>
+    <span id="status-message">Disconnected</span>
+  </div>
+</div>
+
+    <!--
+    <div id="credits" >
+        <h3 style="margin: 0;">Test Pilots</h3>
+        <a href="mailto:marc.issa@drs.com">marc.issa@drs.com</a><br>
+        <a href="mailto:max.koerner@drs.com">max.koerner@drs.com</a>
+
+        <h3 style="margin: 2px 0 2px 0;">Authors</h3>
+        <a href="mailto:ji.park@drs.com">ji.park@drs.com</a><br>
+        <a href="mailto:eric.zipor@drs.com">eric.zipor@drs.com</a>
+    </div>
+    <-->
+
+</body>
+
+</html>
