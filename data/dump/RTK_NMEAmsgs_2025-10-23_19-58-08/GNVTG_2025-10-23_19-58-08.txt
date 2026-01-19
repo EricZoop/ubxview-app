@@ -1,0 +1,4 @@
+$GNVTG,,,,,,,,,N*2E
+$GNVTG,,,,,,,,,N*2E
+$GNVTG,,,,,,,,,N*2E
+$GNVTG,,,,,,,,,N*2E
