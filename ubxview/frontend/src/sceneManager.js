@@ -21,7 +21,7 @@ export function initializeScene() {
     dataGroup.add(tileGroup);
 
     // Camera
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 500000);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 500000);
     camera.position.set(610, 610, 610);
     
     // Renderers
