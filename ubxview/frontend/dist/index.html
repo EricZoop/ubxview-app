@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-CzP04cw0.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-COf9-EED.css">
+  <script type="module" crossorigin src="./assets/index-B8xwYsKn.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DONrYSq6.css">
 </head>
 
 <body>
@@ -17,7 +17,7 @@
 
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
-            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank" title="Developed by Ji Park & Eric Zipor">v3.0.3</a></p>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank" title="Developed by Ji Park & Eric Zipor">v3.0.4</a></p>
         </div>
 
 
@@ -29,7 +29,7 @@
 
         <div class="controls-container">
 
-            <span style="font-weight: 600; text-decoration: none; color: inherit;" target="_blank">
+            <span style="font-weight: 500; text-decoration: none; color: inherit;" target="_blank">
                 Select Capture
             </span>
 
@@ -44,7 +44,7 @@
                 </span>
             </label>
 
-            <div style="font-weight: 600;" class="noselect">Poll Rate (ms)</div>
+            <div style="font-weight: 500;" class="noselect">Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
                     <input type="number" id="pollRateInput" placeholder="10" min="10" step="10" value="10"
@@ -57,7 +57,7 @@
 
             <!--<h2>Scene Visuals</h2>-->
 
-            <div style="font-weight: 600;" class="noselect">Canvas</div>
+            <div style="font-weight: 500;" class="noselect">Canvas</div>
             <div class="view-toggle">
                 <button class="view-option active" data-view="satellite">Satellite</button>
                 <button class="view-option" data-view="streetview">Streetview</button>
@@ -77,13 +77,13 @@
                 });    
             </script>
 
-            <div style="font-weight: 600;" class="noselect">Map Opacity</div>
+            <div style="font-weight: 500;" class="noselect">Map Opacity</div>
             <div class="slider-wrapper">
                 <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
                 <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
-            <div style="font-weight: 600;" class="noselect">Render Distance</div>
+            <div style="font-weight: 500;" class="noselect">Render Distance</div>
             <div class="plus-minus-selector">
                 <button id="renderMinus" type="button">&#8722;</button>
                 <div id="renderValue" class="value-display">17</div>
@@ -95,7 +95,7 @@
                 <!-- Preset selector -->
                 <div style="margin-bottom: 10px;">
                     <label for="trail-preset"
-                        style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 600;">Plot
+                        style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">Plot
                         Palette</label>
                     <select id="trail-preset" style="
             width: 100%;
@@ -118,7 +118,7 @@
                 </div>
 
                 <!-- Color controls -->
-                <div style="display: flex; justify-content: space-between; margin-top: 0px;">
+                <div style="display: flex; justify-content: space-between; margin-top: 0px;  font-size: 0.85em;">
                     <span style="text-align: left;">
                         <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
                         <input type="color" id="trail-head-color" name="trail-head-color" value="#ff0000"
@@ -260,7 +260,7 @@
     <div id="playback">
         <div class="controls">
             <button id="rewind">
-                <img src="assets/seek.png" title="Rewind 10s" style="transform: scaleX(-1);" />
+                <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
             </button>
 
             <button id="playPause">
@@ -269,7 +269,7 @@
             </button>
 
             <button id="forward">
-                <img src="assets/seek.png" title="Seek 10s" />
+                <img src="assets/seek.png" title="Seek" />
             </button>
         </div>
 
@@ -295,7 +295,7 @@
     </div>
 
 <div id="com-reader" style="user-select: none; -webkit-user-select: none; -moz-user-select: none;" >
-  <div style="font-weight: 600;">Serial Reader</div>
+  <div style="font-weight: 500;">Serial Reader</div>
 
   <div class="com-reader-row top-row">
     <button id="select-port-button">Select Port</button>
