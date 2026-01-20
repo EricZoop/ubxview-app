@@ -7,7 +7,7 @@ import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 
 /**
  * Creates the HTML structure for a talker's statistics panel.
- * @param {string} talkerId The talker ID (e.g., "GP", "GN")
+ * @param {string} talkerId The talker ID (e.g., "GP", "GN", "ZZ", "01", "A1")
  * @param {string} headerColor The color to use for the header
  * @returns {string} HTML string
  */
@@ -20,7 +20,7 @@ function createTalkerStatsHTML(talkerId, headerColor) {
                 tabindex="0"
                 role="button"
                 title="Click to follow">
-                <span>Rover${talkerId}</span>
+                <span>Rover ${talkerId}</span>
 
             </h3>
             <table>

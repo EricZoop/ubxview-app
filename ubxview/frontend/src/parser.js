@@ -1,8 +1,6 @@
 // parser.js
 // Pure parsing logic - no DOM manipulation
 
-// edge case fix "$GAGGA,183527.10,3911.7235965,N,0061645,W,1,12,0.74,244.612,M,-34.533,M,,*7B"
-
 /**
  * Parses text content to find and convert GNGGA/GPGGA sentences into structured points.
  * This function ONLY parses text. It does not touch the DOM.
@@ -21,7 +19,8 @@ export function extractGpsPointsFromText(text) {
     const lines = cleanedText.split('\n');
     if (lines.length === 0) return points;
 
-    const ggaRegex = /\$(?:GP|GN|GA|GB|GL)GGA,[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
+    // Updated regex to match any 2-character talker ID (letters or numbers)
+    const ggaRegex = /\$[A-Z0-9]{2}GGA,[^\r\n]*?\*[0-9A-Fa-f]{2}/g;
     const matches = cleanedText.match(ggaRegex);
     if (!matches) return points;
 
@@ -39,6 +38,7 @@ export function extractGpsPointsFromText(text) {
         if (parts.length < 15) continue;
 
         try {
+            // Extract the 2-character talker ID (any letters/numbers)
             const talkerId = sentence.substring(1, 3);
 
             const UTCstr = parts[1];
