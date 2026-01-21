@@ -56,7 +56,7 @@ body {
 
 /* Scrollbar styling for webkit browsers */
 #stats::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
 }
 
 #stats::-webkit-scrollbar-track {

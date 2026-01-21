@@ -14,18 +14,13 @@ import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 function createTalkerStatsHTML(talkerId, headerColor) {
     return `
         <div class="stats-group">
-            <h3 style="color: ${headerColor};"
-                class="talker-header"
-                data-talker-id="${talkerId}"
-                tabindex="0"
-                role="button"
-                title="Click to follow">
+            <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${talkerId}" tabindex="0" role="button" title="Click to follow">
                 <span>Rover ${talkerId}</span>
-
             </h3>
             <table>
                 <tbody>
                     <tr><td>Points:</td><td><span id="${talkerId}-points-stat">0</span></td></tr>
+                    <tr><td>Telemetry:</td><td><span id="${talkerId}-hz-stat">0.0</span> Hz</td></tr>
                     <tr><td>Latitude:</td><td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td></tr>
                     <tr><td>Longitude:</td><td><span id="${talkerId}-long-stat">0.0</span>&deg;</td></tr>
                     <tr><td>Alt (MSL):</td><td><span id="${talkerId}-altitude-stat">0.0</span> m</td></tr>
@@ -33,6 +28,7 @@ function createTalkerStatsHTML(talkerId, headerColor) {
                     <tr><td>Speed:</td><td><span id="${talkerId}-speed-stat">0.0</span> m/s</td></tr>
                     <tr><td>2D Distance:</td><td><span id="${talkerId}-twod-stat">0.0</span> m</td></tr>
                     <tr><td>3D Distance:</td><td><span id="${talkerId}-threed-stat">0.0</span> m</td></tr>
+                    <tr><td>RTH Distance:</td><td><span id="${talkerId}-rth-stat">0.0</span> m</td></tr>
                     <tr><td>Satellites:</td><td><span id="${talkerId}-satellites-stat">0</span></td></tr>
                     <tr><td>Start Time:</td><td><span id="${talkerId}-start-stat">--</span></td></tr>
                     <tr><td>End Time:</td><td><span id="${talkerId}-end-stat">--</span></td></tr>
@@ -65,9 +61,11 @@ function updateTalkerStatsDOM(talkerId, stats) {
     const endTimeFormatted = formatTime(stats.endTime);
 
     document.getElementById(`${talkerId}-points-stat`).textContent = stats.totalPoints;
+    document.getElementById(`${talkerId}-hz-stat`).textContent = stats.updateRate.toFixed(2); // Added
     document.getElementById(`${talkerId}-duration-stat`).textContent = stats.totalDuration.toFixed(1);
     document.getElementById(`${talkerId}-twod-stat`).textContent = stats.total2DDistance.toFixed(1);
     document.getElementById(`${talkerId}-threed-stat`).textContent = stats.total3DDistance.toFixed(1);
+    document.getElementById(`${talkerId}-rth-stat`).textContent = stats.rthDistance3D.toFixed(1); // Added
     document.getElementById(`${talkerId}-speed-stat`).textContent = stats.latestSpeed.toFixed(2);
     document.getElementById(`${talkerId}-altitude-stat`).textContent = stats.currentAltitude.toFixed(2);
     document.getElementById(`${talkerId}-altwsg84-stat`).textContent = stats.currentAltWsg84.toFixed(2);
@@ -111,10 +109,10 @@ export function updateStatsHeaderColors(plotObjects) {
         });
         return;
     }
-    
+
     // Check if plotObjects is valid
     if (!plotObjects || plotObjects.size === 0) return;
-    
+
     // Otherwise, calculate colors based on the current trail tail color.
     const tailColorPicker = document.getElementById('trail-tail-color');
     const baseColor = new THREE.Color(tailColorPicker ? tailColorPicker.value : '#00ffaa');
@@ -129,7 +127,7 @@ export function updateStatsHeaderColors(plotObjects) {
             // Generate the unique color variant for this track's index
             const trackColor = getTrackVariantColor(baseColor, index);
             const headerColorHex = `#${trackColor.getHexString()}`;
-            
+
             // Apply the new color directly to the element's style attribute
             header.style.color = headerColorHex;
         }
@@ -167,7 +165,7 @@ export function updateStats(points) {
         if (!document.getElementById(`${talkerId}-points-stat`)) {
             let headerColorHex;
             if (isElevationModeActive()) {
-                headerColorHex = '#ffffff'; 
+                headerColorHex = '#ffffff';
             } else {
                 const trackColor = getTrackVariantColor(baseColor, index);
                 headerColorHex = `#${trackColor.getHexString()}`;

@@ -175,6 +175,12 @@ export function calculateTalkerStats(talkerPoints) {
 
     const totalPoints = talkerPoints.length;
     const totalDuration = lastPoint.time - firstPoint.time;
+    const updateRate = totalDuration > 0 ? (totalPoints / totalDuration) : 0;
+
+    const rth2D = haversine(firstPoint.lat, firstPoint.lon, lastPoint.lat, lastPoint.lon);
+    const rthAltChange = lastPoint.alt - firstPoint.alt;
+    const rthDistance3D = Math.sqrt(Math.pow(rth2D, 2) + Math.pow(rthAltChange, 2));
+
     const currentAltitude = lastPoint.alt;
     const currentAltWsg84 = lastPoint.alt + (lastPoint.undulation || 0);
     const currentLat = lastPoint.lat;
@@ -217,6 +223,8 @@ export function calculateTalkerStats(talkerPoints) {
         latestSpeed,
         total2DDistance,
         total3DDistance,
+        rthDistance3D,
+        updateRate,     
         startTime: firstPoint.time,
         endTime: lastPoint.time
     };

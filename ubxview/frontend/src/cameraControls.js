@@ -364,15 +364,15 @@ export function setupCameraControls(camera, scene) {
                 // BILL's EDIT HERE
 
                 const talkerMap = {
-                    '1': 'GP',
-                    '2': 'GN',
-                    '3': 'GA',
-                    '4': 'GB',
-                    '5': 'GL',
-                    '6': 'BD',
-                    '7': 'QZ',
-                    '8': 'IR',
-                    '9': 'GI'
+                    '1': 'AA',
+                    '2': 'BB',
+                    '3': 'CC',
+                    '4': 'DD',
+                    '5': 'WW',
+                    '6': 'XX',
+                    '7': 'YY',
+                    '8': 'ZZ',
+                    '9': 'JJ'
                 };
                 controls.setTargetTalkerId(talkerMap[digit] || null);
             }
