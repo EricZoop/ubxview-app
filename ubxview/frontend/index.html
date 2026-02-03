@@ -16,15 +16,17 @@
 <body>
 
     <div id="info">
-        <div class="logo-title" >
+        <div class="logo-title">
 
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
-            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank" title="Developed by Ji Park & Eric Zipor">v3.0.4</a></p>
+            <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
+                    title="Developed by Ji Park & Eric Zipor">v3.0.4</a></p>
         </div>
 
 
-        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drone-mounted NMEA sensors for radar auto-registration workflows.</div>
+        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drone-mounted NMEA sensors for
+            radar auto-registration workflows.</div>
         <hr style="border-width: 0px;">
 
         <!--<h2>Read Capture </h2>-->
@@ -94,7 +96,7 @@
             </div>
 
 
-            <div class="trail-controls" >
+            <div class="trail-controls">
                 <!-- Preset selector -->
                 <div style="margin-bottom: 10px;">
                     <label for="trail-preset"
@@ -124,7 +126,7 @@
                 <div style="display: flex; justify-content: space-between; margin-top: 0px;  font-size: 0.85em;">
                     <span style="text-align: left;">
                         <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
-                        <input type="color" id="trail-head-color" name="trail-head-color" value="#ff0000"
+                        <input type="color" id="trail-head-color" name="trail-head-color" value="#0073FF"
                             style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
                     </span>
                     <span style="text-align: left;">
@@ -419,12 +421,12 @@
         </button>
     </div>
 
-<div id="com-reader" style="user-select: none; -webkit-user-select: none; -moz-user-select: none;" >
-  <div style="font-weight: 500;">Serial Reader</div>
+    <div id="com-reader" style="user-select: none; -webkit-user-select: none; -moz-user-select: none;">
+        <div style="font-weight: 500;">Serial Reader</div>
 
-  <div class="com-reader-row top-row">
-    <button id="select-port-button">Select Port</button>
-    <select id="baud-rate" style="
+        <div class="com-reader-row top-row">
+            <button id="select-port-button">Select Port</button>
+            <select id="baud-rate" style="
       width: 100%;
       padding: 0.6em .8em;
       color: #e0e0e0;
@@ -435,20 +437,20 @@
       -moz-appearance: none;
       background-size: 14px;
     ">
-      <option>9600</option>
-      <option>19200</option>
-      <option>38400</option>
-      <option>57600</option>
-      <option selected>115200</option>
-    </select>
-  </div>
+                <option>9600</option>
+                <option>19200</option>
+                <option>38400</option>
+                <option>57600</option>
+                <option selected>115200</option>
+            </select>
+        </div>
 
-  <div class="com-reader-row bottom-row">
-    <button id="start-button">Record</button>
-    <button id="end-button" disabled>Stop</button>
-    <span id="status-message">Disconnected</span>
-  </div>
-</div>
+        <div class="com-reader-row bottom-row">
+            <button id="start-button">Record</button>
+            <button id="end-button" disabled>Stop</button>
+            <span id="status-message">Disconnected</span>
+        </div>
+    </div>
 
     <!--
     <div id="credits" >

@@ -51,26 +51,19 @@ function getCurrentPlaybackInterval() {
 }
 
 function startPlaybackInterval() {
+    // FIX: If user is at the very end and hits play, reset to start.
+    // Otherwise, start from EXACTLY where the slider is.
+    if (currentLineIndex >= allFileLines.length - 1) {
+        currentLineIndex = 0;
+    }
+
     playbackInterval = setInterval(() => {
         if (currentLineIndex < allFileLines.length - 1) {
             currentLineIndex++;
             updateTimeSlider();
-
-            const currentLine = allFileLines[currentLineIndex];
-            const points = extractGpsPointsFromText(currentLine);
-
-            if (points && points.length > 0) {
-                const pointsUpToCurrent = [];
-                for (let i = 0; i <= currentLineIndex; i++) {
-                    const linePoints = extractGpsPointsFromText(allFileLines[i]);
-                    if (linePoints) pointsUpToCurrent.push(...linePoints);
-                }
-                plotGpsData(pointsUpToCurrent, false);
-                updateStats(pointsUpToCurrent);
-            }
+            updatePlotToCurrentPosition();
         } else {
             pausePlayback();
-            if (!isLiveMode) goLive();
         }
     }, getCurrentPlaybackInterval());
 }
@@ -119,22 +112,49 @@ export function goLive() {
     updatePlotToCurrentPosition();
 }
 
+let cachedPointsPerLine = [];
+
 export function setPlaybackLines(lines, totalPoints = []) {
     allFileLines = lines;
-    totalGpsPoints = totalPoints;
-    currentLineIndex = allFileLines.length - 1;
+    // FIX: Pre-cache points immediately so they are ready for the first slider move
+    cachedPointsPerLine = lines.map(line => extractGpsPointsFromText(line) || []);
+    
+    // Set to the end for "Live" start
+    currentLineIndex = Math.max(0, allFileLines.length - 1);
+    
+    // Ensure the UI slider max value matches the new file length
+    updateTimeSlider();
 }
+
 export function getAllFileLines() {
     return allFileLines;
+}
+
+// NEW: Function to update slider range when file grows
+export function updateSliderRange() {
+    const slider = document.getElementById("timeSlider");
+    if (slider && allFileLines.length > 0) {
+        slider.max = allFileLines.length - 1;
+        // Only update value if we're in live mode
+        if (isLiveMode) {
+            slider.value = allFileLines.length - 1;
+            currentLineIndex = allFileLines.length - 1;
+        }
+    }
 }
 
 // ----------------- UI Helpers -----------------
 function updatePlotToCurrentPosition() {
     const pointsUpToCurrent = [];
+    // Only loop if we have lines to process
     for (let i = 0; i <= currentLineIndex; i++) {
-        const linePoints = extractGpsPointsFromText(allFileLines[i] || '');
-        if (linePoints) pointsUpToCurrent.push(...linePoints);
+        const points = cachedPointsPerLine[i];
+        if (points && points.length > 0) {
+            pointsUpToCurrent.push(...points);
+        }
     }
+    
+    // Use the non-append version (false) to redraw the path up to this point
     plotGpsData(pointsUpToCurrent, false);
     updateStats(pointsUpToCurrent);
 }
@@ -183,12 +203,18 @@ function updateSpeedDisplay() {
 
 // ----------------- Event Handlers -----------------
 export function handleTimeSliderChange(event) {
-    if (isLiveMode) enterPlaybackMode();
-    currentLineIndex = parseInt(event.target.value);
-    updatePlotToCurrentPosition();
-    if (!isPlaying) {
-        startPlayback();
+    // If the user moves the slider, we naturally exit "Live" mode
+    if (isLiveMode) {
+        enterPlaybackMode();
     }
+
+    currentLineIndex = parseInt(event.target.value);
+    
+    // Update the visual plot immediately
+    updatePlotToCurrentPosition();
+
+    // REMOVED: The forced startPlayback() call. 
+    // It will now remain paused if it was already paused.
 }
 
 export function handleSpeedSelection(event) {
@@ -202,7 +228,7 @@ export function handleSpeedSelection(event) {
     }
 }
 
-// --- Attach protection to slider so orbitControls don’t move the scene ---
+// --- Attach protection to slider so orbitControls don't move the scene ---
 export function protectSliderFromOrbitControls() {
     const timeSlider = document.getElementById("timeSlider");
     if (timeSlider) {
@@ -212,4 +238,3 @@ export function protectSliderFromOrbitControls() {
         timeSlider.addEventListener("input", handleTimeSliderChange);
     }
 }
-

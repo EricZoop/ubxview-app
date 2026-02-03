@@ -6,7 +6,8 @@ import {
     startPlayback, pausePlayback, rewind, forward,
     enterPlaybackMode, goLive, setPlaybackLines,
     handleTimeSliderChange, handleSpeedSelection,
-    getPlaybackState, protectSliderFromOrbitControls, getAllFileLines
+    getPlaybackState, protectSliderFromOrbitControls, getAllFileLines,
+    updateSliderRange
 } from "./playback.js";
 
 // File state
@@ -20,7 +21,6 @@ let isWatcherRunning = false;
 // --- File Watcher ---
 async function watchFileForChanges() {
     if (!fileHandle || isWatcherRunning) return;
-    
     isWatcherRunning = true;
 
     try {
@@ -33,14 +33,23 @@ async function watchFileForChanges() {
 
             if (newText.length > 0) {
                 const newLines = newText.split('\n').filter(line => line.trim());
-                const masterPoints = extractGpsPointsFromText(newText);
-
+                
+                // Get current state
                 const currentLines = getAllFileLines();
-                setPlaybackLines([...currentLines, ...newLines]);
+                const updatedLines = [...currentLines, ...newLines];
 
-                if (masterPoints && masterPoints.length > 0) {
-                    plotGpsData(masterPoints, true);
-                    updateStats(getMasterGpsPoints());
+                // Update the master list and cache
+                setPlaybackLines(updatedLines);
+
+                // --- THE FIX ---
+                // Only "jump" to the end if the user is currently in Live Mode.
+                // If they are scrubbing (isLiveMode === false), we update the data 
+                // in the background but DON'T move their slider.
+                if (getPlaybackState().isLiveMode) {
+                    goLive(); 
+                } else {
+                    // Update the slider's max value so they can scrub into the new data
+                    updateSliderRange();
                 }
             }
         }
@@ -50,6 +59,7 @@ async function watchFileForChanges() {
         isWatcherRunning = false;
     }
 }
+
 
 function startFileWatcher() {
     if (fileWatcherInterval) clearInterval(fileWatcherInterval);
@@ -72,6 +82,8 @@ export async function openFile(onPlotComplete) {
         if (!fileHandle) return false;
         const file = await fileHandle.getFile();
         currentFile = file;
+        
+        // Reset readOffset to 0 for a fresh file load
         readOffset = 0;
 
         const fileLabel = document.getElementById("fileLabel");
@@ -79,10 +91,13 @@ export async function openFile(onPlotComplete) {
 
         const initialText = await file.text();
         const allFileLines = initialText.split('\n').filter(line => line.trim());
-        const masterGpsPoints = extractGpsPointsFromText(initialText);
+        
+        // 1. Sync the playback state FIRST to initialize the cache and indices
+        // This prevents the "disappearing points" bug on the first interaction
+        setPlaybackLines(allFileLines); 
 
-        setPlaybackLines(allFileLines, masterGpsPoints);
-        readOffset = file.size;
+        // 2. Extract total points to initialize the 3D coordinate system
+        const masterGpsPoints = extractGpsPointsFromText(initialText);
 
         if (masterGpsPoints.length === 0) {
             alert("No valid GPS points found.");
@@ -91,7 +106,13 @@ export async function openFile(onPlotComplete) {
             return false;
         }
 
+        // 3. Setup the scene dimensions based on the file content
         initializeCoordinateSystem(masterGpsPoints);
+        
+        // 4. Update the readOffset so the watcher knows where the live append begins
+        readOffset = file.size;
+
+        // 5. Initial Plot: Draw the full path immediately
         const plotMetadata = plotGpsData(masterGpsPoints, false);
         updateStats(masterGpsPoints);
 
@@ -99,6 +120,7 @@ export async function openFile(onPlotComplete) {
             onPlotComplete(plotMetadata);
         }
 
+        // 6. Start the polling interval for live data
         startFileWatcher();
         return true;
 
