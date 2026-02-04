@@ -2,7 +2,7 @@ import { onWindowResize, getSceneObjects } from './sceneManager.js';
 import { setupTrailControlListeners } from './trailControls.js';
 import { setupFileManagerListeners } from './fileManager.js';
 import { createCompassLabels } from './compassRose.js';
-import { fetchAndDisplayTiles } from './tileManager.js';
+import { fetchAndDisplayTiles, initializeTileManager } from './tileManager.js';
 import { initializeUI } from './uiManager.js';
 
 /**
@@ -27,7 +27,10 @@ export function initializeEventListeners() {
             // Reset camera and add new compass
             controls.reset(plotMetadata.dataSpan, plotMetadata.firstPointVec);
             createCompassLabels(dataGroup);
+            
+            // Load initial tiles and start dynamic monitoring
             fetchAndDisplayTiles();
+            initializeTileManager();
         }
     });
 

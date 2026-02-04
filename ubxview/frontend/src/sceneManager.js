@@ -25,8 +25,18 @@ export function initializeScene() {
     camera.position.set(610, 610, 610);
     
     // Renderers
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance"
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Color management settings to prevent brightness shifts
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NoToneMapping;
+    
     document.body.appendChild(renderer.domElement);
 
     labelRenderer = new CSS2DRenderer();

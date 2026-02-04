@@ -2,6 +2,7 @@
 import { extractGpsPointsFromText } from "./parser.js";
 import { updateStats } from "./statsUI.js"
 import { plotGpsData, getMasterGpsPoints, initializeCoordinateSystem, resetCoordinateSystem } from "./plotManager.js";
+import { stopTileManager } from "./tileManager.js";
 import {
     startPlayback, pausePlayback, rewind, forward,
     enterPlaybackMode, goLive, setPlaybackLines,
@@ -132,6 +133,7 @@ export async function openFile(onPlotComplete) {
 
 export function closeFile() {
     stopFileWatcher();
+    stopTileManager();
     pausePlayback();
     resetCoordinateSystem();
     currentFile = null;
