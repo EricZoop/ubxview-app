@@ -15,9 +15,9 @@ let isLoadingTiles = false;
 
 // Multi-resolution settings
 const HIGH_RES_ZOOM = DEFAULTS.zoomLevel; // 17 - for areas with plot data
-const LOW_RES_ZOOM = HIGH_RES_ZOOM - 3;   // 14 - for background context
+const LOW_RES_ZOOM = HIGH_RES_ZOOM - 2;   // 14 - for background context
 const HIGH_RES_PADDING = 2;  // Tiles around the plot data
-const LOW_RES_RADIUS = 15;   // Larger radius for low-res background
+const LOW_RES_RADIUS = 10;   // Larger radius for low-res background
 
 /**
  * Initialize the tile update system that monitors for plot changes
