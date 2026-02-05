@@ -3,7 +3,7 @@ import { setupTrailControlListeners } from './trailControls.js';
 import { setupFileManagerListeners } from './fileManager.js';
 import { createCompassLabels } from './compassRose.js';
 import { fetchAndDisplayTiles, initializeTileManager } from './tileManager.js';
-import { initializeUI } from './uiManager.js';
+import { initializeUI, setMapLoaded } from './uiManager.js';
 
 /**
  * Setup all application event listeners.
@@ -24,6 +24,9 @@ export function initializeEventListeners() {
                 scene.remove(axesHelper);
             }
             
+            // Inform UI manager that map mode is active (enabling grid toggling)
+            setMapLoaded(true);
+
             // Reset camera and add new compass
             controls.reset(plotMetadata.dataSpan, plotMetadata.firstPointVec);
             createCompassLabels(dataGroup);

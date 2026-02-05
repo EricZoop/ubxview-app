@@ -15,7 +15,7 @@ import {
 let currentFile = null;
 let readOffset = 0;
 let fileWatcherInterval = null;
-let POLLING_RATE_MS = 10;
+let POLLING_RATE_MS = 10; // connect to html's  <input type="number" id="pollRateInput" placeholder="10" min="10" step="10" value="10" class="polling-input" /> <button id="updatePollRateBtn" class="polling-button">Set</button>
 let fileHandle = null;
 let isWatcherRunning = false;
 

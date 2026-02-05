@@ -1,0 +1,9 @@
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61
+$GNTXT,01,01,00,txbuf alloc*61

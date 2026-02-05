@@ -6,7 +6,7 @@ import { createCompassLabels, updateCompass } from "./compassRose.js";
 import { getLatestPoint } from "./plotManager.js";
 
 // Module-level variables for scene components
-let scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper;
+let scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper, gridMesh;
 
 /**
  * Initialize the Three.js scene, camera, renderers, and controls.
@@ -46,8 +46,7 @@ export function initializeScene() {
     labelRenderer.domElement.style.pointerEvents = "none";
     document.body.appendChild(labelRenderer.domElement);
 
-    // Controls and Lights - FIXED: Pass renderer.domElement for event handling
-    // MODIFIED: This was the line causing the issue.
+    // Controls and Lights
     controls = setupCameraControls(camera, renderer.domElement);
     
     scene.add(new THREE.AmbientLight(0x404040, 1.5));
@@ -63,7 +62,8 @@ export function initializeScene() {
     // Set camera to look at the center of the axes helper
     camera.lookAt(axesHelper.position);
 
-    createGrid(scene);
+    // Create and store the grid mesh
+    gridMesh = createGrid(scene);
     createCompassLabels(scene);
 
     // Start Animation
@@ -76,7 +76,7 @@ export function initializeScene() {
  * Provides access to core scene objects for other modules.
  */
 export function getSceneObjects() {
-    return { scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper };
+    return { scene, camera, renderer, labelRenderer, controls, dataGroup, tileGroup, axesHelper, gridMesh };
 }
 
 /**

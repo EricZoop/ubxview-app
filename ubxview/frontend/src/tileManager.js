@@ -17,7 +17,7 @@ let isLoadingTiles = false;
 const HIGH_RES_ZOOM = DEFAULTS.zoomLevel; // 17 - for areas with plot data
 const LOW_RES_ZOOM = HIGH_RES_ZOOM - 3;   // 14 - for background context
 const HIGH_RES_PADDING = 2;  // Tiles around the plot data
-const LOW_RES_RADIUS = 10;   // Larger radius for low-res background
+const LOW_RES_RADIUS = 15;   // Larger radius for low-res background
 
 /**
  * Initialize the tile update system that monitors for plot changes
@@ -261,56 +261,51 @@ async function loadTile(x, y, zoom, isHighRes, textureLoader, gpsToCartesian) {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
         
-        // Use better filtering to reduce dithering artifacts
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        texture.anisotropy = 16; // Maximum anisotropic filtering
+        texture.anisotropy = 16;
         texture.generateMipmaps = true;
         texture.colorSpace = THREE.SRGBColorSpace;
 
         const geometry = new THREE.PlaneGeometry(width, height);
         
-        // FIXED: Material settings to prevent opacity stacking while maintaining coverage
         const material = new THREE.MeshBasicMaterial({
             map: texture,
             side: THREE.DoubleSide,
             transparent: currentOpacity < 1.0,
             opacity: currentOpacity,
+            // Keep the brightness dilution for high-res
+            color: isHighRes ? 0xe5e5e5 : 0xffffff, 
             
-            // KEY FIX: Disable depth write for transparent tiles to prevent incorrect occlusion
-            depthWrite: currentOpacity >= 0.99,
+            // Masking Logic: HighRes writes depth, effectively "punching a hole" 
+            // in the LowRes layer which will fail the depth test behind it.
+            depthWrite: isHighRes ? true : (currentOpacity >= 0.99),
             depthTest: true,
+            blending: THREE.NormalBlending,
             
-            // Use CustomBlending to prevent brightness accumulation
-            // This ensures overlapping tiles don't add brightness
-            blending: THREE.CustomBlending,
-            blendEquation: THREE.AddEquation,
-            blendSrc: THREE.SrcAlphaFactor,
-            blendDst: THREE.OneMinusSrcAlphaFactor,
-            blendSrcAlpha: THREE.OneFactor,
-            blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-            
-            // Subtle polygon offset for layering without large gaps
+            // USE POLYGON OFFSET ONLY - NO PHYSICAL SEPARATION
+            // This pushes the "depth" calculation without moving the pixels,
+            // eliminating the parallax/detethering effect.
             polygonOffset: true,
-            polygonOffsetFactor: isHighRes ? -1 : 1,
+            // HighRes (-1) pulls closer. LowRes (1) pushes back. Grid is (-10) way back.
+            polygonOffsetFactor: isHighRes ? -1 : 1, 
             polygonOffsetUnits: isHighRes ? -1 : 1
         });
         
         const plane = new THREE.Mesh(geometry, material);
         plane.rotation.x = -Math.PI / 2;
         
-        // CRITICAL FIX: Minimal physical separation to prevent gaps
-        // High-res and low-res on nearly the same plane with just enough offset
-        // to prevent z-fighting while keeping them visually continuous
-        const yPosition = isHighRes ? -0.08 : -0.1;
-        plane.position.set(centerX, yPosition, centerZ);
+        // FIX: Snap both to exactly -0.1 to match grid and each other.
+        // No physical gap = no parallax.
+        plane.position.set(centerX, -0.1, centerZ);
         
-        // Render order: High-res after low-res so it appears on top
-        plane.renderOrder = isHighRes ? 100 : 50;
+        // Render Order: Draw HighRes first (10) to write to depth buffer.
+        // Then Draw LowRes (20). It checks depth, sees HighRes is "closer" (via polygon offset),
+        // and discards pixels, preventing the double-opacity stacking.
+        plane.renderOrder = isHighRes ? 10 : 20;
         
         tileGroup.add(plane);
         
-        // Store tile data
         loadedTiles.set(key, {
             mesh: plane,
             bounds: { minLon: tileBounds.lon, maxLon: nextTileBounds.lon, 
@@ -332,9 +327,8 @@ export function updateMapOpacity(newOpacity) {
     loadedTiles.forEach(tileData => {
         if (tileData.mesh && tileData.mesh.material) {
             tileData.mesh.material.opacity = currentOpacity;
-            // Update transparency and depth write based on opacity
             tileData.mesh.material.transparent = currentOpacity < 1.0;
-            tileData.mesh.material.depthWrite = currentOpacity >= 0.99;
+            tileData.mesh.material.depthWrite = tileData.isHighRes ? true : (currentOpacity >= 0.99);
             tileData.mesh.material.needsUpdate = true;
         }
     });
