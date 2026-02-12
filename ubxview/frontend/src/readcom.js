@@ -9,22 +9,21 @@ class SerialRecorder {
         this.statusMessage = document.getElementById('status-message');
         this.baudRateSelect = document.getElementById('baud-rate');
         this.selectPortButton = document.getElementById('select-port-button');
-
-        // URL Reader DOM Elements
         this.urlInput = document.getElementById('url-input');
-        this.connectUrlButton = document.getElementById('connect-url-button');
+        this.pollRateInput = document.getElementById('pollRateInput');
+        this.updatePollRateBtn = document.getElementById('updatePollRateBtn');
 
         // Serial Port State
         this.port = null;
         this.reader = null;
 
         // URL Reader State
-        this.urlConnected = false;
         this.urlPollingInterval = null;
-        this.urlPollingRateMs = 1000; // Poll every 1 second
-        this.trafficData = []; // Accumulated traffic JSON packets
+        this.urlPollingRateMs = parseInt(this.pollRateInput?.value) || 1000;
+        this.trafficData = [];
         this.trafficFileHandle = null;
         this.trafficWritableStream = null;
+        this.urlActive = false;
 
         // Shared Recording State
         this.isRecording = false;
@@ -45,7 +44,6 @@ class SerialRecorder {
         // Post-processing state
         this.capturedData = [];
 
-        // Check for Web Serial API support
         if (!('serial' in navigator)) {
             this.handleUnsupportedBrowser();
         }
@@ -57,10 +55,36 @@ class SerialRecorder {
         this.startButton.addEventListener('click', () => this.startRecording());
         this.endButton.addEventListener('click', () => this.endRecording());
         this.selectPortButton.addEventListener('click', () => this.selectPort());
-        this.connectUrlButton.addEventListener('click', () => this.connectUrl());
+
+        // Poll rate: apply on button click or Enter key
+        if (this.updatePollRateBtn) {
+            this.updatePollRateBtn.addEventListener('click', () => this.applyPollRate());
+        }
+        if (this.pollRateInput) {
+            this.pollRateInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.applyPollRate();
+            });
+        }
 
         window.addEventListener('beforeunload', (e) => this.handleBeforeUnload(e));
         window.addEventListener('pagehide', () => this.handlePageHide());
+    }
+
+    /**
+     * Reads the poll rate input, clamps it, and restarts polling if active.
+     */
+    applyPollRate() {
+        const raw = parseInt(this.pollRateInput.value);
+        const clamped = Math.max(10, isNaN(raw) ? 1000 : raw);
+        this.pollRateInput.value = clamped;
+        this.urlPollingRateMs = clamped;
+        console.log(`Poll rate set to ${clamped}ms`);
+
+        // Hot-swap interval if currently polling
+        if (this.urlActive && this.urlPollingInterval) {
+            this.stopUrlPolling();
+            this.startUrlPolling();
+        }
     }
 
     handleUnsupportedBrowser() {
@@ -71,44 +95,19 @@ class SerialRecorder {
 
     // ─── URL Reader Methods ───────────────────────────────────────────
 
-    async connectUrl() {
+    async validateUrl() {
         const url = this.urlInput.value.trim();
-        if (!url) {
-            alert('Please enter a URL.');
-            return;
-        }
-
-        if (this.urlConnected) {
-            // Disconnect
-            this.urlConnected = false;
-            this.connectUrlButton.textContent = 'Connect';
-            this.urlInput.disabled = false;
-            console.log('URL reader disconnected.');
-            return;
-        }
-
-        // Validate with a test fetch
-        this.connectUrlButton.textContent = 'Testing...';
-        this.connectUrlButton.disabled = true;
+        if (!url) return false;
 
         try {
             const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            // Try to parse as JSON to confirm it's a valid endpoint
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             await response.json();
-
-            this.urlConnected = true;
-            this.connectUrlButton.textContent = 'Disconnect';
-            this.urlInput.disabled = true;
-            console.log(`URL reader connected: ${url}`);
+            return true;
         } catch (error) {
-            console.error('URL connection test failed:', error);
-            alert(`Could not connect to URL:\n${error.message}`);
-            this.connectUrlButton.textContent = 'Connect';
-        } finally {
-            this.connectUrlButton.disabled = false;
+            console.error('URL validation failed:', error);
+            alert(`URL endpoint unreachable:\n${error.message}`);
+            return false;
         }
     }
 
@@ -119,8 +118,6 @@ class SerialRecorder {
             if (!response.ok) return;
 
             const json = await response.json();
-
-            // Wrap each poll result with a receive timestamp
             const packet = {
                 receivedAt: new Date().toISOString(),
                 data: json
@@ -128,7 +125,6 @@ class SerialRecorder {
 
             this.trafficData.push(packet);
 
-            // Stream-write the packet as a JSON line to the traffic file
             if (this.trafficWritableStream) {
                 const line = JSON.stringify(packet) + '\n';
                 const encoded = new TextEncoder().encode(line);
@@ -136,14 +132,12 @@ class SerialRecorder {
                 await this.trafficWritableStream.write(encoded);
             }
         } catch (error) {
-            // Silently skip transient fetch errors during polling
             console.warn('URL poll error:', error.message);
         }
     }
 
     startUrlPolling() {
-        if (!this.urlConnected) return;
-        // Do an immediate first poll, then set interval
+        if (!this.urlActive) return;
         this.pollUrl();
         this.urlPollingInterval = setInterval(() => this.pollUrl(), this.urlPollingRateMs);
         console.log(`URL polling started (every ${this.urlPollingRateMs}ms).`);
@@ -181,25 +175,42 @@ class SerialRecorder {
     async startRecording() {
         if (this.isRecording) return;
 
-        // Must have at least one source
         const hasSerial = !!this.port;
-        const hasUrl = this.urlConnected;
+        const hasUrl = !!this.urlInput.value.trim();
 
         if (!hasSerial && !hasUrl) {
-            // If serial API is available, try to select a port
-            if ('serial' in navigator) {
-                await this.selectPort();
-                if (!this.port && !this.urlConnected) {
-                    alert('Please connect a serial port or URL endpoint before recording.');
-                    return;
-                }
-            } else if (!hasUrl) {
-                alert('Please connect a URL endpoint before recording.');
+            alert('Please select a serial port and/or enter a URL endpoint before recording.');
+            return;
+        }
+
+        // Snapshot current poll rate
+        this.urlPollingRateMs = Math.max(10, parseInt(this.pollRateInput?.value) || 1000);
+
+        // Validate URL if provided
+        let urlValid = false;
+        if (hasUrl) {
+            this.statusMessage.textContent = 'Validating URL...';
+            urlValid = await this.validateUrl();
+            if (!urlValid && !hasSerial) {
+                this.statusMessage.textContent = 'Disconnected';
+                return;
+            }
+            if (!urlValid && hasSerial) {
+                console.warn('URL validation failed — continuing with serial only.');
+            }
+        }
+        this.urlActive = urlValid;
+
+        // Prompt for serial port if needed
+        if (!hasSerial && 'serial' in navigator && !this.urlActive) {
+            await this.selectPort();
+            if (!this.port) {
+                this.statusMessage.textContent = 'Disconnected';
                 return;
             }
         }
 
-        // Ask user for output folder once per session
+        // Output directory
         if (!this.outputDirHandle) {
             try {
                 this.outputDirHandle = await window.showDirectoryPicker({
@@ -210,7 +221,8 @@ class SerialRecorder {
                 console.log('Output directory selected.');
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    console.log('Folder selection cancelled by user.');
+                    console.log('Folder selection cancelled.');
+                    this.statusMessage.textContent = 'Disconnected';
                     return;
                 }
                 console.error('Error selecting output directory:', error);
@@ -219,22 +231,22 @@ class SerialRecorder {
             }
         }
 
-        // Generate timestamp
+        // Timestamp
         const timestamp = new Date().toISOString()
             .replace('T', '_')
             .replace(/\..+Z$/, '')
             .replace(/[:]/g, '-');
         this.currentTimestamp = timestamp;
 
-        // Create the NMEA sub-directory (only if serial is active)
+        // NMEA sub-directory (serial only)
         if (this.port) {
             const folderName = `NMEAmsgs_${this.currentTimestamp}`;
             try {
                 this.currentSubDirHandle = await this.outputDirHandle.getDirectoryHandle(folderName, { create: true });
-                console.log(`Output sub-directory created: ${folderName}`);
+                console.log(`NMEA sub-directory created: ${folderName}`);
             } catch (error) {
-                console.error('Error creating output sub-directory:', error);
-                alert(`Failed to create output folder "${folderName}": ${error.message}`);
+                console.error('Error creating NMEA sub-directory:', error);
+                alert(`Failed to create folder "${folderName}": ${error.message}`);
                 return;
             }
 
@@ -250,8 +262,8 @@ class SerialRecorder {
             }
         }
 
-        // Create the traffic JSON file in the PARENT directory (if URL is connected)
-        if (this.urlConnected) {
+        // Traffic file in parent directory (URL only)
+        if (this.urlActive) {
             const trafficFileName = `pingStation_${this.currentTimestamp}.json`;
             try {
                 this.trafficFileHandle = await this.outputDirHandle.getFileHandle(trafficFileName, { create: true });
@@ -260,8 +272,8 @@ class SerialRecorder {
             } catch (error) {
                 console.error('Error creating traffic file:', error);
                 alert(`Traffic file creation failed: ${error.message}`);
-                // Non-fatal for serial — only abort if URL is the only source
                 if (!this.port) return;
+                this.urlActive = false;
             }
         }
 
@@ -271,7 +283,7 @@ class SerialRecorder {
         this.trafficData = [];
         this.capturedData = [];
 
-        // Open serial port (if selected)
+        // Open serial port
         if (this.port) {
             try {
                 const baudRate = parseInt(this.baudRateSelect.value);
@@ -289,18 +301,17 @@ class SerialRecorder {
         this.isRecording = true;
         console.log('Recording started.');
 
-        // --- UI Updates ---
+        // UI lockdown
         this.startButton.disabled = true;
         this.endButton.disabled = false;
         this.baudRateSelect.disabled = true;
         this.selectPortButton.disabled = true;
-        this.connectUrlButton.disabled = true;
         this.urlInput.disabled = true;
 
         this.lastTime = performance.now();
         this.rateInterval = setInterval(() => this.updateRateDisplay(), 1000);
 
-        // Start both readers
+        // Start readers
         if (this.port) this.readAndWriteLoop();
         this.startUrlPolling();
     }
@@ -311,28 +322,21 @@ class SerialRecorder {
         clearInterval(this.rateInterval);
         this.rateInterval = null;
 
-        // Stop URL polling
         this.stopUrlPolling();
 
-        // Cancel serial reader
         if (this.reader) {
             try { await this.reader.cancel(); } catch (e) {
                 console.error('Error cancelling reader:', e);
             }
         }
 
-        // Close serial writable stream
-        if (this.writableStream) {
-            await this.writableStream.close();
-        }
+        if (this.writableStream) await this.writableStream.close();
 
-        // Close traffic writable stream
         if (this.trafficWritableStream) {
             await this.trafficWritableStream.close();
             console.log(`Traffic data saved: ${this.trafficData.length} packets.`);
         }
 
-        // Close serial port
         if (this.port) {
             try { await this.port.close(); } catch (e) {
                 console.error('Error closing port:', e);
@@ -355,16 +359,16 @@ class SerialRecorder {
             }
         }
 
-        // Reset all state
+        // Reset state
         this.port = null;
         this.reader = null;
         this.isRecording = false;
+        this.urlActive = false;
         this.resetFileState();
         this.capturedData = [];
         this.trafficData = [];
         this.totalBytesWritten = 0;
 
-        // --- UI Updates ---
         this.statusMessage.textContent = 'Disconnected';
         this.resetUIToIdle();
     }
@@ -382,9 +386,7 @@ class SerialRecorder {
         this.endButton.disabled = true;
         this.baudRateSelect.disabled = false;
         if ('serial' in navigator) this.selectPortButton.disabled = false;
-        this.connectUrlButton.disabled = false;
-        // Only re-enable URL input if disconnected
-        if (!this.urlConnected) this.urlInput.disabled = false;
+        this.urlInput.disabled = false;
     }
 
     // ─── Serial Read Loop ────────────────────────────────────────────
@@ -485,7 +487,7 @@ class SerialRecorder {
             const sizeText = this.formatFileSize(this.totalBytesWritten);
 
             const parts = [rateText, sizeText];
-            if (this.urlConnected) parts.push(`${this.trafficData.length} pkts`);
+            if (this.urlActive) parts.push(`${this.trafficData.length} pkts`);
             this.statusMessage.textContent = parts.join(' | ');
         }
         this.lastTime = now;
@@ -512,7 +514,6 @@ class SerialRecorder {
 
     handleBeforeUnload(event) {
         if (this.isRecording) {
-            console.log('beforeunload: Recording in progress, prompting user.');
             event.preventDefault();
             event.returnValue = 'Recording is in progress. Are you sure you want to leave?';
             return event.returnValue;
@@ -525,7 +526,6 @@ class SerialRecorder {
 
             clearInterval(this.rateInterval);
             this.rateInterval = null;
-
             this.stopUrlPolling();
 
             if (this.reader) {
@@ -533,11 +533,11 @@ class SerialRecorder {
                 this.reader = null;
             }
             if (this.writableStream) {
-                this.writableStream.close().catch(e => console.error('pagehide serial stream close:', e.message));
+                this.writableStream.close().catch(e => console.error('pagehide serial close:', e.message));
                 this.writableStream = null;
             }
             if (this.trafficWritableStream) {
-                this.trafficWritableStream.close().catch(e => console.error('pagehide traffic stream close:', e.message));
+                this.trafficWritableStream.close().catch(e => console.error('pagehide traffic close:', e.message));
                 this.trafficWritableStream = null;
             }
             if (this.port) {
@@ -546,7 +546,6 @@ class SerialRecorder {
             }
 
             this.isRecording = false;
-            console.log('pagehide: Emergency cleanup initiated.');
         }
     }
 }

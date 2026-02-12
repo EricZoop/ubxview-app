@@ -416,22 +416,43 @@ input {
     bottom: 10px;
     left: 10px;
     width: 260px;
-    /* Use 'auto' height so it hugs the content perfectly */
-    height: auto; 
-    /* Match top and bottom padding (12px) */
-    padding: 12px; 
+    height: auto;
+    padding: 12px;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
+
+#com-reader .section-label {
+    font-weight: 500;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-bottom: 4px;
 }
 
 #url-input {
-    flex: 3; /* Give the input more space than the button */
-    height: 32px;
+    width: 100%;
     box-sizing: border-box;
     font-size: 0.8rem;
+    padding: 0.6em 0.8em;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 2px;
+    color: #eee;
+    font-family: inherit;
+    transition: border 0.2s ease;
 }
 
+#url-input:focus {
+    outline: none;
+    border-color: #555;
+    background-color: #2a2a2a;
+}
 
+.com-reader-row.bottom-row {
+    margin-top: 4px;
+    margin-bottom: 0;
+}
 
 #controls {
     bottom: 10px;
@@ -804,6 +825,11 @@ select:hover {
   gap: 0.5rem;
 }
 
+.com-reader-row.top-row {
+    margin-bottom: 8px;
+}
+
+
 /* Top row: button + select side by side */
 .top-row {
     display: flex;
@@ -819,6 +845,10 @@ select:hover {
   min-width: 140px;
 }
 
+.com-reader-row.top-row select {
+    flex: 1;
+}
+
 /* Bottom row: start, stop, and status spaced neatly */
 .bottom-row {
     margin-top: 8px;
@@ -829,6 +859,11 @@ select:hover {
 }
 .bottom-row button {
   flex: 0 0 auto;      /* Keep buttons compact */
+}
+
+.com-reader-row.bottom-row #status-message {
+    margin-left: auto;
+    text-align: right;
 }
 
 .bottom-row #status-message {

@@ -21,7 +21,7 @@
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v4.0.1</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v5.0.1</a></p>
         </div>
 
 
@@ -49,7 +49,7 @@
                 </span>
             </label>
 
-            <!--
+            
             <div style="font-weight: 500;" class="noselect">Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
@@ -58,7 +58,7 @@
                     <button id="updatePollRateBtn" class="polling-button">Set</button>
                 </div>
             </div>
-            -->
+            
 
 
 
@@ -90,14 +90,14 @@
                 <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
-            <!--
+            
             <div style="font-weight: 500;" class="noselect">Render Distance</div>
             <div class="plus-minus-selector">
                 <button id="renderMinus" type="button">&#8722;</button>
                 <div id="renderValue" class="value-display">17</div>
                 <button id="renderPlus" type="button">&#x2b;</button>
             </div>
-            -->
+            
 
 
             <div class="trail-controls">
@@ -426,16 +426,8 @@
     </div>
 
     <div id="com-reader" class="noselect">
-        <div style="font-weight: 500; margin-bottom: 5px; font-size: 0.8rem; opacity: 0.7;">URL Reader</div>
-        <div class="com-reader-row top-row" style="margin-bottom: 12px;">
-            <input type="text" id="url-input" placeholder="https://xxx.xxx.xxx.xxx/" value="http://192.168.225.3/api/v1/traffic"
-                class="polling-input" style="border-right: 1px solid #333; border-radius: 2px;">
-            <button id="connect-url-button" style="margin-left: 5px;">Connect</button>
-        </div>
 
-
-
-        <div style="font-weight: 500; margin-bottom: 5px; font-size: 0.8rem; opacity: 0.7;">Serial Reader</div>
+        <div class="section-label">Serial Reader</div>
         <div class="com-reader-row top-row">
             <button id="select-port-button">Select Port</button>
             <select id="baud-rate">
@@ -447,9 +439,16 @@
             </select>
         </div>
 
-        <div class="com-reader-row bottom-row" style="margin-top: 8px;">
+        <div class="section-label">URL Reader</div>
+        <div class="com-reader-row top-row">
+            <input type="text" id="url-input"
+                placeholder="http://###.###.###.###/api/v1/traffic"
+                value="http://192.168.225.3/api/v1/traffic">
+        </div>
+
+        <div class="com-reader-row bottom-row">
             <button id="start-button">Record</button>
-            <button id="end-button" disabled style="margin-left: 5px;">Stop</button>
+            <button id="end-button" disabled>Stop</button>
             <span id="status-message">Disconnected</span>
         </div>
     </div>
