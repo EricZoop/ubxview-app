@@ -416,9 +416,22 @@ input {
     bottom: 10px;
     left: 10px;
     width: 260px;
-    height: 95px;
-    padding: 12px 12px 5px 12px;
+    /* Use 'auto' height so it hugs the content perfectly */
+    height: auto; 
+    /* Match top and bottom padding (12px) */
+    padding: 12px; 
+    display: flex;
+    flex-direction: column;
 }
+
+#url-input {
+    flex: 3; /* Give the input more space than the button */
+    height: 32px;
+    box-sizing: border-box;
+    font-size: 0.8rem;
+}
+
+
 
 #controls {
     bottom: 10px;
@@ -793,7 +806,8 @@ select:hover {
 
 /* Top row: button + select side by side */
 .top-row {
-  justify-content: space-between;
+    display: flex;
+    gap: 5px;
 }
 
 .top-row select {
@@ -807,11 +821,12 @@ select:hover {
 
 /* Bottom row: start, stop, and status spaced neatly */
 .bottom-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
+    margin-top: 8px;
+    margin-bottom: 0; 
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
-
 .bottom-row button {
   flex: 0 0 auto;      /* Keep buttons compact */
 }
@@ -829,12 +844,13 @@ select:hover {
   background-color: #1a1a1a;
   border: 1px solid #333;
   color: #eee;
-  padding: 0.6em 0.8em;
+  padding: 0.6em 0.6em;
   cursor: pointer;
   border-radius: 3px;
   transition: all 0.2s ease;
   font-family: inherit;
   font-size: 0.85em;
+
 }
 
 #com-reader button:hover {
