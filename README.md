@@ -1,6 +1,6 @@
 <h1 style="display: flex; align-items: center; gap: 10px;">
   <img src="ubxview/frontend/public/assets/dot-launch.png" alt="Logo" height="32">
-  [UBXView](https://ubxview.netlify.app/)
+  UBXView
 </h1>
 
 *Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
