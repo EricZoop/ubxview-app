@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { setupCameraControls } from "./cameraControls.js";
 import { createGrid } from "./gridSetup.js";
-import { createCompassLabels, updateCompass } from "./compassRose.js";
 import { getLatestPoint } from "./plotManager.js";
 
 // Module-level variables for scene components
@@ -54,7 +53,6 @@ export function initializeScene() {
     camera.lookAt(axesHelper.position);
 
     createGrid(scene);
-    createCompassLabels(scene);
 
     // Start Animation
     animate();
@@ -86,7 +84,6 @@ function animate() {
     controls.update();
     
     const currentCamera = controls.getCurrentCamera();
-    updateCompass(currentCamera);
     renderer.render(scene, currentCamera);
     labelRenderer.render(scene, currentCamera);
 }

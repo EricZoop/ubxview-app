@@ -1,7 +1,11 @@
 // fileManager.js
 import { extractGpsPointsFromText } from "./parser.js";
-import { updateStats } from "./statsUI.js"
-import { plotGpsData, getMasterGpsPoints, initializeCoordinateSystem, resetCoordinateSystem } from "./plotManager.js";
+import { isNDJSON, extractAircraftPointsFromText } from "./aircraftParser.js";
+import { updateStats } from "./statsUI.js";
+import {
+    plotGpsData, getMasterGpsPoints,
+    initializeCoordinateSystem, resetCoordinateSystem
+} from "./plotManager.js";
 import {
     startPlayback, pausePlayback, rewind, forward,
     enterPlaybackMode, goLive, setPlaybackLines,
@@ -10,152 +14,222 @@ import {
     updateSliderRange
 } from "./playback.js";
 
-// File state
-let currentFile = null;
-let readOffset = 0;
-let fileWatcherInterval = null;
-let POLLING_RATE_MS = 10;
-let fileHandle = null;
-let isWatcherRunning = false;
+// --- Capture registry ---
+const captures = {
+    1: { handle: null, readOffset: 0, watcherInterval: null, type: null, talkerIds: new Set(), visible: true, points: [] },
+    2: { handle: null, readOffset: 0, watcherInterval: null, type: null, talkerIds: new Set(), visible: true, points: [] },
+};
 
-// --- File Watcher ---
-async function watchFileForChanges() {
-    if (!fileHandle || isWatcherRunning) return;
-    isWatcherRunning = true;
+let isWatcherRunning = { 1: false, 2: false };
+let POLLING_RATE_MS = 10;
+
+// --- Auto-detect file type ---
+function detectAndParse(text) {
+    if (isNDJSON(text)) {
+        return { type: 'adsb', points: extractAircraftPointsFromText(text) };
+    }
+    return { type: 'rover', points: extractGpsPointsFromText(text) };
+}
+
+// --- File Watcher per slot ---
+async function watchCapture(slot) {
+    const cap = captures[slot];
+    if (!cap.handle || isWatcherRunning[slot]) return;
+    isWatcherRunning[slot] = true;
 
     try {
-        const latestFile = await fileHandle.getFile();
-        
-        if (latestFile.size > readOffset) {
-            const fileSlice = latestFile.slice(readOffset);
-            const newText = await fileSlice.text();
-            readOffset = latestFile.size;
+        const file = await cap.handle.getFile();
+        if (file.size > cap.readOffset) {
+            const slice = file.slice(cap.readOffset);
+            const newText = await slice.text();
+            cap.readOffset = file.size;
 
             if (newText.length > 0) {
-                const newLines = newText.split('\n').filter(line => line.trim());
-                
-                // Get current state
-                const currentLines = getAllFileLines();
-                const updatedLines = [...currentLines, ...newLines];
+                const { points: newPoints } = detectAndParse(newText);
+                if (newPoints.length > 0) {
+                    cap.points.push(...newPoints);
+                    newPoints.forEach(p => cap.talkerIds.add(p.talkerId));
+                    mergeAndReplot();
 
-                // Update the master list and cache
-                setPlaybackLines(updatedLines);
-
-                // --- THE FIX ---
-                // Only "jump" to the end if the user is currently in Live Mode.
-                // If they are scrubbing (isLiveMode === false), we update the data 
-                // in the background but DON'T move their slider.
-                if (getPlaybackState().isLiveMode) {
-                    goLive(); 
-                } else {
-                    // Update the slider's max value so they can scrub into the new data
-                    updateSliderRange();
+                    if (slot === 1 && cap.type === 'rover') {
+                        const newLines = newText.split('\n').filter(l => l.trim());
+                        const currentLines = getAllFileLines();
+                        setPlaybackLines([...currentLines, ...newLines]);
+                        if (getPlaybackState().isLiveMode) goLive();
+                        else updateSliderRange();
+                    }
                 }
             }
         }
     } catch (err) {
-        console.error("Error watching file:", err);
+        console.error(`Watcher error (slot ${slot}):`, err);
     } finally {
-        isWatcherRunning = false;
+        isWatcherRunning[slot] = false;
     }
 }
 
-
-function startFileWatcher() {
-    if (fileWatcherInterval) clearInterval(fileWatcherInterval);
-    fileWatcherInterval = setInterval(watchFileForChanges, POLLING_RATE_MS);
+function startWatcher(slot) {
+    const cap = captures[slot];
+    if (cap.watcherInterval) clearInterval(cap.watcherInterval);
+    cap.watcherInterval = setInterval(() => watchCapture(slot), POLLING_RATE_MS);
 }
 
-function stopFileWatcher() {
-    if (fileWatcherInterval) clearInterval(fileWatcherInterval);
-    fileWatcherInterval = null;
+function stopWatcher(slot) {
+    const cap = captures[slot];
+    if (cap.watcherInterval) clearInterval(cap.watcherInterval);
+    cap.watcherInterval = null;
 }
 
-// --- File Operations ---
-export async function openFile(onPlotComplete) {
+// --- Merge all visible captures and replot ---
+function mergeAndReplot() {
+    const allPoints = [];
+    for (const slot of [1, 2]) {
+        const cap = captures[slot];
+        if (cap.visible && cap.points.length > 0) {
+            allPoints.push(...cap.points);
+        }
+    }
+    if (allPoints.length > 0) {
+        plotGpsData(allPoints, false);
+        updateStats(allPoints);
+    }
+}
+
+// --- Open capture for a given slot ---
+export async function openCapture(slot, onPlotComplete) {
     try {
-        [fileHandle] = await window.showOpenFilePicker({
-            types: [{ accept: { "text/plain": [".txt", ".log", ".csv", ".ubx", ".crswap", ".bin"] } }],
+        const [handle] = await window.showOpenFilePicker({
+            types: [{
+                accept: {
+                    "text/plain": [".txt", ".log", ".csv", ".ubx", ".crswap", ".bin"],
+                    "application/json": [".json", ".ndjson"],
+                }
+            }],
             multiple: false,
         });
+        if (!handle) return false;
 
-        if (!fileHandle) return false;
-        const file = await fileHandle.getFile();
-        currentFile = file;
-        
-        // Reset readOffset to 0 for a fresh file load
-        readOffset = 0;
+        const cap = captures[slot];
+        cap.handle = handle;
+        cap.readOffset = 0;
+        cap.talkerIds = new Set();
+        cap.points = [];
 
-        const fileLabel = document.getElementById("fileLabel");
-        if (fileLabel) fileLabel.innerHTML = file.name;
+        const file = await handle.getFile();
+        const text = await file.text();
+        const { type, points } = detectAndParse(text);
 
-        const initialText = await file.text();
-        const allFileLines = initialText.split('\n').filter(line => line.trim());
-        
-        // 1. Sync the playback state FIRST to initialize the cache and indices
-        // This prevents the "disappearing points" bug on the first interaction
-        setPlaybackLines(allFileLines); 
+        cap.type = type;
+        cap.points = points;
+        cap.readOffset = file.size;
+        cap.visible = true;
+        points.forEach(p => cap.talkerIds.add(p.talkerId));
 
-        // 2. Extract total points to initialize the 3D coordinate system
-        const masterGpsPoints = extractGpsPointsFromText(initialText);
+        // Update UI
+        updateCaptureUI(slot, file.name);
 
-        if (masterGpsPoints.length === 0) {
-            alert("No valid GPS points found.");
-            plotGpsData([]);
-            updateStats([]);
+        if (points.length === 0) {
+            alert("No valid data points found in file.");
             return false;
         }
 
-        // 3. Setup the scene dimensions based on the file content
-        initializeCoordinateSystem(masterGpsPoints);
-        
-        // 4. Update the readOffset so the watcher knows where the live append begins
-        readOffset = file.size;
-
-        // 5. Initial Plot: Draw the full path immediately
-        const plotMetadata = plotGpsData(masterGpsPoints, false);
-        updateStats(masterGpsPoints);
-
-        if (onPlotComplete && plotMetadata) {
-            onPlotComplete(plotMetadata);
+        // Playback: only for slot 1 rover data
+        if (slot === 1 && type === 'rover') {
+            const allLines = text.split('\n').filter(l => l.trim());
+            setPlaybackLines(allLines);
         }
 
-        // 6. Start the polling interval for live data
-        startFileWatcher();
+        // Build coordinate system from ALL loaded points
+        const allPoints = [];
+        for (const s of [1, 2]) {
+            if (captures[s].points.length > 0) allPoints.push(...captures[s].points);
+        }
+        initializeCoordinateSystem(allPoints);
+
+        const plotMetadata = plotGpsData(allPoints, false);
+        updateStats(allPoints);
+
+        if (onPlotComplete && plotMetadata) onPlotComplete(plotMetadata);
+
+        startWatcher(slot);
         return true;
 
     } catch (err) {
-        if (err.name !== "AbortError") console.error("File selection failed:", err);
+        if (err.name !== "AbortError") console.error(`File selection failed (slot ${slot}):`, err);
         return false;
     }
 }
 
-export function closeFile() {
-    stopFileWatcher();
-    pausePlayback();
-    resetCoordinateSystem();
-    currentFile = null;
-    readOffset = 0;
-    fileHandle = null;
-    isWatcherRunning = false;
+// --- UI helpers ---
+function updateCaptureUI(slot, filename) {
+    const inputLabel = document.getElementById(`capture${slot}InputLabel`);
+    const loadedDiv = document.getElementById(`capture${slot}-loaded`);
+    const nameSpan = document.getElementById(`capture${slot}-name`);
 
-    const fileLabel = document.getElementById("fileLabel");
-    if (fileLabel) fileLabel.innerHTML = "No file selected";
+    if (inputLabel) inputLabel.style.display = 'none';
+    if (loadedDiv) loadedDiv.classList.add('visible');
+    if (nameSpan) nameSpan.textContent = filename;
+
+    // After slot 1 loads, reveal slot 2
+    if (slot === 1) {
+        const slot2 = document.getElementById('capture2-slot');
+        if (slot2) slot2.style.display = '';
+    }
+}
+
+function toggleCaptureVisibility(slot) {
+    const cap = captures[slot];
+    cap.visible = !cap.visible;
+
+    const btn = document.getElementById(`capture${slot}-eye`);
+    if (btn) {
+        btn.classList.toggle('hidden-state', !cap.visible);
+    }
+
+    mergeAndReplot();
+}
+
+export function closeCapture(slot) {
+    stopWatcher(slot);
+    const cap = captures[slot];
+    cap.handle = null;
+    cap.readOffset = 0;
+    cap.type = null;
+    cap.talkerIds = new Set();
+    cap.points = [];
+    cap.visible = true;
+    isWatcherRunning[slot] = false;
+
+    if (slot === 1) {
+        pausePlayback();
+        resetCoordinateSystem();
+    }
+}
+
+export function getCaptureInfo(slot) {
+    return captures[slot];
 }
 
 // --- Listeners ---
 export function setupFileManagerListeners() {
-    const fileInputLabel = document.getElementById("fileInputLabel");
-    if (fileInputLabel) {
-        fileInputLabel.addEventListener("click", () => {
-            openFile((plotMetadata) => {
-                window.dispatchEvent(new CustomEvent('fileLoaded', { detail: plotMetadata }));
-            });
+    document.getElementById("capture1InputLabel")?.addEventListener("click", () => {
+        openCapture(1, (meta) => {
+            window.dispatchEvent(new CustomEvent('fileLoaded', { detail: meta }));
         });
-    }
+    });
 
-    const rewindBtn = document.getElementById("rewind");
-    if (rewindBtn) rewindBtn.addEventListener("click", rewind);
+    document.getElementById("capture2InputLabel")?.addEventListener("click", () => {
+        openCapture(2, (meta) => {
+            window.dispatchEvent(new CustomEvent('fileLoaded', { detail: meta }));
+        });
+    });
+
+    // Eye toggles
+    document.getElementById("capture1-eye")?.addEventListener("click", () => toggleCaptureVisibility(1));
+    document.getElementById("capture2-eye")?.addEventListener("click", () => toggleCaptureVisibility(2));
+
+    // Playback controls
+    document.getElementById("rewind")?.addEventListener("click", rewind);
 
     const playPauseBtn = document.getElementById("playPause");
     if (playPauseBtn) {
@@ -166,11 +240,8 @@ export function setupFileManagerListeners() {
         });
     }
 
-    const forwardBtn = document.getElementById("forward");
-    if (forwardBtn) forwardBtn.addEventListener("click", forward);
-
-    const goLiveBtn = document.getElementById("goLive");
-    if (goLiveBtn) goLiveBtn.addEventListener("click", goLive);
+    document.getElementById("forward")?.addEventListener("click", forward);
+    document.getElementById("goLive")?.addEventListener("click", goLive);
 
     const timeSlider = document.getElementById("timeSlider");
     if (timeSlider) {

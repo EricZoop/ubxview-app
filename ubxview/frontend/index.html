@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="/src/style.css">
     <link rel="icon" href="/assets/dot-launch.ico" type="image/x-icon" />
 
-
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/ui.js"></script>
     <script type="module" src="/src/readcom.js"></script>
@@ -17,39 +16,72 @@
 
     <div id="info">
         <div class="logo-title">
-
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
                     title="Developed by Ji Park & Eric Zipor">v5.0.1</a></p>
         </div>
 
-
         <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drone-mounted NMEA sensors for
             radar auto-registration workflows.</div>
         <hr style="border-width: 0px;">
 
-        <!--<h2>Read Capture </h2>-->
-
-
         <div class="controls-container">
 
-            <span style="font-weight: 500; text-decoration: none; color: inherit;" target="_blank">
-                Select Capture
-            </span>
+            <span style="font-weight: 500; text-decoration: none; color: inherit;">Captures</span>
 
-            <label id="fileInputLabel" class="custom-file">
-                <span id="fileLabel">
-                    .ubx, .txt, .csv,
-                    .log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
-                        <path fill="#fff"
-                            d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
-                    </svg>
-                </span>
-            </label>
+            <!-- ===== CAPTURE SLOT 1 ===== -->
+            <div id="capture1-slot" class="capture-slot">
+                <label id="capture1InputLabel" class="custom-file">
+                    <span id="capture1FileLabel">
+                        Select Capture
+                        <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
+                            <path fill="#fff"
+                                d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+                        </svg>
+                    </span>
+                </label>
+                <div id="capture1-loaded" class="capture-loaded">
+                    <span id="capture1-name" class="capture-name">--</span>
+                    <button id="capture1-eye" class="eye-toggle-btn" data-capture="1" title="Toggle visibility">
+                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
-            
+            <!-- ===== CAPTURE SLOT 2 (hidden until capture 1 loads) ===== -->
+            <div id="capture2-slot" class="capture-slot" style="display: none;">
+                <label id="capture2InputLabel" class="custom-file">
+                    <span id="capture2FileLabel">
+                        Add Overlay
+                        <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
+                            <path fill="#fff"
+                                d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+                        </svg>
+                    </span>
+                </label>
+                <div id="capture2-loaded" class="capture-loaded">
+                    <span id="capture2-name" class="capture-name">--</span>
+                    <button id="capture2-eye" class="eye-toggle-btn" data-capture="2" title="Toggle visibility">
+                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <div style="font-weight: 500;" class="noselect">Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
@@ -58,17 +90,11 @@
                     <button id="updatePollRateBtn" class="polling-button">Set</button>
                 </div>
             </div>
-            
-
-
-
-            <!--<h2>Scene Visuals</h2>-->
 
             <div style="font-weight: 500;" class="noselect">Canvas</div>
             <div class="view-toggle">
                 <button class="view-option active" data-view="satellite">Satellite</button>
                 <button class="view-option" data-view="streetview">Streetview</button>
-                <!--<button class="view-option" data-view="terrain">Terrain</button>-->
             </div>
 
             <script>
@@ -76,12 +102,10 @@
                     button.addEventListener('click', () => {
                         document.querySelectorAll('.view-option').forEach(btn => btn.classList.remove('active'));
                         button.classList.add('active');
-
                         const selectedView = button.dataset.view;
-                        // 🔁 Replace this line with your logic to switch views
                         console.log('Selected view:', selectedView);
                     });
-                });    
+                });
             </script>
 
             <div style="font-weight: 500;" class="noselect">Map Opacity</div>
@@ -90,44 +114,31 @@
                 <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
-            
-            <div style="font-weight: 500;" class="noselect">Render Distance</div>
-            <div class="plus-minus-selector">
-                <button id="renderMinus" type="button">&#8722;</button>
-                <div id="renderValue" class="value-display">17</div>
-                <button id="renderPlus" type="button">&#x2b;</button>
-            </div>
-            
-
-
             <div class="trail-controls">
-                <!-- Preset selector -->
                 <div style="margin-bottom: 10px;">
                     <label for="trail-preset"
                         style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">Plot
                         Palette</label>
                     <select id="trail-preset" style="
-            width: 100%;
-            padding: 0.6em .8em;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 2px;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-size: 14px;
-        ">
+                        width: 100%;
+                        padding: 0.6em .8em;
+                        color: #e0e0e0;
+                        border: 1px solid #333;
+                        border-radius: 2px;
+                        appearance: none;
+                        -webkit-appearance: none;
+                        -moz-appearance: none;
+                        background-size: 14px;
+                    ">
                         <option value="">Custom</option>
                         <option value="elevation">Elevation</option>
                         <option value="neon">Neon</option>
                         <option value="america">1776&nbsp;&#129413;</option>
                         <option value="invincible">Invincible</option>
-
                     </select>
                 </div>
 
-                <!-- Color controls -->
-                <div style="display: flex; justify-content: space-between; margin-top: 0px;  font-size: 0.85em;">
+                <div style="display: flex; justify-content: space-between; margin-top: 0px; font-size: 0.85em;">
                     <span style="text-align: left;">
                         <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
                         <input type="color" id="trail-head-color" name="trail-head-color" value="#0073FF"
@@ -139,7 +150,8 @@
                             style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
                     </span>
                     <span style="text-align: center;">
-                        <label for="trail-line-color" style="display: block; transform: translateX(-19px);">Line</label>
+                        <label for="trail-line-color"
+                            style="display: block; transform: translateX(-19px);">Line</label>
                         <div style="display: flex; align-items: center; justify-content: center; margin-top: 0px;">
                             <input type="color" id="trail-line-color" name="trail-line-color" value="#878787"
                                 style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
@@ -148,7 +160,6 @@
                         </div>
                     </span>
                 </div>
-
             </div>
         </div>
 
@@ -162,34 +173,12 @@
             } from './src/trailControls.js';
 
             const presets = {
-                invincible: {
-                    head: '#ffe753',
-                    tail: '#4c9cbf',
-                    line: '#3a3b3d',
-                    showLines: true
-                },
-                america: {
-                    head: '#efefef',
-                    tail: '#ff0022',
-                    line: '#0432ff',
-                    showLines: true
-                },
-                neon: {
-                    head: '#00FFFF',
-                    tail: '#FF00FF',
-                    line: '#00FF00',
-                    showLines: true
-                },
-                elevation: {
-                    head: '#FF4444',
-                    tail: '#4444FF',
-                    line: '#888888',
-                    showLines: true,
-                    isElevationBased: true
-                }
+                invincible: { head: '#ffe753', tail: '#4c9cbf', line: '#3a3b3d', showLines: true },
+                america: { head: '#efefef', tail: '#ff0022', line: '#0432ff', showLines: true },
+                neon: { head: '#00FFFF', tail: '#FF00FF', line: '#00FF00', showLines: true },
+                elevation: { head: '#FF4444', tail: '#4444FF', line: '#888888', showLines: true, isElevationBased: true }
             };
 
-            // Store custom values
             const customValues = {
                 head: document.getElementById('trail-head-color').value,
                 tail: document.getElementById('trail-tail-color').value,
@@ -197,149 +186,52 @@
                 showLines: document.getElementById('show-lines-toggle').checked
             };
 
-            /**
-             * Sets the color picker values on the UI and triggers a full visual refresh.
-             */
             function applyValues(values) {
                 document.getElementById('trail-head-color').value = values.head;
                 document.getElementById('trail-tail-color').value = values.tail;
                 document.getElementById('trail-line-color').value = values.line;
                 document.getElementById('show-lines-toggle').checked = values.showLines;
-
-                // Trigger the single, consolidated refresh function from trailControls
                 refreshColorsFromUI();
             }
 
-            /**
-             * Applies a named preset.
-             */
             function applyPreset(presetName) {
                 const preset = presets[presetName];
                 if (!preset) return;
-
                 if (preset.isElevationBased) {
                     const success = enableElevationMode();
-                    if (!success) {
-                        console.warn('Elevation mode failed, falling back to preset colors.');
-                        applyValues(preset); // Apply colors normally if elevation fails
-                    }
+                    if (!success) applyValues(preset);
                 } else {
-                    applyValues(preset); // For all non-elevation presets
+                    applyValues(preset);
                 }
             }
 
-            // Handle preset changes
             document.getElementById('trail-preset').addEventListener('change', function () {
-                const selectedPreset = this.value;
-
-                if (selectedPreset) {
-                    applyPreset(selectedPreset);
-                } else {
-                    // User chose "Custom" — reapply custom settings
-                    applyValues(customValues);
-                }
+                const sel = this.value;
+                if (sel) applyPreset(sel);
+                else applyValues(customValues);
             });
 
-            // Save changes and trigger refresh when any color input changes
             ['trail-head-color', 'trail-tail-color', 'trail-line-color'].forEach(id => {
                 document.getElementById(id).addEventListener('input', function () {
-                    document.getElementById('trail-preset').value = ''; // Force Custom mode
-
-                    // Save to custom values
+                    document.getElementById('trail-preset').value = '';
                     customValues.head = document.getElementById('trail-head-color').value;
                     customValues.tail = document.getElementById('trail-tail-color').value;
                     customValues.line = document.getElementById('trail-line-color').value;
-
-                    // Trigger the refresh with the new custom values
                     refreshColorsFromUI();
                 });
             });
 
-            // Save toggle state as well
             document.getElementById('show-lines-toggle').addEventListener('change', function () {
-                document.getElementById('trail-preset').value = ''; // Custom mode
+                document.getElementById('trail-preset').value = '';
                 customValues.showLines = this.checked;
-                toggleLineVisibility(); // This is a simple toggle, no full refresh needed
+                toggleLineVisibility();
             });
-
-            console.log('Trail controls with centralized refresh logic initialized');
         </script>
-
-
-
     </div>
 
     <div id="stats">
-        <div class="stats-group">
-            <!--<h3 style="color: ${headerColor};">
-                Capture Stats
-            </h3>-->
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Points:</td>
-                        <td><span id="${talkerId}-points-stat">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>Telemetry:</td>
-                        <td><span id="${talkerId}-hz-stat">0.0</span> Hz</td>
-                    </tr>
-                    <tr>
-                        <td>Latitude:</td>
-                        <td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td>
-                    </tr>
-                    <tr>
-                        <td>Longitude:</td>
-                        <td><span id="${talkerId}-long-stat">0.0</span>&deg;</td>
-                    </tr>
-                    <tr>
-                        <td>Alt (MSL):</td>
-                        <td><span id="${talkerId}-altitude-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Alt (WGS84):</td>
-                        <td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Speed:</td>
-                        <td><span id="${talkerId}-speed-stat">0.0</span> m/s</td>
-                    </tr>
-                    <tr>
-                        <td>2D Distance:</td>
-                        <td><span id="${talkerId}-twod-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>3D Distance:</td>
-                        <td><span id="${talkerId}-threed-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>RTH Distance:</td>
-                        <td><span id="${talkerId}-rth-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Satellites:</td>
-                        <td><span id="${talkerId}-satellites-stat">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>Start Time:</td>
-                        <td><span id="${talkerId}-start-stat">HH:mm:ss</span></td>
-                    </tr>
-                    <tr>
-                        <td>End Time:</td>
-                        <td><span id="${talkerId}-end-stat">HH:mm:ss</span></td>
-                    </tr>
-                    <tr>
-                        <td>Duration:</td>
-                        <td><span id="${talkerId}-duration-stat">0.0</span> s</td>
-                    </tr>
-
-
-                </tbody>
-            </table>
-        </div>
+        <!-- Stats panels dynamically generated by statsUI.js -->
     </div>
-
-
 
     <div id="controls" class="noselect">
         <div class="control-row">
@@ -387,18 +279,15 @@
         </div>
     </div>
 
-
     <div id="playback">
         <div class="controls">
             <button id="rewind">
                 <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
             </button>
-
             <button id="playPause">
                 <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
                 <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
             </button>
-
             <button id="forward">
                 <img src="assets/seek.png" title="Seek" />
             </button>
@@ -414,7 +303,6 @@
                 <button class="speed-option" data-speed="5">5x</button>
                 <button class="speed-option" data-speed="10">10x</button>
             </div>
-
             <button id="adjustSpeed">
                 <img src="/assets/tachometer.png" title="Adjust Speed" />
             </button>
@@ -426,7 +314,6 @@
     </div>
 
     <div id="com-reader" class="noselect">
-
         <div class="section-label">Data Reader</div>
         <div class="com-reader-row top-row">
             <button id="select-port-button">Select Port</button>
@@ -438,13 +325,11 @@
                 <option selected>115200</option>
             </select>
         </div>
-
         <div class="com-reader-row top-row">
             <input type="text" id="url-input"
                 placeholder="http://###.###.###.###/api/v1/traffic"
                 value="">
         </div>
-
         <div class="com-reader-row bottom-row">
             <button id="start-button">Record</button>
             <button id="end-button" disabled>Stop</button>
@@ -453,5 +338,4 @@
     </div>
 
 </body>
-
 </html>

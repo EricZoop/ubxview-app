@@ -18,6 +18,6 @@ export const TILE_SERVICES = {
 export const DEFAULTS = {
     initialOpacity: 0.5,
     initialTileService: 'satellite',
-    zoomLevel: 17,
-    initialRenderDistance: 5
+    maxTotalTiles: 500,
+    defaultPadding: 8,
 };

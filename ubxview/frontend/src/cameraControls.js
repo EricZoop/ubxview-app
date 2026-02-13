@@ -8,6 +8,10 @@ import * as THREE from "three";
  */
 export function setupCameraControls(camera, scene) {
 
+    // --- FIX: Push far clipping plane out so distant geometry is never culled ---
+    camera.far = 5000000;
+    camera.updateProjectionMatrix();
+
     // --- DOM Elements for UI feedback ---
     const cinematicControlRow = document.getElementById('cinematic-control-row');
     const birdseyeControlRow = document.getElementById('birdseye-control-row');
@@ -29,47 +33,36 @@ export function setupCameraControls(camera, scene) {
     // --- State for cinematic camera ---
     let isCinematicMode = false;
     let cinematicTarget = new THREE.Vector3();
-    let cachedDistance = null; // To store distance before cinematic mode
-    let targetTalkerId = null; // null means track latest point across all tracks
-    let talkerIdList = []; // Ordered list of talker IDs discovered in the data
+    let cinematicFollowDistance = null; // The desired distance in cinematic mode
+    let targetTalkerId = null;
+    let talkerIdList = [];
 
     // --- State for birdseye orthographic view ---
     let isBirdseyeMode = false;
-    let originalCamera = camera; // Store reference to original perspective camera
+    let originalCamera = camera;
     let orthographicCamera = null;
-    let currentCamera = camera; // Track which camera is currently active
+    let currentCamera = camera;
     
-    // Cache original camera state for restoration
     let cachedPerspectivePosition = new THREE.Vector3();
     let cachedPerspectiveTarget = new THREE.Vector3();
     let cachedPerspectiveDistance = 1000;
     let cachedPerspectiveAngles = { x: Math.PI / 6, y: Math.PI / 4 };
 
     const controls = {
-        // --- Camera positioning properties ---
         distance: 1000,
         angleX: Math.PI / 6,
         angleY: Math.PI / 4,
         panOffset: new THREE.Vector3(0, 0, 0),
         
-        // --- Control sensitivity ---
         moveSpeed: 10,
         lookSpeed: 0.01,
 
-        /**
-         * Get the currently active camera (perspective or orthographic)
-         */
         getCurrentCamera: function() {
             return currentCamera;
         },
 
-        /**
-         * Recalculates and sets the camera's position and orientation.
-         */
         updateCameraPosition: function () {
             if (isBirdseyeMode && orthographicCamera) {
-                // For orthographic birdseye view, position camera directly above the target
-                // Use a much higher height for better overview
                 const height = Math.max(this.distance * 2, 2000);
                 orthographicCamera.position.set(
                     this.panOffset.x,
@@ -78,21 +71,18 @@ export function setupCameraControls(camera, scene) {
                 );
                 orthographicCamera.lookAt(this.panOffset);
                 
-                // Update orthographic camera size based on distance and window aspect ratio
                 const aspect = window.innerWidth / window.innerHeight;
-                const size = this.distance * 0.8; // This 'size' represents the vertical view extent (half-height)
+                const size = this.distance * 0.8;
                 
                 orthographicCamera.left = -size * aspect;
                 orthographicCamera.right = size * aspect;
                 orthographicCamera.top = size;
                 orthographicCamera.bottom = -size;
                 
-                // Adjust near and far planes for the height
                 orthographicCamera.near = 0.1;
                 orthographicCamera.far = height * 2;
                 orthographicCamera.updateProjectionMatrix();
             } else {
-                // Original perspective camera positioning
                 const x = Math.cos(this.angleY) * Math.cos(this.angleX) * this.distance;
                 const y = Math.sin(this.angleX) * this.distance;
                 const z = Math.sin(this.angleY) * Math.cos(this.angleX) * this.distance;
@@ -106,13 +96,9 @@ export function setupCameraControls(camera, scene) {
             }
         },
         
-        /**
-         * This is the core update loop for keyboard controls.
-         */
         update: function() {
             if (isCinematicMode && !isBirdseyeMode) {
                 this.updateCinematic();
-                // We still process keyboard movements in cinematic mode for panning
             }
 
             const dynamicMoveSpeed = this.distance * 0.02;
@@ -123,9 +109,8 @@ export function setupCameraControls(camera, scene) {
             let cameraRight, cameraUp;
             
             if (isBirdseyeMode) {
-                // In birdseye mode, movement is aligned with world axes
-                cameraRight = new THREE.Vector3(1, 0, 0); // East-West
-                cameraUp = new THREE.Vector3(0, 0, -1);   // North-South (negative Z is north)
+                cameraRight = new THREE.Vector3(1, 0, 0);
+                cameraUp = new THREE.Vector3(0, 0, -1);
             } else {
                 cameraRight = new THREE.Vector3().crossVectors(currentCamera.up, cameraDir).normalize();
                 cameraUp = new THREE.Vector3().crossVectors(cameraDir, cameraRight).normalize();
@@ -133,10 +118,9 @@ export function setupCameraControls(camera, scene) {
 
             let moved = false;
 
-            // --- Camera Movement checks ---
             if (keyState['KeyW']) {
                 if (isBirdseyeMode) {
-                    this.panOffset.add(new THREE.Vector3(0, 0, -dynamicMoveSpeed)); // North
+                    this.panOffset.add(new THREE.Vector3(0, 0, -dynamicMoveSpeed));
                 } else {
                     this.panOffset.add(cameraDir.clone().multiplyScalar(dynamicMoveSpeed));
                 }
@@ -144,7 +128,7 @@ export function setupCameraControls(camera, scene) {
             }
             if (keyState['KeyS']) {
                 if (isBirdseyeMode) {
-                    this.panOffset.add(new THREE.Vector3(0, 0, dynamicMoveSpeed)); // South
+                    this.panOffset.add(new THREE.Vector3(0, 0, dynamicMoveSpeed));
                 } else {
                     this.panOffset.add(cameraDir.clone().multiplyScalar(-dynamicMoveSpeed));
                 }
@@ -152,7 +136,7 @@ export function setupCameraControls(camera, scene) {
             }
             if (keyState['KeyD']) {
                 if (isBirdseyeMode) {
-                    this.panOffset.add(new THREE.Vector3(dynamicMoveSpeed, 0, 0)); // East
+                    this.panOffset.add(new THREE.Vector3(dynamicMoveSpeed, 0, 0));
                 } else {
                     this.panOffset.add(cameraRight.clone().multiplyScalar(-dynamicMoveSpeed));
                 }
@@ -160,38 +144,35 @@ export function setupCameraControls(camera, scene) {
             }
             if (keyState['KeyA']) {
                 if (isBirdseyeMode) {
-                    this.panOffset.add(new THREE.Vector3(-dynamicMoveSpeed, 0, 0)); // West
+                    this.panOffset.add(new THREE.Vector3(-dynamicMoveSpeed, 0, 0));
                 } else {
                     this.panOffset.add(cameraRight.clone().multiplyScalar(dynamicMoveSpeed));
                 }
                 moved = true;
             }
 
-            // Handle vertical panning in perspective view and zooming in birdseye view
             if (isBirdseyeMode) {
-                const zoomSpeed = this.distance * 0.03; // Define a speed for zooming
-                if (keyState['KeyQ']) { // Zoom In
+                const zoomSpeed = this.distance * 0.03;
+                if (keyState['KeyQ']) {
                     this.distance -= zoomSpeed;
-                    this.distance = Math.max(50, this.distance); // Prevent zooming in too far
+                    this.distance = Math.max(50, this.distance);
                     moved = true;
                 }
-                if (keyState['KeyE']) { // Zoom Out
+                if (keyState['KeyE']) {
                     this.distance += zoomSpeed;
                     moved = true;
                 }
             } else {
-                // Original vertical pan controls for perspective mode
-                if (keyState['KeyE']) { // Up
+                if (keyState['KeyE']) {
                     this.panOffset.add(new THREE.Vector3(0, dynamicMoveSpeed, 0));
                     moved = true;
                 }
-                if (keyState['KeyQ']) { // Down
+                if (keyState['KeyQ']) {
                     this.panOffset.add(new THREE.Vector3(0, -dynamicMoveSpeed, 0));
                     moved = true;
                 }
             }
 
-            // --- Camera Look checks (only for perspective mode) ---
             if (!isBirdseyeMode) {
                 if (keyState['ArrowLeft']) {
                     this.angleY -= this.lookSpeed;
@@ -213,32 +194,32 @@ export function setupCameraControls(camera, scene) {
                 }
             }
             
-            if(moved) {
+            if (moved) {
                 this.updateCameraPosition();
             }
         },
 
         updateCinematic: function() {
-            // Smoothly interpolate the camera's look-at point (panOffset) towards the cinematic target.
+            // Smoothly move look-at point toward the tracked target
             this.panOffset.lerp(cinematicTarget, 0.05);
 
-            // Use the cached distance as the target. Fallback to 1000 if not set.
-            const desiredDistance = cachedDistance || 1000;
-            this.distance += (desiredDistance - this.distance) * 0.05;
+            // Lerp actual distance toward the desired cinematic follow distance
+            const target = cinematicFollowDistance || 1000;
+            this.distance += (target - this.distance) * 0.05;
 
             this.updateCameraPosition();
         },
 
         toggleCinematicMode: function () {
             if (isBirdseyeMode) {
-                this.toggleBirdseyeMode(); // This will also update the UI correctly
+                this.toggleBirdseyeMode();
             }
 
             isCinematicMode = !isCinematicMode;
             
-            // Reset target when toggling off
             if (!isCinematicMode) {
                 targetTalkerId = null;
+                cinematicFollowDistance = null;
             }
             
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
@@ -248,7 +229,8 @@ export function setupCameraControls(camera, scene) {
             }
 
             if (isCinematicMode) {
-                cachedDistance = this.distance;
+                // Snapshot current distance as the starting follow distance
+                cinematicFollowDistance = this.distance;
             } 
         },
 
@@ -261,9 +243,9 @@ export function setupCameraControls(camera, scene) {
             }
 
             if (isBirdseyeMode) {
-                // Disable cinematic mode and its UI when entering birdseye
                 if (isCinematicMode) {
                     isCinematicMode = false;
+                    cinematicFollowDistance = null;
                     if (cinematicControlRow) {
                         cinematicControlRow.classList.remove('active-mode');
                     }
@@ -336,6 +318,7 @@ export function setupCameraControls(camera, scene) {
         reset: function (dataSpan, centerVec) {
             isCinematicMode = false;
             isBirdseyeMode = false;
+            cinematicFollowDistance = null;
             currentCamera = originalCamera;
             
             if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
@@ -352,27 +335,15 @@ export function setupCameraControls(camera, scene) {
     };
 
     // --- Event Listeners ---
-    document.addEventListener("keydown", (e) => { // Handle number keys 0-9 for track selection in cinematic mode
-        
+    document.addEventListener("keydown", (e) => {
         if (isCinematicMode && e.code.startsWith('Digit')) {
             const digit = e.code.replace('Digit', '');
             if (digit === '0') {
                 controls.setTargetTalkerId(null);
             } else {
-                // Map 1-9 to talker IDs 
-
-                // BILL's EDIT HERE
-
                 const talkerMap = {
-                    '1': 'AA',
-                    '2': 'BB',
-                    '3': 'CC',
-                    '4': 'DD',
-                    '5': 'WW',
-                    '6': 'XX',
-                    '7': 'YY',
-                    '8': 'ZZ',
-                    '9': 'JJ'
+                    '1': 'AA', '2': 'BB', '3': 'CC', '4': 'DD',
+                    '5': 'WW', '6': 'XX', '7': 'YY', '8': 'ZZ', '9': 'JJ'
                 };
                 controls.setTargetTalkerId(talkerMap[digit] || null);
             }
@@ -398,12 +369,12 @@ export function setupCameraControls(camera, scene) {
             }
             isCinematicMode = false;
             isBirdseyeMode = false;
+            cinematicFollowDistance = null;
             currentCamera = originalCamera;
 
             if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
             if (birdseyeControlRow) birdseyeControlRow.classList.remove('active-mode');
             
-            // Reset camera position if cached values are available
             if (cachedDataSpan !== null && cachedCenterVec !== null) {
                 controls.reset(cachedDataSpan, cachedCenterVec);
             }
@@ -469,23 +440,29 @@ export function setupCameraControls(camera, scene) {
 
     document.addEventListener("wheel", (e) => {
         if (e.target.closest("#info")) return;
-        controls.distance += e.deltaY * 0.5;
-        controls.distance = Math.max(50, controls.distance);
+
+        const zoomDelta = e.deltaY * 0.5;
+
+        if (isCinematicMode) {
+            // In cinematic mode, scroll adjusts the follow distance persistently.
+            // The updateCinematic loop will lerp toward this new value.
+            cinematicFollowDistance = Math.max(50, (cinematicFollowDistance || controls.distance) + zoomDelta);
+        } else {
+            controls.distance += zoomDelta;
+            controls.distance = Math.max(50, controls.distance);
+        }
+
         controls.updateCameraPosition();
     });
 
     document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    // Listen for custom event from stats panel to activate cinematic mode for specific talker
-    // ================= CHANGE #2: IMPROVED THIS LOGIC =================
     window.addEventListener('activateCinematicForTalker', (e) => {
         const { talkerId } = e.detail;
         
-        // If cinematic mode is already on and we click the SAME talker, turn it off.
         if (isCinematicMode && targetTalkerId === talkerId) {
             controls.toggleCinematicMode();
         } else {
-            // Otherwise, turn cinematic mode on (if it's off) and set the new target.
             if (!isCinematicMode) {
                 controls.toggleCinematicMode();
             }

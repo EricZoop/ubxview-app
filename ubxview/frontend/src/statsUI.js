@@ -4,9 +4,10 @@
 import * as THREE from 'three';
 import { getTrackVariantColor, isElevationModeActive } from './trailControls.js';
 import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
+import { calculateAircraftStats, emitterTypeLabel } from './aircraftParser.js';
 
 /**
- * Creates the HTML structure for a talker's statistics panel.
+ * Creates the HTML structure for a rover talker's statistics panel.
  * @param {string} talkerId The talker ID (e.g., "GP", "GN", "ZZ", "01", "A1")
  * @param {string} headerColor The color to use for the header
  * @returns {string} HTML string
@@ -40,6 +41,40 @@ function createTalkerStatsHTML(talkerId, headerColor) {
 }
 
 /**
+ * Creates the HTML structure for an aircraft's statistics panel.
+ * @param {string} icao The ICAO address (e.g., "A54B30")
+ * @param {string} headerColor The color to use for the header
+ * @returns {string} HTML string
+ */
+function createAircraftStatsHTML(icao, headerColor) {
+    return `
+        <div class="stats-group" data-aircraft="true">
+            <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${icao}" tabindex="0" role="button" title="Click to follow">
+                <span>&#9992; ${icao}</span>
+            </h3>
+            <table>
+                <tbody>
+                    <tr><td>Points:</td><td><span id="${icao}-points-stat">0</span></td></tr>
+                    <tr><td>Latitude:</td><td><span id="${icao}-lat-stat">0.0</span>&deg;</td></tr>
+                    <tr><td>Longitude:</td><td><span id="${icao}-long-stat">0.0</span>&deg;</td></tr>
+                    <tr><td>Altitude:</td><td><span id="${icao}-altitude-stat">0.0</span> m</td></tr>
+                    <tr><td>Heading:</td><td><span id="${icao}-heading-stat">0.0</span>&deg;</td></tr>
+                    <tr><td>Hor. Speed:</td><td><span id="${icao}-horvel-stat">0.0</span> m/s</td></tr>
+                    <tr><td>Ver. Speed:</td><td><span id="${icao}-vervel-stat">0.0</span> m/s</td></tr>
+                    <tr><td>2D Distance:</td><td><span id="${icao}-twod-stat">0.0</span> m</td></tr>
+                    <tr><td>3D Distance:</td><td><span id="${icao}-threed-stat">0.0</span> m</td></tr>
+                    <tr><td>RTH Distance:</td><td><span id="${icao}-rth-stat">0.0</span> m</td></tr>
+                    <tr><td>Type:</td><td><span id="${icao}-type-stat">Unknown</span></td></tr>
+                    <tr><td>Start Time:</td><td><span id="${icao}-start-stat">--</span></td></tr>
+                    <tr><td>End Time:</td><td><span id="${icao}-end-stat">--</span></td></tr>
+                    <tr><td>Duration:</td><td><span id="${icao}-duration-stat">0.0</span> s</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+/**
  * Formats time in seconds to HH:MM:SS format.
  * @param {number} timeInSeconds Time in seconds
  * @returns {string} Formatted time string
@@ -52,7 +87,7 @@ function formatTime(timeInSeconds) {
 }
 
 /**
- * Updates the DOM with statistics for a specific talker.
+ * Updates the DOM with statistics for a specific rover talker.
  * @param {string} talkerId The talker ID
  * @param {Object} stats Statistics object from calculateTalkerStats
  */
@@ -61,11 +96,11 @@ function updateTalkerStatsDOM(talkerId, stats) {
     const endTimeFormatted = formatTime(stats.endTime);
 
     document.getElementById(`${talkerId}-points-stat`).textContent = stats.totalPoints;
-    document.getElementById(`${talkerId}-hz-stat`).textContent = stats.updateRate.toFixed(2); // Added
+    document.getElementById(`${talkerId}-hz-stat`).textContent = stats.updateRate.toFixed(2);
     document.getElementById(`${talkerId}-duration-stat`).textContent = stats.totalDuration.toFixed(1);
     document.getElementById(`${talkerId}-twod-stat`).textContent = stats.total2DDistance.toFixed(1);
     document.getElementById(`${talkerId}-threed-stat`).textContent = stats.total3DDistance.toFixed(1);
-    document.getElementById(`${talkerId}-rth-stat`).textContent = stats.rthDistance3D.toFixed(1); // Added
+    document.getElementById(`${talkerId}-rth-stat`).textContent = stats.rthDistance3D.toFixed(1);
     document.getElementById(`${talkerId}-speed-stat`).textContent = stats.latestSpeed.toFixed(2);
     document.getElementById(`${talkerId}-altitude-stat`).textContent = stats.currentAltitude.toFixed(2);
     document.getElementById(`${talkerId}-altwsg84-stat`).textContent = stats.currentAltWsg84.toFixed(2);
@@ -74,6 +109,34 @@ function updateTalkerStatsDOM(talkerId, stats) {
     document.getElementById(`${talkerId}-satellites-stat`).textContent = stats.currentSatellites;
     document.getElementById(`${talkerId}-start-stat`).textContent = startTimeFormatted;
     document.getElementById(`${talkerId}-end-stat`).textContent = endTimeFormatted;
+}
+
+/**
+ * Updates the DOM with statistics for a specific aircraft.
+ * @param {string} icao The ICAO address
+ * @param {Object} stats Statistics object from calculateAircraftStats
+ */
+function updateAircraftStatsDOM(icao, stats) {
+    const el = (suffix) => document.getElementById(`${icao}-${suffix}`);
+    if (!el('points-stat')) return;
+
+    const startTimeFormatted = formatTime(stats.startTime);
+    const endTimeFormatted = formatTime(stats.endTime);
+
+    el('points-stat').textContent = stats.totalPoints;
+    el('lat-stat').textContent = stats.currentLat.toFixed(7);
+    el('long-stat').textContent = stats.currentLon.toFixed(7);
+    el('altitude-stat').textContent = stats.currentAltitude.toFixed(1);
+    el('heading-stat').textContent = stats.heading.toFixed(1);
+    el('horvel-stat').textContent = stats.horVelocity.toFixed(1);
+    el('vervel-stat').textContent = stats.verVelocity.toFixed(1);
+    el('twod-stat').textContent = stats.total2DDistance.toFixed(1);
+    el('threed-stat').textContent = stats.total3DDistance.toFixed(1);
+    el('rth-stat').textContent = stats.rthDistance3D.toFixed(1);
+    el('type-stat').textContent = emitterTypeLabel(stats.emitterType);
+    el('start-stat').textContent = startTimeFormatted;
+    el('end-stat').textContent = endTimeFormatted;
+    el('duration-stat').textContent = stats.totalDuration.toFixed(1);
 }
 
 /**
@@ -136,7 +199,8 @@ export function updateStatsHeaderColors(plotObjects) {
 
 /**
  * Main function to update all statistics in the UI.
- * @param {Array} points Array of all GPS points
+ * Handles both rover (NMEA) and aircraft (PingStation) points.
+ * @param {Array} points Array of all GPS points (rovers and aircraft mixed)
  */
 export function updateStats(points) {
     const statsContainer = document.getElementById('stats');
@@ -146,7 +210,7 @@ export function updateStats(points) {
         return;
     }
 
-    // Group points by talker ID
+    // Group points by talker ID (works for both rover talkerId and aircraft ICAO)
     const pointsByTalker = groupPointsByTalker(points);
     const currentTalkerIds = Object.keys(pointsByTalker).sort();
 
@@ -160,6 +224,7 @@ export function updateStats(points) {
     // Create or update panels for each talker
     currentTalkerIds.forEach((talkerId, index) => {
         const talkerPoints = pointsByTalker[talkerId];
+        const isAC = talkerPoints[0]?.isAircraft === true;
 
         // 1. CREATE the panel structure if it's not already in the DOM
         if (!document.getElementById(`${talkerId}-points-stat`)) {
@@ -170,13 +235,24 @@ export function updateStats(points) {
                 const trackColor = getTrackVariantColor(baseColor, index);
                 headerColorHex = `#${trackColor.getHexString()}`;
             }
-            statsContainer.insertAdjacentHTML('beforeend', createTalkerStatsHTML(talkerId, headerColorHex));
+
+            const html = isAC
+                ? createAircraftStatsHTML(talkerId, headerColorHex)
+                : createTalkerStatsHTML(talkerId, headerColorHex);
+            statsContainer.insertAdjacentHTML('beforeend', html);
         }
 
-        // 2. Calculate stats and UPDATE the DOM
-        const stats = calculateTalkerStats(talkerPoints);
-        if (stats) {
-            updateTalkerStatsDOM(talkerId, stats);
+        // 2. Calculate stats and UPDATE the DOM using the appropriate function
+        if (isAC) {
+            const stats = calculateAircraftStats(talkerPoints);
+            if (stats) {
+                updateAircraftStatsDOM(talkerId, stats);
+            }
+        } else {
+            const stats = calculateTalkerStats(talkerPoints);
+            if (stats) {
+                updateTalkerStatsDOM(talkerId, stats);
+            }
         }
     });
 }
