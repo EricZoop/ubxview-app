@@ -18,6 +18,7 @@ export const TILE_SERVICES = {
 export const DEFAULTS = {
     initialOpacity: 0.5,
     initialTileService: 'satellite',
-    zoomLevel: 17,
+    zoomLevel: 17,           // NMEA / rover (< 5 km spread)
+    adsbZoomLevel: 11,       // ADS-B / wide-area aircraft
     initialRenderDistance: 5
 };
