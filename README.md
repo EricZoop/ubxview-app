@@ -12,6 +12,9 @@
 > [xyzservices](https://pypi.org/project/xyzservices/) - Satellite images <br>
 > [u-center](https://www.u-blox.com/en/product/u-center) - GPS utility<br>
 
+## Databases
+> ICAO24 Lookup: https://opensky-network.org/datasets/#metadata/
+
 ## Get Running
 
 ```bash
@@ -29,6 +32,11 @@ npm run tauri dev
 
 npm run tauri build
 ```
+
+Download Chrome Extension
+https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en
+* This allows Ajax requests from [pingStation3](https://uavionix.com/support/pingstation-3/#user-guides)
+
 
 ## Directory Glance
 ```rs

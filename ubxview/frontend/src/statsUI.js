@@ -8,6 +8,85 @@ import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
 
 let currentDataType = 'nmea';
+let aircraftDatabase = new Map(); // icao24 -> { model, manufacturer, operator, ... }
+let databaseLoaded = false;
+
+// ─── Aircraft Database Loading ─────────────────────────────────
+async function loadAircraftDatabase() {
+    if (databaseLoaded) return;
+    
+    try {
+        // Ensure this matches your actual filename in /public
+        const response = await fetch('/aircraft-database-complete-2024-10.csv');
+        if (!response.ok) {
+            console.warn('Aircraft database CSV not found.');
+            return;
+        }
+        
+        const csvText = await response.text();
+        parseAircraftCSV(csvText);
+        databaseLoaded = true;
+        console.log(`Loaded ${aircraftDatabase.size} aircraft records`);
+    } catch (error) {
+        console.warn('Failed to load aircraft database:', error);
+    }
+}
+
+function parseAircraftCSV(csvText) {
+    const lines = csvText.split('\n');
+    if (lines.length < 2) return;
+    
+    // Parse header - Simple split since quotes are removed
+    const header = lines[0].split(',').map(h => h.trim());
+    
+    // Debug check
+    // console.log('CSV Header columns:', header.slice(0, 10)); 
+    
+    const icaoIdx = header.indexOf('icao24');
+    const modelIdx = header.indexOf('model');
+    const manufacturerIdx = header.indexOf('manufacturerName');
+    const operatorIdx = header.indexOf('operator');
+    const registrationIdx = header.indexOf('registration');
+    
+    if (icaoIdx === -1) {
+        console.warn('CSV missing icao24 column. Found columns:', header);
+        return;
+    }
+    
+    // Parse data rows
+    let loadedCount = 0;
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Simple split matches your new clean CSV format
+        const cols = line.split(',');
+        
+        // Safety check to ensure we don't read out of bounds if a line is truncated
+        const icao = cols[icaoIdx]?.trim().toLowerCase();
+        
+        if (icao) {
+            aircraftDatabase.set(icao, {
+                model: (modelIdx >= 0 ? cols[modelIdx]?.trim() : '') || 'Unknown Model',
+                manufacturer: (manufacturerIdx >= 0 ? cols[manufacturerIdx]?.trim() : '') || '',
+                operator: (operatorIdx >= 0 ? cols[operatorIdx]?.trim() : '') || '',
+                registration: (registrationIdx >= 0 ? cols[registrationIdx]?.trim() : '') || ''
+            });
+            loadedCount++;
+        }
+    }
+    // console.log(`Loaded ${loadedCount} aircraft records from CSV`);
+}
+
+function lookupAircraftModel(icaoAddress) {
+    if (!icaoAddress) return 'Unknown';
+    const normalized = icaoAddress.toLowerCase();
+    const record = aircraftDatabase.get(normalized);
+    return record?.model || 'Unknown';
+}
+
+// Initialize database loading
+loadAircraftDatabase();
 
 // ─── NMEA Panel ─────────────────────────────────────────────────
 function createNmeaStatsHTML(talkerId, headerColor) {
@@ -56,12 +135,15 @@ function updateNmeaStatsDOM(talkerId, stats) {
 
 // ─── ADS-B Panel ────────────────────────────────────────────────
 function createAdsbStatsHTML(icao, headerColor) {
+    // HEADER: Now displays the Model (initially "Loading...")
+    // ROW 1: Now displays the ICAO address
     return `
         <div class="stats-group" data-data-type="adsb">
             <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${icao}" tabindex="0" role="button" title="Click to follow">
-                <span>${icao}</span>
+                <span id="${icao}-header-model">Loading...</span> 
             </h3>
             <table><tbody>
+                <tr><td>ICAO:</td><td><span style="font-family: monospace;">${icao}</span></td></tr>
                 <tr><td>Points:</td><td><span id="${icao}-points-stat">0</span></td></tr>
                 <tr><td>Latitude:</td><td><span id="${icao}-lat-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Longitude:</td><td><span id="${icao}-long-stat">0.0</span>&deg;</td></tr>
@@ -80,9 +162,24 @@ function createAdsbStatsHTML(icao, headerColor) {
 function updateAdsbStatsDOM(icao, stats) {
     const s = (id) => document.getElementById(`${icao}-${id}`);
     if (!s('points-stat')) return;
+    
+    // Lookup Model
+    const modelName = lookupAircraftModel(stats.icaoAddress || icao);
+    
+    // Update Header to show Model Name
+    const headerEl = document.getElementById(`${icao}-header-model`);
+    if (headerEl) {
+        // If Model is unknown, we show "Aircraft [ICAO]" or just the ICAO if preferred
+        if (modelName === 'Unknown' || modelName === 'Unknown Model') {
+            headerEl.textContent = `Aircraft ${icao}`;
+        } else {
+            headerEl.textContent = modelName;
+        }
+    }
+    
     s('points-stat').textContent = stats.totalPoints;
-    s('lat-stat').textContent = stats.currentLat.toFixed(7);
-    s('long-stat').textContent = stats.currentLon.toFixed(7);
+    s('lat-stat').textContent = stats.currentLat.toFixed(6);
+    s('long-stat').textContent = stats.currentLon.toFixed(6);
     s('alt-stat').textContent = stats.currentAltM.toFixed(1);
     s('hdg-stat').textContent = stats.heading.toFixed(1);
     s('hvel-stat').textContent = stats.horVelocityMs.toFixed(1);
