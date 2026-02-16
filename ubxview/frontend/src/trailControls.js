@@ -2,6 +2,7 @@
 
 import * as THREE from "three";
 import { updateStatsHeaderColors } from './statsUI.js';
+import { updateLabelColors } from './labelManager.js';
 
 // Module state
 let plotObjects = new Map();
@@ -10,7 +11,7 @@ let bounds = null;
 let isElevationMode = false;
 let elevationColorData = null; // { minElevation, maxElevation, elevationRange } across all tracks
 
-// ─── Stable Color Assignment ────────────────────────────────────
+// ─── Stable Color Assignment ────────────────────────────────────────────────
 const GOLDEN_ANGLE = 0.618033988749895;
 const stableColorMap = new Map();
 let nextColorIndex = 0;
@@ -41,10 +42,10 @@ export function resetStableColors() {
 }
 
 
-// ─── Comet Point Sizing ────────────────────────────────────────
-const COMET_LENGTH = 10;
-const MIN_POINT_SIZE = 3.0;
-const MAX_POINT_SIZE = 5.0;
+// ─── Comet Point Sizing ─────────────────────────────────────────────────────
+const COMET_LENGTH = 3;
+const MIN_POINT_SIZE = 5.0;
+const MAX_POINT_SIZE = 8.0;
 
 export function updatePointSizes() {
     if (!plotObjects || plotObjects.size === 0) return;
@@ -69,7 +70,7 @@ export function updatePointSizes() {
 }
 
 
-// ─── Initialize ─────────────────────────────────────────────────
+// ─── Initialize ─────────────────────────────────────────────────────────────
 export function initializeTrailControls(objects, gpsPoints, dataBounds) {
     plotObjects = objects;
     masterGpsPoints = gpsPoints;
@@ -83,7 +84,7 @@ export function initializeTrailControls(objects, gpsPoints, dataBounds) {
 }
 
 
-// ─── Elevation Mode ─────────────────────────────────────────────
+// ─── Elevation Mode ─────────────────────────────────────────────────────────
 
 function calculateElevationColorData() {
     if (!masterGpsPoints || masterGpsPoints.length === 0) return null;
@@ -115,6 +116,16 @@ function getElevationColor(elevation, elevationData) {
     return new THREE.Color(r, g, b);
 }
 
+// NEW EXPORT: Allows statsUI to grab the correct color
+export function getElevationColorForTrack(talkerId) {
+    const track = plotObjects.get(talkerId);
+    if (!track || !track.gpsPoints || !track.gpsPoints.length || !elevationColorData) {
+        return new THREE.Color(0xffffff);
+    }
+    const lastPoint = track.gpsPoints[track.gpsPoints.length - 1];
+    return getElevationColor(lastPoint.alt, elevationColorData);
+}
+
 function updateElevationPointColors() {
     if (!plotObjects || !elevationColorData || !masterGpsPoints.length) return;
 
@@ -136,9 +147,16 @@ export function enableElevationMode() {
     elevationColorData = calculateElevationColorData();
     if (!elevationColorData) return false;
     isElevationMode = true;
+    
     updateElevationPointColors();
     updateLineColor();
+    
+    // Scene labels: use elevation color
+    updateLabelColors(getElevationColorForTrack);
+    
+    // Stats UI: now triggered to update with elevation awareness
     updateStatsHeaderColors(plotObjects);
+    
     return true;
 }
 
@@ -154,13 +172,14 @@ export function isElevationModeActive() { return isElevationMode; }
 export function getElevationData() { return elevationColorData; }
 
 
-// ─── Point Colors (gradient head→tail + comet sizes) ────────────
+// ─── Point Colors ────────────────────────────────────────────────────────
 export function updatePointColors() {
     if (!plotObjects || plotObjects.size === 0 || !bounds || !masterGpsPoints.length) return;
 
     if (isElevationMode && elevationColorData) {
         updateElevationPointColors();
         updatePointSizes();
+        updateLabelColors(getElevationColorForTrack);
         return;
     }
 
@@ -203,10 +222,13 @@ export function updatePointColors() {
     });
 
     updatePointSizes();
+
+    // Scene labels: use tail color variant
+    updateLabelColors((talkerId) => getTrackVariantColor(baseTailColor, talkerId));
 }
 
 
-// ─── Line Colors ────────────────────────────────────────────────
+// ─── Line Colors ────────────────────────────────────────────────────────────
 export function updateLineColor() {
     if (!plotObjects) return;
     const baseLineColor = new THREE.Color(document.getElementById('trail-line-color').value);
@@ -224,7 +246,7 @@ export function updateLineColor() {
 }
 
 
-// ─── Line Visibility ────────────────────────────────────────────
+// ─── Line Visibility ────────────────────────────────────────────────────────
 export function toggleLineVisibility() {
     if (!plotObjects) return;
     const showLines = document.getElementById('show-lines-toggle').checked;
@@ -234,7 +256,7 @@ export function toggleLineVisibility() {
 }
 
 
-// ─── Getters ────────────────────────────────────────────────────
+// ─── Getters ────────────────────────────────────────────────────────────────
 export function getCurrentTrailColors() {
     return {
         head: new THREE.Color(document.getElementById('trail-head-color').value),
@@ -249,7 +271,7 @@ export function getLineVisibility() {
 }
 
 
-// ─── UI Listeners ───────────────────────────────────────────────
+// ─── UI Listeners ───────────────────────────────────────────────────────────
 export function setupTrailControlListeners() {
     const headColorInput = document.getElementById("trail-head-color");
     const tailColorInput = document.getElementById("trail-tail-color");
@@ -279,7 +301,7 @@ export function setupTrailControlListeners() {
 }
 
 
-// ─── Reset ──────────────────────────────────────────────────────
+// ─── Reset ──────────────────────────────────────────────────────────────────
 export function resetTrailControls() {
     plotObjects = new Map();
     masterGpsPoints = [];

@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-CfrxvYuL.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CHvwYjGk.css">
+  <script type="module" crossorigin src="./assets/index-CstJmANr.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-COcMhg0b.css">
 </head>
 
 <body>
@@ -18,11 +18,12 @@
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v5.2.1</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v5.2.2</a></p>
         </div>
 
 
-        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drone-mounted NMEA sensors for
+        
+        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drones and ADS-B data live for
             radar auto-registration workflows.</div>
         <hr style="border-width: 0px;">
 
@@ -170,70 +171,44 @@
     <div id="stats">
         <div class="stats-group">
             <h3>
-                Statistics
+                Rover Stats
             </h3>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Points:</td>
-                        <td><span id="${talkerId}-points-stat">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>Telemetry:</td>
-                        <td><span id="${talkerId}-hz-stat">0.0</span> Hz</td>
-                    </tr>
-                    <tr>
-                        <td>Latitude:</td>
-                        <td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td>
-                    </tr>
-                    <tr>
-                        <td>Longitude:</td>
-                        <td><span id="${talkerId}-long-stat">0.0</span>&deg;</td>
-                    </tr>
-                    <tr>
-                        <td>Alt (MSL):</td>
-                        <td><span id="${talkerId}-altitude-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Alt (WGS84):</td>
-                        <td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Speed:</td>
-                        <td><span id="${talkerId}-speed-stat">0.0</span> m/s</td>
-                    </tr>
-                    <tr>
-                        <td>2D Distance:</td>
-                        <td><span id="${talkerId}-twod-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>3D Distance:</td>
-                        <td><span id="${talkerId}-threed-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>RTH Distance:</td>
-                        <td><span id="${talkerId}-rth-stat">0.0</span> m</td>
-                    </tr>
-                    <tr>
-                        <td>Satellites:</td>
-                        <td><span id="${talkerId}-satellites-stat">0</span></td>
-                    </tr>
-                    <tr>
-                        <td>Start Time:</td>
-                        <td><span id="${talkerId}-start-stat">HH:mm:ss</span></td>
-                    </tr>
-                    <tr>
-                        <td>End Time:</td>
-                        <td><span id="${talkerId}-end-stat">HH:mm:ss</span></td>
-                    </tr>
-                    <tr>
-                        <td>Duration:</td>
-                        <td><span id="${talkerId}-duration-stat">0.0</span> s</td>
-                    </tr>
-
-
-                </tbody>
-            </table>
+            <table><tbody>
+            <tr><td>Points:</td><td><span id="${talkerId}-points-stat">0</span></td></tr>
+            <tr><td>Telemetry:</td><td><span id="${talkerId}-hz-stat">0.0</span> Hz</td></tr>
+            <tr><td>Latitude:</td><td><span id="${talkerId}-lat-stat">0.0</span>&deg;</td></tr>
+            <tr><td>Longitude:</td><td><span id="${talkerId}-long-stat">0.0</span>&deg;</td></tr>
+            <tr><td>Alt (MSL):</td><td><span id="${talkerId}-altitude-stat">0.0</span> m</td></tr>
+            <tr><td>Alt (WGS84):</td><td><span id="${talkerId}-altwsg84-stat">0.0</span> m</td></tr>
+            <tr><td>Speed:</td><td><span id="${talkerId}-speed-stat">0.0</span> m/s</td></tr>
+            <tr><td>2D Distance:</td><td><span id="${talkerId}-twod-stat">0.0</span> m</td></tr>
+            <tr><td>3D Distance:</td><td><span id="${talkerId}-threed-stat">0.0</span> m</td></tr>
+            <tr><td>RTH Distance:</td><td><span id="${talkerId}-rth-stat">0.0</span> m</td></tr>
+            <tr><td>Satellites:</td><td><span id="${talkerId}-satellites-stat">0</span></td></tr>
+            <tr><td>Start Time:</td><td><span id="${talkerId}-start-stat">HH:mm:ss</span></td></tr>
+            <tr><td>End Time:</td><td><span id="${talkerId}-end-stat">HH:mm:ss</span></td></tr>
+            <tr><td>Duration:</td><td><span id="${talkerId}-duration-stat">0.0</span> s</td></tr>
+            </tbody></table>
+        </div>
+        <div class="stats-group">
+            <h3>
+                Aircraft Model Stats
+            </h3>
+            <table><tbody>
+                <tr><td>Points:</td><td><span id="${icao}-points-stat">0</span></td></tr>
+                <tr><td>ICAO Address:</td><td><span>?</span></td></tr>
+                <tr><td>Latitude:</td><td><span id="${icao}-lat-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Longitude:</td><td><span id="${icao}-long-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Alt (MSL):</td><td><span id="${icao}-baroalt-stat">0.0</span> m</td></tr>
+                <tr><td>Alt (WGS84):</td><td><span id="${icao}-geoalt-stat">0.0</span> m</td></tr>
+                <tr><td>Heading:</td><td><span id="${icao}-hdg-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Hor Vel:</td><td><span id="${icao}-hvel-stat">0.0</span> m/s</td></tr>
+                <tr><td>Ver Vel:</td><td><span id="${icao}-vvel-stat">0.0</span> m/s</td></tr>
+                <tr><td>2D Distance:</td><td><span id="${icao}-gdist-stat">0.0</span> m</td></tr>
+                <tr><td>Type:</td><td><span id="${icao}-type-stat">0.0</span></td></tr>
+                <tr><td>Last Seen:</td><td><span id="${icao}-lastseen-stat">HH:mm:ss</span></td></tr>
+                <tr><td>Duration:</td><td><span id="${icao}-duration-stat">0.0</span> s</td></tr>
+            </tbody></table>
         </div>
     </div>
 

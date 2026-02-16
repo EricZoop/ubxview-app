@@ -7,6 +7,12 @@ import {
     updatePointColors,
     updateLineColor,
 } from "./trailControls.js";
+import { 
+    initializeLabelManager, 
+    createOrUpdateLabels, 
+    updateLabelPositions, 
+    clearTrackLabels 
+} from "./labelManager.js";
 
 // ── Shaders for per-vertex point sizing (comet effect) ──
 const COMET_VERTEX_SHADER = `
@@ -45,6 +51,18 @@ let globalCenter = null;
 let globalBaselineAltitude = null;
 let isCoordinateSystemInitialized = false;
 
+// ─── Track Label Management (Delegated to labelManager) ─────────
+
+/**
+ * Update label positions to the latest point of each track.
+ * Can be called externally (e.g. from animate loop) for real-time following.
+ */
+export function updateTrackLabelPositions() {
+    updateLabelPositions(masterGpsPoints, gpsToCartesian);
+}
+
+// ─── Existing exports ───────────────────────────────────────────
+
 export function getLatestPoint(talkerId = null) {
     if (!masterGpsPoints || masterGpsPoints.length === 0 || !gpsToCartesian) return null;
     if (talkerId === null) {
@@ -58,7 +76,12 @@ export function getLatestPoint(talkerId = null) {
 }
 
 export function getBoundingBox() { return bounds; }
-export function initializePlotManager(group) { dataGroup = group; }
+
+export function initializePlotManager(group) { 
+    dataGroup = group;
+    initializeLabelManager(group);
+}
+
 export function getGpsToCartesian() { return gpsToCartesian; }
 export function getMasterGpsPoints() { return masterGpsPoints; }
 
@@ -122,6 +145,7 @@ function clearPlotData() {
         }
     });
     plotObjects.clear();
+    clearTrackLabels();
     masterGpsPoints = [];
     center = null;
     bounds = null;
@@ -263,6 +287,9 @@ export function plotGpsData(points, append = false) {
             });
         }
     }
+
+    // Create / reposition track labels at latest point of each track via Manager
+    createOrUpdateLabels(pointsByTalker, gpsToCartesian);
 
     console.log(`Plotted ${effectivePoints.length} points across ${plotObjects.size} tracks.`);
 

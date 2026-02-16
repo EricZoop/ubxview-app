@@ -1,16 +1,16 @@
 // statsUI.js
 // DOM manipulation and UI updates for statistics panel
-// Supports both NMEA rover and ADS-B aircraft data
 
 import * as THREE from 'three';
-import { getTrackVariantColor, isElevationModeActive } from './trailControls.js';
+// CHANGED: Import getElevationColorForTrack
+import { getTrackVariantColor, isElevationModeActive, getElevationColorForTrack } from './trailControls.js';
 import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
 
 let currentDataType = 'nmea';
 let aircraftDatabase = new Map(); 
 let databaseLoaded = false;
-let currentlyTrackedId = null; // Track who we are following
+let currentlyTrackedId = null; 
 
 // ─── Aircraft Database Loading ─────────────────────────────────
 async function loadAircraftDatabase() {
@@ -59,7 +59,7 @@ function parseAircraftCSV(csvText) {
     }
 }
 
-function lookupAircraftModel(icaoAddress) {
+export function lookupAircraftModel(icaoAddress) {
     if (!icaoAddress) return 'Unknown';
     const normalized = icaoAddress.toLowerCase();
     const record = aircraftDatabase.get(normalized);
@@ -71,7 +71,6 @@ loadAircraftDatabase();
 // ─── Header Visuals Helper ──────────────────────────────────────
 function updateHeaderVisuals() {
     document.querySelectorAll('.talker-header').forEach(h => {
-         // Toggle the class that triggers the CSS ::after width
          if (h.dataset.talkerId === currentlyTrackedId) {
              h.classList.add('active-track');
          } else {
@@ -214,19 +213,21 @@ function removeStalePanels(statsContainer, currentTalkerIds) {
 
 // ─── Header Colors ──────────────────────────────────────────────
 export function updateStatsHeaderColors(plotObjects) {
-    if (isElevationModeActive()) {
-        document.querySelectorAll('.talker-header').forEach(h => { h.style.color = '#ffffff'; });
-        return;
-    }
-    if (!plotObjects || plotObjects.size === 0) return;
-
     const tailPicker = document.getElementById('trail-tail-color');
     const base = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
+    const isElevation = isElevationModeActive();
 
-    plotObjects.forEach((_, talkerId) => {
-        const header = document.querySelector(`.talker-header[data-talker-id="${talkerId}"]`);
-        if (header) {
-            header.style.color = `#${getTrackVariantColor(base, talkerId).getHexString()}`;
+    // Iterate over existing DOM headers rather than the map to ensure we catch everything visible
+    document.querySelectorAll('.talker-header').forEach(header => {
+        const talkerId = header.dataset.talkerId;
+        if (isElevation) {
+            // CHANGED: Use elevation color if in elevation mode
+            const color = getElevationColorForTrack(talkerId);
+            header.style.color = `#${color.getHexString()}`;
+        } else {
+            // Otherwise use the stable variant color
+            const color = getTrackVariantColor(base, talkerId);
+            header.style.color = `#${color.getHexString()}`;
         }
     });
 }
@@ -245,43 +246,53 @@ export function updateStats(points, dataType) {
 
     const tailPicker = document.getElementById('trail-tail-color');
     const baseColor = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
+    const isElevation = isElevationModeActive();
 
     if (effectiveType === 'adsb') {
-        updateAdsbStats(statsContainer, points, baseColor);
+        updateAdsbStats(statsContainer, points, baseColor, isElevation);
     } else {
-        updateNmeaStats(statsContainer, points, baseColor);
+        updateNmeaStats(statsContainer, points, baseColor, isElevation);
     }
     
-    // Ensure the underline persists if DOM was rebuilt
     updateHeaderVisuals();
 }
 
-function updateNmeaStats(container, points, baseColor) {
+function updateNmeaStats(container, points, baseColor, isElevation) {
     const byTalker = groupPointsByTalker(points);
     const ids = Object.keys(byTalker).sort();
     removeStalePanels(container, ids);
 
     ids.forEach((talkerId) => {
         if (!document.getElementById(`${talkerId}-points-stat`)) {
-            const color = isElevationModeActive() ? '#ffffff'
-                : `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
-            container.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, color));
+            // Initial color calculation
+            let colorHex;
+            if (isElevation) {
+                colorHex = `#${getElevationColorForTrack(talkerId).getHexString()}`;
+            } else {
+                colorHex = `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
+            }
+            container.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, colorHex));
         }
         const stats = calculateTalkerStats(byTalker[talkerId]);
         if (stats) updateNmeaStatsDOM(talkerId, stats);
     });
 }
 
-function updateAdsbStats(container, points, baseColor) {
+function updateAdsbStats(container, points, baseColor, isElevation) {
     const byAircraft = groupAdsbByAircraft(points);
     const icaos = Object.keys(byAircraft).sort();
     removeStalePanels(container, icaos);
 
     icaos.forEach((icao) => {
         if (!document.getElementById(`${icao}-points-stat`)) {
-            const color = isElevationModeActive() ? '#ffffff'
-                : `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
-            container.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, color));
+             // Initial color calculation
+            let colorHex;
+            if (isElevation) {
+                colorHex = `#${getElevationColorForTrack(icao).getHexString()}`;
+            } else {
+                colorHex = `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
+            }
+            container.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, colorHex));
         }
         const stats = calculateAdsbAircraftStats(byAircraft[icao]);
         if (stats) updateAdsbStatsDOM(icao, stats);
