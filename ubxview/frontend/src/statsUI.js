@@ -133,15 +133,16 @@ function createAdsbStatsHTML(icao, headerColor) {
                 <span id="${icao}-header-model">Loading...</span> 
             </h3>
             <table><tbody>
-                <tr><td>ICAO:</td><td><span style="font-family: monospace;">${icao}</span></td></tr>
                 <tr><td>Points:</td><td><span id="${icao}-points-stat">0</span></td></tr>
+                <tr><td>ICAO:</td><td><span>${icao}</span></td></tr>
                 <tr><td>Latitude:</td><td><span id="${icao}-lat-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Longitude:</td><td><span id="${icao}-long-stat">0.0</span>&deg;</td></tr>
-                <tr><td>Altitude:</td><td><span id="${icao}-alt-stat">0.0</span> m</td></tr>
+                <tr><td>Alt (MSL):</td><td><span id="${icao}-baroalt-stat">--</span> m</td></tr>
+                <tr><td>Alt (WGS84):</td><td><span id="${icao}-geoalt-stat">--</span> m</td></tr>
                 <tr><td>Heading:</td><td><span id="${icao}-hdg-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Hor Vel:</td><td><span id="${icao}-hvel-stat">0.0</span> m/s</td></tr>
                 <tr><td>Ver Vel:</td><td><span id="${icao}-vvel-stat">0.0</span> m/s</td></tr>
-                <tr><td>Ground Dist:</td><td><span id="${icao}-gdist-stat">0.0</span> m</td></tr>
+                <tr><td>2D Distance:</td><td><span id="${icao}-gdist-stat">0.0</span> m</td></tr>
                 <tr><td>Type:</td><td><span id="${icao}-type-stat">--</span></td></tr>
                 <tr><td>Duration:</td><td><span id="${icao}-duration-stat">0.0</span> s</td></tr>
                 <tr><td>Last Seen:</td><td><span id="${icao}-lastseen-stat">--</span></td></tr>
@@ -166,7 +167,17 @@ function updateAdsbStatsDOM(icao, stats) {
     s('points-stat').textContent = stats.totalPoints;
     s('lat-stat').textContent = stats.currentLat.toFixed(6);
     s('long-stat').textContent = stats.currentLon.toFixed(6);
-    s('alt-stat').textContent = stats.currentAltM.toFixed(1);
+    if (stats.currentBaroAltM != null) {
+        s('baroalt-stat').textContent = stats.currentBaroAltM.toFixed(1);
+    } else {
+        s('baroalt-stat').textContent = '--';
+    }
+
+    if (stats.currentGeoAltM != null) {
+        s('geoalt-stat').textContent = stats.currentGeoAltM.toFixed(1);
+    } else {
+        s('geoalt-stat').textContent = '--';
+    }
     s('hdg-stat').textContent = stats.heading.toFixed(1);
     s('hvel-stat').textContent = stats.horVelocityMs.toFixed(1);
     s('vvel-stat').textContent = stats.verVelocityMs.toFixed(1);

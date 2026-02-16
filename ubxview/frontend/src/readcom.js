@@ -245,7 +245,7 @@ class SerialRecorder {
 
         // Create traffic JSON file in PARENT directory (if URL validated)
         if (this.urlActive) {
-            const trafficFileName = `pingStation_${this.currentTimestamp}.json`;
+            const trafficFileName = `pingStation_${this.currentTimestamp}.ndjson`;
             try {
                 this.trafficFileHandle = await this.outputDirHandle.getFileHandle(trafficFileName, { create: true });
                 this.trafficWritableStream = await this.trafficFileHandle.createWritable();

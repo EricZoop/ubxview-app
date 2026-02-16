@@ -24,7 +24,7 @@ export function detectDataFormat(text) {
 /**
  * Parses NDJSON text into GPS-compatible point arrays.
  * Points are shaped to work with plotManager / trailControls:
- *   { lat, lon, alt, time, satellites, undulation, talkerId, dataType, ...extras }
+ * { lat, lon, alt, time, satellites, undulation, talkerId, dataType, ...extras }
  *
  * @param {string} text - Raw NDJSON content
  * @returns {Array<Object>}
@@ -49,13 +49,36 @@ export function extractAdsbPointsFromText(text) {
             if (!ac.icaoAddress || ac.latDD == null || ac.lonDD == null || ac.altitudeMM == null) continue;
             if (Math.abs(ac.latDD) > 90 || Math.abs(ac.lonDD) > 180) continue;
 
-            const altMeters  = ac.altitudeMM / 1000;
+            const rawAltM = ac.altitudeMM / 1000;
+            const diffM = (ac.detail && ac.detail.baroaltDiffMM != null) 
+                          ? ac.detail.baroaltDiffMM / 1000 
+                          : null;
+
+            let baroAlt = null;
+            let geoAlt  = null;
+
+            // altitudeType 0 = Barometric, 1 = Geometric (GNSS)
+            if (ac.altitudeType === 0) {
+                baroAlt = rawAltM;
+                // If we have the difference, calculate Geometric: Geo = Baro + Diff
+                if (diffM !== null) {
+                    geoAlt = baroAlt + diffM;
+                }
+            } else if (ac.altitudeType === 1) {
+                geoAlt = rawAltM;
+                // If we have the difference, calculate Barometric: Baro = Geo - Diff
+                if (diffM !== null) {
+                    baroAlt = geoAlt - diffM;
+                }
+            }
+
             const horVelMs   = (ac.horVelocityCMS || 0) / 100;
             const verVelMs   = (ac.verVelocityCMS || 0) / 100;
             const headingDeg = (ac.headingDE2 || 0) / 100;
 
             const ts   = ac.timeStamp || receivedAt;
             const date = ts ? new Date(ts) : new Date();
+            // Convert to seconds of day (UTC)
             const time = date.getUTCHours() * 3600
                        + date.getUTCMinutes() * 60
                        + date.getUTCSeconds()
@@ -64,7 +87,9 @@ export function extractAdsbPointsFromText(text) {
             points.push({
                 lat:        ac.latDD,
                 lon:        ac.lonDD,
-                alt:        altMeters,
+                alt:        geoAlt !== null ? geoAlt : baroAlt, // Prefer Geo for 3D plotting if available
+                baroAlt,
+                geoAlt,
                 time,
                 satellites: 0,
                 undulation: 0,
@@ -120,7 +145,10 @@ export function calculateAdsbAircraftStats(pts) {
         totalPoints:   pts.length,
         currentLat:    last.lat,
         currentLon:    last.lon,
-        currentAltM:   last.alt,
+        // UI expects these keys:
+        currentAltM:     last.alt,
+        currentBaroAltM: last.baroAlt,
+        currentGeoAltM:  last.geoAlt,
         heading:       last.heading,
         horVelocityMs: last.horVelocity,
         verVelocityMs: last.verVelocity,

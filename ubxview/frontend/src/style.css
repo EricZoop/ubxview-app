@@ -225,7 +225,7 @@ input {
     align-items: center;
     gap: 0.5rem;
     overflow: hidden;
-    text-overflow: ellipsis;
+    /*text-overflow: ellipsis;*/
     white-space: nowrap;
     max-width: 100%;
     min-width: 0;

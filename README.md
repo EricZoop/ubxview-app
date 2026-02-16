@@ -3,7 +3,7 @@
   UBXView
 </h1>
 
-*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center.*
+*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center and uAvionix.*
 
 ## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
@@ -33,7 +33,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Unlock cross-domain Ajax requests in web applications [Download Chrome Extension](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
+> Unlock cross-domain Ajax requests in web applications [Download Chrome Extension](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
 
 ## Directory Glance
 ```rs
