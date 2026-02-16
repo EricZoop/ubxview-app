@@ -1,4 +1,5 @@
-icao24,timestamp,acars,adsb,built,categoryDescription,country,engines,firstFlightDate,firstSeen,icaoAircraftClass,lineNumber,manufacturerIcao,manufacturerName,model,modes,nextReg,operator,operatorCallsign,operatorIata,operatorIcao,owner,prevReg,regUntil,registered,registration,selCal,serialNumber,status,typecode,vdl
-a02088,2021-07-19 19:00:00,0,0,,,United States,CFM INTL. CFM56 SERIES,,,L2J,,AIRBUS,Airbus Industrie,A320-214,0,,,AMERICAN,,AAL,American Airlines Inc,,2028-12-31,,N107US,,1052,,A320,0
-a0208b,2023-03-03 19:00:00,0,0,,,United States,LYCOMING IO-360-M1A+,,,L1P,,DIAMOND,Diamond Aircraft Ind Inc,DA 40,0,,,,,,Utah Valley University,,2027-07-31,,N107UV,,40.1030,,DA40,0
-0101bc,2017-10-02 00:57:36,0,0,,,Egypt,,,,L2J,,BOEING,Boeing,Boeing 737NG 800/W,0,,,EGYPTAIR,,MSR,Egyptair,,,,SU-GEL,,63804,,B738,0
+icao24,registration,manufacturericao,manufacturername,model,typecode,serialnumber,linenumber,icaoaircrafttype,operator,operatorcallsign,operatoricao,operatoriata,owner,testreg,registered,reguntil,status,built,firstflightdate,seatconfiguration,engines,modes,adsb,acars,notes,categoryDescription
+,,,,,,,,,,,,,,,,,,,,,,false,false,false,,
+aa3487,N757F,RAYTHEON,Raytheon Aircraft Company,A36,BE36,E-3121,,L1P,,,,,Vintage Aircraft Llc,,,2027-01-31,,,,,,false,false,false,,
+a4fa61,N42MH,PIPER,Piper,PA-31-350,PA31,31-7852015,,L2P,,,,,Tvpx Aircraft Solutions Inc Trustee,,,2029-08-31,,1977-01-01,,,LYCOMING TI0-540 SER,false,false,false,,
+a19af3,N202RL,CESSNA,Cessna,560XL,C56X,560-5117,,L2J,,,,,Doc Sugar Master Llc,,,2029-04-30,,2000-01-01,,,P&W CANADA PW545 SER,false,false,false,,

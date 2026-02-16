@@ -604,20 +604,34 @@ select:hover {
     cursor: pointer;
     user-select: none;
     max-width: 250px;
+    margin-bottom: 8px;
+}
+
+/* Animation for the Header Underline */
+.stats-group h3 {
+    position: relative;
+    display: inline-block; /* Ensures underline matches text width */
+    cursor: pointer;
 }
 
 .stats-group h3::after {
     content: "";
     position: absolute;
     left: 0;
-    bottom: -4px;
-    width: 0;
+    bottom: -2px;
+    width: 0; /* Hidden by default */
     height: 2px;
-    background-color: currentColor;
-    transition: width 0.05s ease;
+    background-color: currentColor; /* Uses the header's text color */
+    transition: width 0.2s ease;
 }
 
+/* State 1: Hover */
 .stats-group h3:hover::after {
+    width: 100%;
+}
+
+/* State 2: Active Tracking (Applied by statsUI.js) */
+.stats-group h3.active-track::after {
     width: 100%;
 }
 

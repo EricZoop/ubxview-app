@@ -8,21 +8,19 @@ import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
 
 let currentDataType = 'nmea';
-let aircraftDatabase = new Map(); // icao24 -> { model, manufacturer, operator, ... }
+let aircraftDatabase = new Map(); 
 let databaseLoaded = false;
+let currentlyTrackedId = null; // Track who we are following
 
 // ─── Aircraft Database Loading ─────────────────────────────────
 async function loadAircraftDatabase() {
     if (databaseLoaded) return;
-    
     try {
-        // Ensure this matches your actual filename in /public
-        const response = await fetch('/aircraft-database-complete-2024-10.csv');
+        const response = await fetch('/aircraftDatabase.csv');
         if (!response.ok) {
             console.warn('Aircraft database CSV not found.');
             return;
         }
-        
         const csvText = await response.text();
         parseAircraftCSV(csvText);
         databaseLoaded = true;
@@ -35,34 +33,19 @@ async function loadAircraftDatabase() {
 function parseAircraftCSV(csvText) {
     const lines = csvText.split('\n');
     if (lines.length < 2) return;
-    
-    // Parse header - Simple split since quotes are removed
     const header = lines[0].split(',').map(h => h.trim());
-    
-    // Debug check
-    // console.log('CSV Header columns:', header.slice(0, 10)); 
-    
     const icaoIdx = header.indexOf('icao24');
     const modelIdx = header.indexOf('model');
     const manufacturerIdx = header.indexOf('manufacturerName');
     const operatorIdx = header.indexOf('operator');
     const registrationIdx = header.indexOf('registration');
     
-    if (icaoIdx === -1) {
-        console.warn('CSV missing icao24 column. Found columns:', header);
-        return;
-    }
+    if (icaoIdx === -1) return;
     
-    // Parse data rows
-    let loadedCount = 0;
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        
-        // Simple split matches your new clean CSV format
         const cols = line.split(',');
-        
-        // Safety check to ensure we don't read out of bounds if a line is truncated
         const icao = cols[icaoIdx]?.trim().toLowerCase();
         
         if (icao) {
@@ -72,10 +55,8 @@ function parseAircraftCSV(csvText) {
                 operator: (operatorIdx >= 0 ? cols[operatorIdx]?.trim() : '') || '',
                 registration: (registrationIdx >= 0 ? cols[registrationIdx]?.trim() : '') || ''
             });
-            loadedCount++;
         }
     }
-    // console.log(`Loaded ${loadedCount} aircraft records from CSV`);
 }
 
 function lookupAircraftModel(icaoAddress) {
@@ -85,8 +66,19 @@ function lookupAircraftModel(icaoAddress) {
     return record?.model || 'Unknown';
 }
 
-// Initialize database loading
 loadAircraftDatabase();
+
+// ─── Header Visuals Helper ──────────────────────────────────────
+function updateHeaderVisuals() {
+    document.querySelectorAll('.talker-header').forEach(h => {
+         // Toggle the class that triggers the CSS ::after width
+         if (h.dataset.talkerId === currentlyTrackedId) {
+             h.classList.add('active-track');
+         } else {
+             h.classList.remove('active-track');
+         }
+    });
+}
 
 // ─── NMEA Panel ─────────────────────────────────────────────────
 function createNmeaStatsHTML(talkerId, headerColor) {
@@ -135,8 +127,6 @@ function updateNmeaStatsDOM(talkerId, stats) {
 
 // ─── ADS-B Panel ────────────────────────────────────────────────
 function createAdsbStatsHTML(icao, headerColor) {
-    // HEADER: Now displays the Model (initially "Loading...")
-    // ROW 1: Now displays the ICAO address
     return `
         <div class="stats-group" data-data-type="adsb">
             <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${icao}" tabindex="0" role="button" title="Click to follow">
@@ -163,13 +153,9 @@ function updateAdsbStatsDOM(icao, stats) {
     const s = (id) => document.getElementById(`${icao}-${id}`);
     if (!s('points-stat')) return;
     
-    // Lookup Model
     const modelName = lookupAircraftModel(stats.icaoAddress || icao);
-    
-    // Update Header to show Model Name
     const headerEl = document.getElementById(`${icao}-header-model`);
     if (headerEl) {
-        // If Model is unknown, we show "Aircraft [ICAO]" or just the ICAO if preferred
         if (modelName === 'Unknown' || modelName === 'Unknown Model') {
             headerEl.textContent = `Aircraft ${icao}`;
         } else {
@@ -215,7 +201,7 @@ function removeStalePanels(statsContainer, currentTalkerIds) {
     });
 }
 
-// ─── Header Colors (uses stable talkerId-based colors) ──────────
+// ─── Header Colors ──────────────────────────────────────────────
 export function updateStatsHeaderColors(plotObjects) {
     if (isElevationModeActive()) {
         document.querySelectorAll('.talker-header').forEach(h => { h.style.color = '#ffffff'; });
@@ -226,7 +212,6 @@ export function updateStatsHeaderColors(plotObjects) {
     const tailPicker = document.getElementById('trail-tail-color');
     const base = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
 
-    // Use talkerId (not sorted index) for stable color assignment
     plotObjects.forEach((_, talkerId) => {
         const header = document.querySelector(`.talker-header[data-talker-id="${talkerId}"]`);
         if (header) {
@@ -255,6 +240,9 @@ export function updateStats(points, dataType) {
     } else {
         updateNmeaStats(statsContainer, points, baseColor);
     }
+    
+    // Ensure the underline persists if DOM was rebuilt
+    updateHeaderVisuals();
 }
 
 function updateNmeaStats(container, points, baseColor) {
@@ -289,10 +277,17 @@ function updateAdsbStats(container, points, baseColor) {
     });
 }
 
-// ─── Click-to-follow delegation ─────────────────────────────────
+// ─── Listeners ──────────────────────────────────────────────────
 export function initializeStatsEventListeners() {
     const statsContainer = document.getElementById('stats');
     if (!statsContainer) return;
+
+    // Listen for state changes from cameraControls.js
+    window.addEventListener('cinematicTargetChanged', (e) => {
+        currentlyTrackedId = e.detail.talkerId;
+        updateHeaderVisuals();
+    });
+
     statsContainer.addEventListener('click', (e) => {
         const header = e.target.closest('.talker-header');
         if (!header) return;

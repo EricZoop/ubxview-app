@@ -1,3 +1,4 @@
+// cameraControls.js
 import * as THREE from "three";
 
 export function setupCameraControls(camera, scene) {
@@ -63,7 +64,7 @@ export function setupCameraControls(camera, scene) {
                 orthographicCamera.top = size;
                 orthographicCamera.bottom = -size;
                 orthographicCamera.near = 0.1;
-                orthographicCamera.far = height * 4;  // Generous far plane for birdseye
+                orthographicCamera.far = height * 4;
                 orthographicCamera.updateProjectionMatrix();
             } else {
                 const x = Math.cos(this.angleY) * Math.cos(this.angleX) * this.distance;
@@ -169,7 +170,6 @@ export function setupCameraControls(camera, scene) {
                     moved = true;
                 }
             } else if (!isCinematicMode) {
-                // Standard vertical pan (only in non-cinematic perspective mode)
                 if (keyState['KeyE']) {
                     this.panOffset.add(new THREE.Vector3(0, dynamicMoveSpeed, 0));
                     moved = true;
@@ -180,7 +180,6 @@ export function setupCameraControls(camera, scene) {
                 }
             }
 
-            // ── Look (only non-cinematic, non-birdseye perspective) ──
             if (!isBirdseyeMode && !isCinematicMode) {
                 if (keyState['ArrowLeft']) { this.angleY -= this.lookSpeed; moved = true; }
                 if (keyState['ArrowRight']) { this.angleY += this.lookSpeed; moved = true; }
@@ -210,7 +209,11 @@ export function setupCameraControls(camera, scene) {
             if (isBirdseyeMode) this.toggleBirdseyeMode();
 
             isCinematicMode = !isCinematicMode;
-            if (!isCinematicMode) targetTalkerId = null;
+            if (!isCinematicMode) {
+                targetTalkerId = null;
+                // NOTIFY: Cinematic mode turned off
+                window.dispatchEvent(new CustomEvent('cinematicTargetChanged', { detail: { talkerId: null } }));
+            }
 
             console.log(`Cinematic mode ${isCinematicMode ? 'enabled' : 'disabled'}`);
             if (cinematicControlRow) cinematicControlRow.classList.toggle('active-mode', isCinematicMode);
@@ -228,7 +231,10 @@ export function setupCameraControls(camera, scene) {
             if (isBirdseyeMode) {
                 if (isCinematicMode) {
                     isCinematicMode = false;
+                    targetTalkerId = null;
                     if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
+                    // NOTIFY: Cinematic mode disabled by Birdseye
+                    window.dispatchEvent(new CustomEvent('cinematicTargetChanged', { detail: { talkerId: null } }));
                 }
                 cachedPerspectivePosition.copy(originalCamera.position);
                 cachedPerspectiveTarget.copy(this.panOffset);
@@ -260,9 +266,12 @@ export function setupCameraControls(camera, scene) {
         setCinematicTarget: function (target) { if (target instanceof THREE.Vector3) cinematicTarget.copy(target); },
         isCinematicActive: function () { return isCinematicMode; },
         getTargetTalkerId: function () { return targetTalkerId; },
+        
         setTargetTalkerId: function (talkerId) {
             targetTalkerId = talkerId;
             console.log(`Tracking ${talkerId === null ? 'all tracks (latest point)' : 'talker: ' + talkerId}`);
+            // NOTIFY: Target changed
+            window.dispatchEvent(new CustomEvent('cinematicTargetChanged', { detail: { talkerId: targetTalkerId } }));
         },
 
         adjustForNewData: function (dataSpan, centerVec) {
@@ -279,7 +288,12 @@ export function setupCameraControls(camera, scene) {
         reset: function (dataSpan, centerVec) {
             isCinematicMode = false;
             isBirdseyeMode = false;
+            targetTalkerId = null; // Reset target
             currentCamera = originalCamera;
+            
+            // NOTIFY: Reset occurred
+            window.dispatchEvent(new CustomEvent('cinematicTargetChanged', { detail: { talkerId: null } }));
+
             if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
             if (birdseyeControlRow) birdseyeControlRow.classList.remove('active-mode');
 
@@ -317,11 +331,6 @@ export function setupCameraControls(camera, scene) {
                 reorientControlRow.classList.add('active-mode');
                 setTimeout(() => reorientControlRow.classList.remove('active-mode'), 150);
             }
-            isCinematicMode = false;
-            isBirdseyeMode = false;
-            currentCamera = originalCamera;
-            if (cinematicControlRow) cinematicControlRow.classList.remove('active-mode');
-            if (birdseyeControlRow) birdseyeControlRow.classList.remove('active-mode');
             if (cachedDataSpan !== null && cachedCenterVec !== null) {
                 controls.reset(cachedDataSpan, cachedCenterVec);
             }
@@ -377,7 +386,6 @@ export function setupCameraControls(camera, scene) {
         if (e.target.closest("#info")) return;
         controls.distance += e.deltaY * 0.5;
         controls.distance = Math.max(50, controls.distance);
-        // Keep cinematic cached distance in sync with scroll
         if (isCinematicMode) cachedDistance = controls.distance;
         controls.updateCameraPosition();
     });

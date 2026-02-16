@@ -33,10 +33,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Download Chrome Extension
-https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en
-* This allows Ajax requests from [pingStation3](https://uavionix.com/support/pingstation-3/#user-guides)
-
+Unlock cross-domain Ajax requests in web applications [Download Chrome Extension](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
 
 ## Directory Glance
 ```rs
