@@ -10,8 +10,7 @@ use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use tauri::Emitter; // --- ADD THIS LINE ---
-
+use tauri::Emitter;
 // Create a state to hold the last read position (offset)
 struct AppState {
     offset: Arc<Mutex<u64>>,
@@ -65,6 +64,7 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_cors_fetch::init())
         .manage(AppState {
             offset: Arc::new(Mutex::new(0)),
         })
