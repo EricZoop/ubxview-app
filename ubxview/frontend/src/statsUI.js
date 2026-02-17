@@ -133,7 +133,7 @@ function createAdsbStatsHTML(icao, headerColor) {
             </h3>
             <table><tbody>
                 <tr><td>Points:</td><td><span id="${icao}-points-stat">0</span></td></tr>
-                <tr><td>ICAO:</td><td><span>${icao}</span></td></tr>
+                <td>Hex ID:</td><td><a href="https://globe.adsbexchange.com/?icao=${icao}" target="_blank">${icao}</a></td>
                 <tr><td>Latitude:</td><td><span id="${icao}-lat-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Longitude:</td><td><span id="${icao}-long-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Alt (MSL):</td><td><span id="${icao}-baroalt-stat">--</span> m</td></tr>
@@ -157,7 +157,7 @@ function updateAdsbStatsDOM(icao, stats) {
     const headerEl = document.getElementById(`${icao}-header-model`);
     if (headerEl) {
         if (modelName === 'Unknown' || modelName === 'Unknown Model') {
-            headerEl.textContent = `Aircraft ${icao}`;
+            headerEl.textContent = `${icao}`;
         } else {
             headerEl.textContent = modelName;
         }
