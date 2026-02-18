@@ -3,7 +3,9 @@
   UBXView
 </h1>
 
-*Model real-time kinematic (RTK) drone-mounted sensors for radar calibration workflows, powered by u-center and uAvionix.*
+<img src="data/screenshots/Screenshot 2026-02-17 180955.png">
+
+*Model real-time kinematic (RTK) drones and ADS-B data live for radar auto-registration workflows, powered by u-blox and uAvionix.*
 
 ## Dependencies
 > [Rust](https://www.rust-lang.org/) - Backend, Tauri .exe compiler<br>
@@ -13,7 +15,7 @@
 > [u-center](https://www.u-blox.com/en/product/u-center) - GPS utility<br>
 
 ## Databases
-> ICAO24 Lookup: https://hexdb.io/
+> ICAO24 code & plane spot image lookup: https://hexdb.io/
 
 ## Get Running
 
@@ -33,7 +35,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Debug:
+Debugging:
 Unlock cross-domain Ajax requests in web applications [Download Chrome Extension](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
 
 ## Directory Glance
@@ -44,8 +46,8 @@ ubxview-app/
     │   ├── drone/
     │   │   ├── dronerun123.ubx           # Captures
     │   │   ├── output.ubx
-    │   │   ├── trackstat.py              # Python parser
-    │   │   ├── simulate.py               # File playback
+    │   │   ├── trackstat.py              # Python parsers
+    │   │   ├── simulate.py               # File generation playback
     │   └── satellite/
     │       ├── compress.py
     │       └── satellite.py              # Fetch Earth images
@@ -57,7 +59,7 @@ ubxview-app/
         │   ├── vite.config.js
         │   └── src/                      # three.js render engine 
         │       ├── main.js               # Init 3D Scene
-        │       ├── parser.js             # .ubx reader & stats
+        │       ├── parser.js             # Reader & stats
         │       └── tileManager.js        # Map API
         └── src-tauri/
             ├── build.rs
@@ -67,5 +69,5 @@ ubxview-app/
             │   └── default.json
             └── src/
                 ├── lib.rs
-                └── main.rs               # Backend runtime
+                └── main.rs               # Backend exe runtime
 ```

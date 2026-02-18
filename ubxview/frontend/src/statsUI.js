@@ -200,7 +200,7 @@ function createAdsbStatsHTML(icao, headerColor) {
             </h3>
             <img id="${icao}-aircraft-img"
                  alt="Aircraft photo"
-                 style="display:none; width:100%; max-height:120px; object-fit:cover; border-radius:4px; margin:4px 0 6px 0; opacity:0.9;"
+                 style="display:none; width:100%; max-height:120px; object-fit:cover; border-radius:3px; margin:0px 0 6px 0; opacity:1;"
                  onerror="this.style.display='none'"
                  onload="this.style.display='block'" />
             <table><tbody>

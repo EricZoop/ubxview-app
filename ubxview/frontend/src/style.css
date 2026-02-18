@@ -47,7 +47,7 @@ body {
 
 #info {
     padding-bottom: .75rem;
-    width: 200px;
+    width: 250px;
     top: 10px;
     left: 10px;
     max-height: calc(100vh - 100px);
@@ -837,7 +837,7 @@ select:hover {
 #com-reader {
     bottom: 10px;
     left: 10px;
-    width: 300px;
+    width: 250px;
     height: auto;
     padding: 12px;
     display: flex;

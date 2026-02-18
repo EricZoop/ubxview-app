@@ -76,7 +76,7 @@ function renderFileList() {
 
         // Name on the left, Icon on the right
         item.innerHTML = `
-            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${entry.name}">
+            <span style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap;" title="${entry.name}">
                 ${entry.name}
             </span>
             <span style="flex-shrink: 0; opacity:${isActive ? 1 : 0.3}; line-height: 0; margin-left: auto;">
