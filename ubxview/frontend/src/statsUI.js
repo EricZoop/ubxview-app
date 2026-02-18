@@ -2,24 +2,45 @@
 // DOM manipulation and UI updates for statistics panel
 
 import * as THREE from 'three';
-// CHANGED: Import getElevationColorForTrack
 import { getTrackVariantColor, isElevationModeActive, getElevationColorForTrack } from './trailControls.js';
 import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
 
-let currentDataType = 'nmea';
 let currentlyTrackedId = null;
+let statsContainerInitialized = false;
 
-// ——— hexdb.io Aircraft Lookup Cache ———————————————————————
-const aircraftCache = new Map(); // hex -> { model, manufacturer, registration, operator, type, fetched, imageResolved, imageUrl }
-const pendingFetches = new Set(); // avoid duplicate in-flight requests
+// ─── Type Detection ───────────────────────────────────────────────────────────
+/**
+ * Classify a single point's data type using its own `dataType` field first,
+ * then fall back to heuristics. Never infers from sibling points.
+ */
+function pointDataType(p) {
+    if (!p) return 'nmea';
+    if (p.dataType === 'adsb') return 'adsb';
+    if (p.dataType === 'nmea') return 'nmea';
+    // Heuristics
+    if (typeof p.satellites === 'number' && p.icaoAddress === undefined) return 'nmea';
+    if (p.icaoAddress !== undefined || p.heading !== undefined || p.horizontalVelocity !== undefined) return 'adsb';
+    if (p.talkerId && /^[A-Z]{2}$/.test(p.talkerId)) return 'nmea';
+    return 'nmea'; // safe default
+}
 
 /**
- * Resolve the actual aircraft image URL from hexdb.io.
- * The hex-image endpoint returns a text URL, not an image directly.
- * @param {string} hex - ICAO hex address (uppercase)
- * @returns {Promise<string|null>} resolved image URL or null
+ * Split a flat point array into { nmea: [...], adsb: [...] }.
  */
+function partitionByDataType(points) {
+    const nmea = [], adsb = [];
+    for (const p of points) {
+        if (pointDataType(p) === 'adsb') adsb.push(p);
+        else nmea.push(p);
+    }
+    return { nmea, adsb };
+}
+
+// ─── Aircraft Lookup Cache ────────────────────────────────────────────────────
+const aircraftCache = new Map();
+const pendingFetches = new Set();
+
 async function resolveAircraftImage(hex) {
     const normalized = hex.toUpperCase();
     try {
@@ -31,10 +52,6 @@ async function resolveAircraftImage(hex) {
     return null;
 }
 
-/**
- * Fetch aircraft info from hexdb.io and cache it.
- * Updates the DOM header + image once the response arrives.
- */
 async function fetchAircraftInfo(hex) {
     const normalized = hex.toUpperCase();
     if (aircraftCache.has(normalized) || pendingFetches.has(normalized)) return;
@@ -62,8 +79,12 @@ async function fetchAircraftInfo(hex) {
             imageUrl: null
         });
 
-        // Update DOM immediately after fetch
         applyAircraftInfoToDOM(hex);
+
+        window.dispatchEvent(new CustomEvent('aircraftInfoLoaded', {
+            detail: { talkerId: hex, model: data.Type || data.ICAOTypeCode || 'Unknown' }
+        }));
+
     } catch (err) {
         console.warn(`hexdb.io lookup failed for ${hex}:`, err);
         aircraftCache.set(normalized, { model: 'Unknown', manufacturer: '', registration: '', operator: '', type: '', fetched: true, imageResolved: false, imageUrl: null });
@@ -72,10 +93,6 @@ async function fetchAircraftInfo(hex) {
     }
 }
 
-/**
- * Apply cached aircraft info to the DOM elements for a given hex.
- * Resolves the aircraft image URL asynchronously on first call.
- */
 function applyAircraftInfoToDOM(hex) {
     const normalized = hex.toUpperCase();
     const info = aircraftCache.get(normalized);
@@ -83,73 +100,119 @@ function applyAircraftInfoToDOM(hex) {
 
     const icao = hex.toLowerCase ? hex : hex;
 
-    // Update header model name
     const headerEl = document.getElementById(`${icao}-header-model`);
     if (headerEl) {
-        if (info.model && info.model !== 'Unknown') {
-            headerEl.textContent = info.model;
-        } else {
-            headerEl.textContent = icao;
-        }
+        headerEl.textContent = (info.model && info.model !== 'Unknown') ? info.model : icao;
     }
 
-    // Update registration
     const regEl = document.getElementById(`${icao}-reg-stat`);
     if (regEl) regEl.textContent = info.registration || '--';
 
-    // Update operator
     const opEl = document.getElementById(`${icao}-operator-stat`);
     if (opEl) opEl.textContent = info.operator || '--';
 
-    // Resolve image URL asynchronously (only once per aircraft)
     const imgEl = document.getElementById(`${icao}-aircraft-img`);
     if (imgEl && !info.imageResolved && info.model !== 'Unknown') {
-        info.imageResolved = true; // prevent duplicate fetches
+        info.imageResolved = true;
         resolveAircraftImage(normalized).then(url => {
             if (url) {
                 info.imageUrl = url;
                 imgEl.src = url;
-                // onload/onerror handlers on the <img> will show/hide it
             }
         });
     } else if (imgEl && info.imageUrl) {
-        // Already resolved — reapply if img element was recreated
-        if (!imgEl.src || imgEl.src !== info.imageUrl) {
-            imgEl.src = info.imageUrl;
-        }
+        if (!imgEl.src || imgEl.src !== info.imageUrl) imgEl.src = info.imageUrl;
     }
 }
 
-/**
- * Synchronous lookup that returns cached model name.
- * Triggers an async fetch if not yet cached.
- */
 export function lookupAircraftModel(icaoAddress) {
     if (!icaoAddress) return 'Unknown';
     const normalized = icaoAddress.toUpperCase();
     const cached = aircraftCache.get(normalized);
     if (cached) return cached.model || 'Unknown';
-
-    // Trigger background fetch
     fetchAircraftInfo(icaoAddress);
     return 'Loading...';
 }
 
-// ——— Header Visuals Helper ——————————————————————————————————
+// ─── Header Visuals ───────────────────────────────────────────────────────────
 function updateHeaderVisuals() {
     document.querySelectorAll('.talker-header').forEach(h => {
-         if (h.dataset.talkerId === currentlyTrackedId) {
-             h.classList.add('active-track');
-         } else {
-             h.classList.remove('active-track');
-         }
+        h.classList.toggle('active-track', h.dataset.talkerId === currentlyTrackedId);
     });
 }
 
-// ——— NMEA Panel —————————————————————————————————————————————
+// ─── Search Bar ───────────────────────────────────────────────────────────────
+const SEARCH_BAR_ID = 'stats-search-bar';
+const SEARCH_WRAPPER_ID = 'stats-search-wrapper';
+
+function injectSearchBar(statsContainer) {
+    if (document.getElementById(SEARCH_WRAPPER_ID)) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = SEARCH_WRAPPER_ID;
+    wrapper.className = 'stats-search-wrapper';
+
+    const input = document.createElement('input');
+    input.id = SEARCH_BAR_ID;
+    input.type = 'text';
+    input.placeholder = 'Search';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.className = 'stats-search-input';
+    input.addEventListener('input', () => filterStatsPanels(input.value.trim().toLowerCase()));
+
+    const stopProp = (e) => e.stopPropagation();
+    input.addEventListener('keydown', stopProp);
+    input.addEventListener('keyup', stopProp);
+    input.addEventListener('keypress', stopProp);
+
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.classList.add("stats-search-icon");
+    icon.setAttribute("viewBox", "0 0 512 512");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376C296.3 401.1 253.9 416 208 416 93.1 416 0 322.9 0 208S93.1 0 208 0 416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z");
+    icon.appendChild(path);
+    wrapper.appendChild(input);
+    wrapper.appendChild(icon);
+
+    statsContainer.insertBefore(wrapper, statsContainer.firstChild);
+}
+
+function updateSearchBarVisibility(count) {
+    const wrapper = document.getElementById(SEARCH_WRAPPER_ID);
+    if (!wrapper) return;
+    if (count > 3) {
+        wrapper.style.display = 'block';
+    } else {
+        wrapper.style.display = 'none';
+        const input = document.getElementById(SEARCH_BAR_ID);
+        if (input && input.value !== '') {
+            input.value = '';
+            filterStatsPanels('');
+        }
+    }
+}
+
+function filterStatsPanels(query) {
+    const panels = document.querySelectorAll('#stats .stats-group');
+    let lastVisible = null;
+    panels.forEach(panel => {
+        panel.classList.remove('last-visible');
+        if (!query) { panel.style.display = ''; lastVisible = panel; return; }
+        const header = panel.querySelector('.talker-header');
+        const text = (header ? header.textContent : '').toLowerCase();
+        const tid = (header?.dataset.talkerId || '').toLowerCase();
+        const isMatch = text.includes(query) || tid.includes(query);
+        panel.style.display = isMatch ? '' : 'none';
+        if (isMatch) lastVisible = panel;
+    });
+    if (lastVisible) lastVisible.classList.add('last-visible');
+}
+
+// ─── NMEA Panel ───────────────────────────────────────────────────────────────
 function createNmeaStatsHTML(talkerId, headerColor) {
     return `
-        <div class="stats-group" data-data-type="nmea">
+        <div class="stats-group" data-data-type="nmea" data-panel-id="${talkerId}">
             <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${talkerId}" tabindex="0" role="button" title="Click to follow">
                 <span>Rover ${talkerId}</span>
             </h3>
@@ -191,12 +254,12 @@ function updateNmeaStatsDOM(talkerId, stats) {
     s('end-stat').textContent = formatTime(stats.endTime);
 }
 
-// ——— ADS-B Panel ————————————————————————————————————————————
+// ─── ADS-B Panel ──────────────────────────────────────────────────────────────
 function createAdsbStatsHTML(icao, headerColor) {
     return `
-        <div class="stats-group" data-data-type="adsb">
+        <div class="stats-group" data-data-type="adsb" data-panel-id="${icao}">
             <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${icao}" tabindex="0" role="button" title="Click to follow">
-                <span id="${icao}-header-model">Loading...</span> 
+                <span id="${icao}-header-model">Loading...</span>
             </h3>
             <img id="${icao}-aircraft-img"
                  alt="Aircraft photo"
@@ -227,42 +290,27 @@ function updateAdsbStatsDOM(icao, stats) {
     const s = (id) => document.getElementById(`${icao}-${id}`);
     if (!s('points-stat')) return;
 
-    // Trigger hexdb.io fetch (no-op if already cached/pending)
     fetchAircraftInfo(icao);
-
-    // Apply any cached info we already have
     applyAircraftInfoToDOM(icao);
 
     s('points-stat').textContent = stats.totalPoints;
     s('lat-stat').textContent = stats.currentLat.toFixed(6);
     s('long-stat').textContent = stats.currentLon.toFixed(6);
-    if (stats.currentBaroAltM != null) {
-        s('baroalt-stat').textContent = stats.currentBaroAltM.toFixed(1);
-    } else {
-        s('baroalt-stat').textContent = '--';
-    }
-
-    if (stats.currentGeoAltM != null) {
-        s('geoalt-stat').textContent = stats.currentGeoAltM.toFixed(1);
-    } else {
-        s('geoalt-stat').textContent = '--';
-    }
-    s('hdg-stat').textContent = stats.heading.toFixed(1);
+    s('baroalt-stat').textContent = stats.currentBaroAltM != null ? stats.currentBaroAltM.toFixed(1) : '--';
+    s('geoalt-stat').textContent = stats.currentGeoAltM  != null ? stats.currentGeoAltM.toFixed(1)  : '--';
+    s('hdg-stat').textContent  = stats.heading.toFixed(1);
     s('hvel-stat').textContent = stats.horVelocityMs.toFixed(1);
     s('vvel-stat').textContent = stats.verVelocityMs.toFixed(1);
     s('gdist-stat').textContent = stats.totalGroundDist.toFixed(1);
     s('type-stat').textContent = emitterTypeLabel(stats.emitterType);
     s('duration-stat').textContent = stats.duration.toFixed(1);
     if (stats.lastSeen) {
-        try {
-            s('lastseen-stat').textContent = new Date(stats.lastSeen).toISOString().substring(11, 19);
-        } catch (_) {
-            s('lastseen-stat').textContent = '--';
-        }
+        try { s('lastseen-stat').textContent = new Date(stats.lastSeen).toISOString().substring(11, 19); }
+        catch (_) { s('lastseen-stat').textContent = '--'; }
     }
 }
 
-// ——— Shared Helpers —————————————————————————————————————————
+// ─── Shared Helpers ───────────────────────────────────────────────────────────
 function formatTime(timeInSeconds) {
     const h = Math.floor(timeInSeconds / 3600).toString().padStart(2, '0');
     const m = Math.floor((timeInSeconds % 3600) / 60).toString().padStart(2, '0');
@@ -270,73 +318,88 @@ function formatTime(timeInSeconds) {
     return `${h}:${m}:${s}`;
 }
 
-function removeStalePanels(statsContainer, currentTalkerIds) {
-    statsContainer.querySelectorAll('.stats-group').forEach(panel => {
-        const header = panel.querySelector('.talker-header');
-        if (header) {
-            if (!currentTalkerIds.includes(header.dataset.talkerId)) panel.remove();
-        } else {
-            panel.remove();
-        }
+/**
+ * Remove panels whose panel-id is not in the provided set for a given data-type.
+ * Panels of a *different* data-type are left untouched.
+ */
+function removeStalePanels(statsContainer, currentIds, dataType) {
+    statsContainer.querySelectorAll(`.stats-group[data-data-type="${dataType}"]`).forEach(panel => {
+        const id = panel.dataset.panelId;
+        if (!id || !currentIds.includes(id)) panel.remove();
     });
 }
 
-// ——— Header Colors ——————————————————————————————————————————
-export function updateStatsHeaderColors(plotObjects) {
+// ─── Header Colors ────────────────────────────────────────────────────────────
+export function updateStatsHeaderColors() {
     const tailPicker = document.getElementById('trail-tail-color');
     const base = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
     const isElevation = isElevationModeActive();
 
     document.querySelectorAll('.talker-header').forEach(header => {
         const talkerId = header.dataset.talkerId;
-        if (isElevation) {
-            const color = getElevationColorForTrack(talkerId);
-            header.style.color = `#${color.getHexString()}`;
-        } else {
-            const color = getTrackVariantColor(base, talkerId);
-            header.style.color = `#${color.getHexString()}`;
-        }
+        const color = isElevation
+            ? getElevationColorForTrack(talkerId)
+            : getTrackVariantColor(base, talkerId);
+        header.style.color = `#${color.getHexString()}`;
     });
 }
 
-// ——— Main Update ————————————————————————————————————————————
-export function updateStats(points, dataType) {
+// ─── Main Update ──────────────────────────────────────────────────────────────
+export function updateStats(points, _dataTypeHint) {
+    // _dataTypeHint is intentionally ignored — we classify per-point instead.
     const statsContainer = document.getElementById('stats');
-    if (!statsContainer || !points || points.length === 0) return;
+    if (!statsContainer) return;
 
-    const effectiveType = dataType || (points[0]?.dataType === 'adsb' ? 'adsb' : 'nmea');
-
-    if (effectiveType !== currentDataType) {
-        statsContainer.querySelectorAll('.stats-group').forEach(p => p.remove());
-        currentDataType = effectiveType;
+    // On first real data load, strip any static placeholder HTML from index.html,
+    // keeping only the search wrapper if it was already injected.
+    if (!statsContainerInitialized) {
+        Array.from(statsContainer.children).forEach(child => {
+            if (child.id !== SEARCH_WRAPPER_ID) child.remove();
+        });
+        statsContainerInitialized = true;
     }
+
+    injectSearchBar(statsContainer);
+
+    if (!points || points.length === 0) return;
+
+    const { nmea: nmeaPoints, adsb: adsbPoints } = partitionByDataType(points);
 
     const tailPicker = document.getElementById('trail-tail-color');
     const baseColor = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
     const isElevation = isElevationModeActive();
 
-    if (effectiveType === 'adsb') {
-        updateAdsbStats(statsContainer, points, baseColor, isElevation);
-    } else {
-        updateNmeaStats(statsContainer, points, baseColor, isElevation);
-    }
-    
+    // Each renderer manages only its own panel type — no cross-contamination.
+    updateNmeaStats(statsContainer, nmeaPoints, baseColor, isElevation);
+    updateAdsbStats(statsContainer, adsbPoints, baseColor, isElevation);
+
+    // Total panel count drives search bar visibility
+    const totalPanels = statsContainer.querySelectorAll('.stats-group').length;
+    updateSearchBarVisibility(totalPanels);
+
     updateHeaderVisuals();
+
+    const searchEl = document.getElementById(SEARCH_BAR_ID);
+    filterStatsPanels(searchEl ? searchEl.value.trim().toLowerCase() : '');
 }
 
 function updateNmeaStats(container, points, baseColor, isElevation) {
+    if (points.length === 0) {
+        // Remove any stale NMEA panels if no NMEA data present
+        container.querySelectorAll('.stats-group[data-data-type="nmea"]').forEach(p => p.remove());
+        return;
+    }
+
     const byTalker = groupPointsByTalker(points);
     const ids = Object.keys(byTalker).sort();
-    removeStalePanels(container, ids);
+
+    removeStalePanels(container, ids, 'nmea');
 
     ids.forEach((talkerId) => {
         if (!document.getElementById(`${talkerId}-points-stat`)) {
-            let colorHex;
-            if (isElevation) {
-                colorHex = `#${getElevationColorForTrack(talkerId).getHexString()}`;
-            } else {
-                colorHex = `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
-            }
+            const colorHex = isElevation
+                ? `#${getElevationColorForTrack(talkerId).getHexString()}`
+                : `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
             container.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, colorHex));
         }
         const stats = calculateTalkerStats(byTalker[talkerId]);
@@ -345,20 +408,22 @@ function updateNmeaStats(container, points, baseColor, isElevation) {
 }
 
 function updateAdsbStats(container, points, baseColor, isElevation) {
+    if (points.length === 0) {
+        container.querySelectorAll('.stats-group[data-data-type="adsb"]').forEach(p => p.remove());
+        return;
+    }
+
     const byAircraft = groupAdsbByAircraft(points);
     const icaos = Object.keys(byAircraft).sort();
-    removeStalePanels(container, icaos);
+
+    removeStalePanels(container, icaos, 'adsb');
 
     icaos.forEach((icao) => {
         if (!document.getElementById(`${icao}-points-stat`)) {
-            let colorHex;
-            if (isElevation) {
-                colorHex = `#${getElevationColorForTrack(icao).getHexString()}`;
-            } else {
-                colorHex = `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
-            }
+            const colorHex = isElevation
+                ? `#${getElevationColorForTrack(icao).getHexString()}`
+                : `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
             container.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, colorHex));
-            // Kick off the hexdb.io lookup as soon as the panel is created
             fetchAircraftInfo(icao);
         }
         const stats = calculateAdsbAircraftStats(byAircraft[icao]);
@@ -366,10 +431,12 @@ function updateAdsbStats(container, points, baseColor, isElevation) {
     });
 }
 
-// ——— Listeners ——————————————————————————————————————————————
+// ─── Listeners ────────────────────────────────────────────────────────────────
 export function initializeStatsEventListeners() {
     const statsContainer = document.getElementById('stats');
     if (!statsContainer) return;
+
+    injectSearchBar(statsContainer);
 
     window.addEventListener('cinematicTargetChanged', (e) => {
         currentlyTrackedId = e.detail.talkerId;

@@ -546,11 +546,13 @@ select:hover {
     right: 10px;
     max-height: 65vh;
     overflow-y: auto;
+    width: 310px;
+    scrollbar-gutter: stable;
 }
 
 #stats table {
     table-layout: fixed;
-    width: 270px;
+    width: 100%;
     border-collapse: collapse;
 }
 
@@ -559,7 +561,7 @@ select:hover {
 }
 
 #stats::-webkit-scrollbar {
-    width: 10px;
+    width: 5px;
 }
 
 #stats::-webkit-scrollbar-track {
@@ -586,7 +588,8 @@ select:hover {
     margin-top: 0.2rem;
 }
 
-.stats-group:last-child {
+.stats-group:last-child,
+.stats-group.last-visible {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
@@ -839,7 +842,7 @@ select:hover {
     left: 10px;
     width: 250px;
     height: auto;
-    padding: 12px;
+
     display: flex;
     flex-direction: column;
     gap: 7px;
@@ -987,4 +990,51 @@ select:hover {
         1px -1px 0 black,
         -1px 1px 0 black,
         1px 1px 0 black;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Stats Search Bar (Minimalist)
+   ═══════════════════════════════════════════════════════════════ */
+
+.stats-search-wrapper {
+    position: relative;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+    display: none; /* Hidden by default, toggled by JS */
+}
+
+.stats-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #444;
+    color: #eee;
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 6px 24px 6px 0; /* Right padding ensures text doesn't overlap icon */
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.stats-search-input::placeholder {
+    color: #666;
+    opacity: 1;
+
+}
+
+.stats-search-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    opacity: 0.6;
+    /* Updated for FontAwesome Path (Fill instead of Stroke) */
+    fill: #eee;
+    stroke: none;
 }

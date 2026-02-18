@@ -9,6 +9,13 @@ let sceneGroup = null;
 
 export function initializeLabelManager(group) {
     sceneGroup = group;
+    
+    // [NEW] Listen for when aircraft data is fetched to update label text instantly
+    window.addEventListener('aircraftInfoLoaded', (e) => {
+        if (e.detail && e.detail.talkerId) {
+            updateSingleLabelContent(e.detail.talkerId);
+        }
+    });
 }
 
 export function clearTrackLabels() {
@@ -17,6 +24,40 @@ export function clearTrackLabels() {
         if (label.element?.parentNode) label.element.parentNode.removeChild(label.element);
     });
     trackLabels.clear();
+}
+
+/**
+ * Updates a single label's text content immediately.
+ * Called when we get fresh metadata (like aircraft model) from an async fetch.
+ */
+function updateSingleLabelContent(talkerId) {
+    // Try to find the label by ID (handling potential case differences if necessary)
+    let label = trackLabels.get(talkerId);
+    
+    // If not found directly, try case-insensitive match (fallback)
+    if (!label) {
+        for (const [key, val] of trackLabels.entries()) {
+            if (key.toLowerCase() === talkerId.toLowerCase()) {
+                label = val;
+                break;
+            }
+        }
+    }
+
+    if (!label) return;
+
+    // Re-query the model. Since this event fires *after* cache update, 
+    // this will now return the real model name instead of "Loading...".
+    const model = lookupAircraftModel(talkerId);
+    
+    let labelText = `Aircraft ${talkerId}`;
+    if (model && model !== 'Unknown' && model !== 'Unknown Model' && model !== 'Loading...') {
+        labelText = model;
+    }
+    
+    if (label.element.textContent !== labelText) {
+        label.element.textContent = labelText;
+    }
 }
 
 export function createOrUpdateLabels(pointsByTalker, gpsToCartesian) {

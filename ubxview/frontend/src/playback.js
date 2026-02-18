@@ -5,25 +5,41 @@ import { getActiveFileType } from "./fileManager.js";
 import { updateStats } from "./statsUI.js";
 import { plotGpsData } from "./plotManager.js";
 
-// Playback state
+// ─── State ────────────────────────────────────────────────────────────────────
 let allFileLines = [];
-let currentLineIndex = 0;
+let cachedPointsPerLine = [];          // raw per-line parse cache (still used by watcher)
+let allActiveSortedPoints = [];        // flat, time-sorted points from the active file
+let overlayPoints = [];                // pre-parsed points from overlaid files
+
+let currentPointIndex = 0;
 let isPlaying = false;
 let isLiveMode = true;
 let playbackInterval = null;
-let totalGpsPoints = [];
 let currentPlaybackSpeed = 1.0;
 
 const BASE_PLAYBACK_SPEED_MS = 100;
-const SEEK_LINES = 100;
+const SEEK_POINTS = 100;
 
-// ----------------- Getters/Setters -----------------
-export function getPlaybackSpeed() { return currentPlaybackSpeed; }
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Rebuild allActiveSortedPoints from the cached per-line arrays. */
+function rebuildSortedTimeline() {
+    const flat = [];
+    for (const pts of cachedPointsPerLine) {
+        if (pts && pts.length) flat.push(...pts);
+    }
+    allActiveSortedPoints = flat.sort((a, b) => a.time - b.time);
+}
+
+// ─── Getters / Setters ────────────────────────────────────────────────────────
+
+export function getPlaybackSpeed()         { return currentPlaybackSpeed; }
+export function getAllFileLines()           { return allFileLines; }
 
 export function setPlaybackSpeed(speed) {
     const old = currentPlaybackSpeed;
     currentPlaybackSpeed = speed;
-    console.log(`Playback speed changed from ${old}x to ${speed}x`);
+    console.log(`Playback speed ${old}x → ${speed}x`);
     if (isPlaying && playbackInterval) {
         clearInterval(playbackInterval);
         startPlaybackInterval();
@@ -33,24 +49,66 @@ export function setPlaybackSpeed(speed) {
 
 export function getPlaybackState() {
     return {
-        isLiveMode, isPlaying, currentLineIndex,
+        isLiveMode,
+        isPlaying,
+        currentPointIndex,
         totalLines: allFileLines.length,
-        progress: allFileLines.length > 0 ? currentLineIndex / (allFileLines.length - 1) : 0,
-        playbackSpeed: currentPlaybackSpeed
+        totalPoints: allActiveSortedPoints.length,
+        progress: allActiveSortedPoints.length > 0
+            ? currentPointIndex / (allActiveSortedPoints.length - 1)
+            : 0,
+        playbackSpeed: currentPlaybackSpeed,
     };
 }
 
-// ----------------- Core Playback -----------------
+/**
+ * Provide pre-parsed overlay points so the playback scrubber can time-filter them.
+ * Called by fileManager whenever overlays change.
+ * @param {Array} pts - Combined points from all currently overlaid files.
+ */
+export function setOverlayPoints(pts) {
+    overlayPoints = pts || [];
+}
+
+// ─── Line / Timeline Management ───────────────────────────────────────────────
+
+export function setPlaybackLines(lines) {
+    allFileLines = lines;
+    const type = getActiveFileType();
+
+    cachedPointsPerLine = lines.map(line => {
+        if (type === 'adsb') return extractAdsbPointsFromText(line) || [];
+        return extractGpsPointsFromText(line) || [];
+    });
+
+    rebuildSortedTimeline();
+    currentPointIndex = Math.max(0, allActiveSortedPoints.length - 1);
+    updateTimeSlider();
+}
+
+export function updateSliderRange() {
+    const slider = document.getElementById("timeSlider");
+    if (slider && allActiveSortedPoints.length > 0) {
+        slider.max = allActiveSortedPoints.length - 1;
+        if (isLiveMode) {
+            currentPointIndex = allActiveSortedPoints.length - 1;
+            slider.value = currentPointIndex;
+        }
+    }
+}
+
+// ─── Core Playback ────────────────────────────────────────────────────────────
+
 function getCurrentPlaybackInterval() {
     return BASE_PLAYBACK_SPEED_MS / currentPlaybackSpeed;
 }
 
 function startPlaybackInterval() {
-    if (currentLineIndex >= allFileLines.length - 1) currentLineIndex = 0;
+    if (currentPointIndex >= allActiveSortedPoints.length - 1) currentPointIndex = 0;
 
     playbackInterval = setInterval(() => {
-        if (currentLineIndex < allFileLines.length - 1) {
-            currentLineIndex++;
+        if (currentPointIndex < allActiveSortedPoints.length - 1) {
+            currentPointIndex++;
             updateTimeSlider();
             updatePlotToCurrentPosition();
         } else {
@@ -74,14 +132,14 @@ export function pausePlayback() {
 
 export function rewind() {
     if (isLiveMode) enterPlaybackMode();
-    currentLineIndex = Math.max(0, currentLineIndex - SEEK_LINES);
+    currentPointIndex = Math.max(0, currentPointIndex - SEEK_POINTS);
     updateTimeSlider();
     updatePlotToCurrentPosition();
 }
 
 export function forward() {
     if (isLiveMode) enterPlaybackMode();
-    currentLineIndex = Math.min(allFileLines.length - 1, currentLineIndex + SEEK_LINES);
+    currentPointIndex = Math.min(allActiveSortedPoints.length - 1, currentPointIndex + SEEK_POINTS);
     updateTimeSlider();
     updatePlotToCurrentPosition();
 }
@@ -94,69 +152,50 @@ export function enterPlaybackMode() {
 export function goLive() {
     isLiveMode = true;
     pausePlayback();
-    currentLineIndex = allFileLines.length - 1;
+    currentPointIndex = Math.max(0, allActiveSortedPoints.length - 1);
     updateTimeSlider();
     updateGoLiveButton();
     updatePlotToCurrentPosition();
 }
 
-let cachedPointsPerLine = [];
+// ─── Plot / Stats Update ──────────────────────────────────────────────────────
 
-export function setPlaybackLines(lines, totalPoints = []) {
-    allFileLines = lines;
-
-    // Use the correct parser for the active file type
-    const type = getActiveFileType();
-    cachedPointsPerLine = lines.map(line => {
-        if (type === 'adsb') return extractAdsbPointsFromText(line) || [];
-        return extractGpsPointsFromText(line) || [];
-    });
-
-    currentLineIndex = Math.max(0, allFileLines.length - 1);
-    updateTimeSlider();
-}
-
-export function getAllFileLines() { return allFileLines; }
-
-export function updateSliderRange() {
-    const slider = document.getElementById("timeSlider");
-    if (slider && allFileLines.length > 0) {
-        slider.max = allFileLines.length - 1;
-        if (isLiveMode) {
-            slider.value = allFileLines.length - 1;
-            currentLineIndex = allFileLines.length - 1;
-        }
-    }
-}
-
-// ----------------- UI Helpers -----------------
 function updatePlotToCurrentPosition() {
-    const pointsUpToCurrent = [];
     const type = getActiveFileType();
-    for (let i = 0; i <= currentLineIndex; i++) {
-        const points = cachedPointsPerLine[i];
-        if (points && points.length > 0) pointsUpToCurrent.push(...points);
+    const activePts = allActiveSortedPoints.slice(0, currentPointIndex + 1);
+
+    let combinedPts = activePts;
+
+    if (overlayPoints.length > 0) {
+        // Show overlay points whose timestamp is <= current active time
+        const currentTime = allActiveSortedPoints[currentPointIndex]?.time ?? Infinity;
+        const visibleOverlay = overlayPoints.filter(p => p.time <= currentTime);
+        combinedPts = [...activePts, ...visibleOverlay];
     }
-    plotGpsData(pointsUpToCurrent, false);
-    updateStats(pointsUpToCurrent, type);
+
+    plotGpsData(combinedPts, false);
+    // Pass all visible points to stats so overlay talkers get their own panels
+    updateStats(combinedPts, type);
 }
+
+// ─── UI Helpers ───────────────────────────────────────────────────────────────
 
 function updateTimeSlider() {
     const slider = document.getElementById("timeSlider");
-    if (slider && allFileLines.length > 0) {
-        slider.max = allFileLines.length - 1;
-        slider.value = currentLineIndex;
+    if (slider && allActiveSortedPoints.length > 0) {
+        slider.max = allActiveSortedPoints.length - 1;
+        slider.value = currentPointIndex;
     }
 }
 
 function updatePlayPauseButton() {
-    const playIcon = document.getElementById("playIcon");
+    const playIcon  = document.getElementById("playIcon");
     const pauseIcon = document.getElementById("pauseIcon");
     if (isPlaying) {
-        if (playIcon) playIcon.style.display = "none";
+        if (playIcon)  playIcon.style.display  = "none";
         if (pauseIcon) pauseIcon.style.display = "inline";
     } else {
-        if (playIcon) playIcon.style.display = "inline";
+        if (playIcon)  playIcon.style.display  = "inline";
         if (pauseIcon) pauseIcon.style.display = "none";
     }
 }
@@ -174,10 +213,11 @@ function updateSpeedDisplay() {
     });
 }
 
-// ----------------- Event Handlers -----------------
+// ─── Event Handlers ───────────────────────────────────────────────────────────
+
 export function handleTimeSliderChange(event) {
     if (isLiveMode) enterPlaybackMode();
-    currentLineIndex = parseInt(event.target.value);
+    currentPointIndex = parseInt(event.target.value);
     updatePlotToCurrentPosition();
 }
 
@@ -193,7 +233,7 @@ export function handleSpeedSelection(event) {
 export function protectSliderFromOrbitControls() {
     const s = document.getElementById("timeSlider");
     if (s) {
-        ['mousedown','mousemove','mouseup','click'].forEach(evt => {
+        ['mousedown', 'mousemove', 'mouseup', 'click'].forEach(evt => {
             s.addEventListener(evt, e => e.stopPropagation());
         });
         s.addEventListener("input", handleTimeSliderChange);
