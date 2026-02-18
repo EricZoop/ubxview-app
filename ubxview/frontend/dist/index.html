@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-DAbUV-u-.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-7zMAnCJF.css">
+  <script type="module" crossorigin src="./assets/index-Be8rz_-K.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DcXgC26y.css">
 </head>
 
 <body>
@@ -18,13 +18,12 @@
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v5.2.2</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v6.0.1</a></p>
         </div>
 
 
         
-        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drones and ADS-B data live for
-            radar auto-registration workflows.</div>
+        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drones and ADS-B data live for radar auto-registration workflows, powered by u-blox and uAvionix.</div>
         <hr style="border-width: 0px;">
 
         <!--<h2>Read Capture </h2>-->
@@ -40,22 +39,21 @@
                 <!-- Populated dynamically by fileManager.js -->
             </div>
 
-            <button id="openFileBtn" class="custom-file" style="cursor:pointer; text-align:center;">
-                <span>
-                    .ubx, .txt, .csv, .log, .json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
-                        <path fill="#fff"
-                            d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+
+            <button id="openFileBtn" class="custom-file" style="cursor:pointer;">
+                <span id="fileLabel">
+                    .ubx, .txt, .csv, .log, .ndjson&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512" style="margin-left:auto; flex-shrink:0;">
+                        <path fill="#fff" d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z"/>
                     </svg>
                 </span>
             </button>
 
-            <button id="addFileBtn" class="custom-file" style="cursor:pointer; text-align:center; display:none;">
-                <span>
-                    .ubx, .txt, .csv, .log, .json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512">
-                        <path fill="#fff"
-                            d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+            <button id="addFileBtn" class="custom-file" style="cursor:pointer; display:none;">
+                <span id="fileLabel">
+                    .ubx, .txt, .csv, .log, .ndjson&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512" style="margin-left:auto; flex-shrink:0;">
+                        <path fill="#fff" d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z"/>
                     </svg>
                 </span>
             </button>
@@ -111,56 +109,54 @@
             
 
 
-            <div class="trail-controls">
-                <!-- Preset selector -->
-                <div style="margin-bottom: 10px;">
-                    <label for="trail-preset"
-                        style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">Plot
-                        Palette</label>
-                    <select id="trail-preset" style="
-            width: 100%;
-            padding: 0.6em .8em;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 2px;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-size: 14px;
-        ">
-                        <option value="">Custom</option>
-                        <option value="elevation">Elevation</option>
-                        <option value="neon">Neon</option>
-                        <option value="america">1776&nbsp;&#129413;</option>
-                        <option value="invincible">Invincible</option>
+<div class="trail-controls">
+    
+    <div class="trail-section">
+        <label for="trail-preset" >Plot Palette</label>
+        <select id="trail-preset" style="font-size: 0.81rem;">
+            <option value="">Custom</option>
+            <option value="elevation">Elevation</option>
+            <option value="neon">Neon</option>
+            <option value="america">1776 &#129413;</option>
+            <option value="invincible">Invincible</option>
+        </select>
+    </div>
 
-                    </select>
-                </div>
+    <div class="trail-grid">
+        
+        <div class="trail-group">
+            <label for="trail-head-color">Head</label>
+            <input type="color" id="trail-head-color" class="color-picker" value="#FF0000">
+        </div>
 
-                <!-- Color controls -->
-                <div style="display: flex; justify-content: space-between; margin-top: 0px;  font-size: 0.85em;">
-                    <span style="text-align: left;">
-                        <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
-                        <input type="color" id="trail-head-color" name="trail-head-color" value="#FF0000"
-                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                    </span>
-                    <span style="text-align: left;">
-                        <label for="trail-tail-color" style="display: block; transform: translateX(2px);">Tail</label>
-                        <input type="color" id="trail-tail-color" name="trail-tail-color" value="#FF0000"
-                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                    </span>
-                    <span style="text-align: center;">
-                        <label for="trail-line-color" style="display: block; transform: translateX(-19px);">Line</label>
-                        <div style="display: flex; align-items: center; justify-content: center; margin-top: 0px;">
-                            <input type="color" id="trail-line-color" name="trail-line-color" value="#FF0000"
-                                style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                            <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked
-                                style="margin-left: 5px; transform: scale(1.25); border-radius: 0px;">
-                        </div>
-                    </span>
-                </div>
+        <div class="trail-group">
+            <label for="trail-tail-color">Tail</label>
+            <input type="color" id="trail-tail-color" class="color-picker" value="#FF0000">
+        </div>
 
-            </div>
+        <div class="trail-group line-composite">
+            <label for="trail-line-color">Line</label>
+            <input type="color" id="trail-line-color" class="color-picker" value="#FF0000">
+            <input type="checkbox" id="show-lines-toggle" class="trail-toggle" style="transform: translateY(2px);" checked title="Toggle Lines" >
+        </div>
+
+<div class="trail-group" style="transform: translateY(-5px);">
+    <label for="show-label-toggle" style="transform: translateX(8.5px);">
+        Tags
+    </label>
+    <input type="checkbox"
+           id="show-label-toggle"
+           class="trail-toggle"
+           style="transform: translateY(2px);"
+           checked>
+</div>
+
+    </div>
+</div>
+
+
+
+            
         </div>
 
 
@@ -210,6 +206,20 @@
                 <tr><td>2D Distance:</td><td><span id="${icao}-gdist-stat">0.0</span> m</td></tr>
                 <tr><td>Last Seen:</td><td><span id="${icao}-lastseen-stat">HH:mm:ss</span></td></tr>
                 <tr><td>Duration:</td><td><span id="${icao}-duration-stat">0.0</span> s</td></tr>
+            </tbody></table>
+        </div>
+        <div class="stats-group">
+            <h3>
+                Radar Track Stats
+            </h3>
+            <table><tbody>
+                <tr><td>Points:</td><td><span id="${radar}-points-stat">0</span></td></tr>
+                <tr><td>RCS:</td><td><span id="${radar}-points-stat">0</span> m&sup2;</td></tr>
+                <tr><td>Latitude:</td><td><span id="${radar}-lat-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Longitude:</td><td><span id="${radar}-long-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Alt:</td><td><span id="${radar}-geoalt-stat">0.0</span> m</td></tr>
+                <tr><td>Vel:</td><td><span id="${radar}-vel-stat">0.0</span> m/s</td></tr>
+                <tr><td>Duration:</td><td><span id="${radar}-duration-stat">0.0</span> s</td></tr>
             </tbody></table>
         </div>
     </div>

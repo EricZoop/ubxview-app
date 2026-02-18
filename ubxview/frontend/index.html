@@ -112,56 +112,54 @@
             
 
 
-            <div class="trail-controls">
-                <!-- Preset selector -->
-                <div style="margin-bottom: 10px;">
-                    <label for="trail-preset"
-                        style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500;">Plot
-                        Palette</label>
-                    <select id="trail-preset" style="
-            width: 100%;
-            padding: 0.6em .8em;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 2px;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-size: 14px;
-        ">
-                        <option value="">Custom</option>
-                        <option value="elevation">Elevation</option>
-                        <option value="neon">Neon</option>
-                        <option value="america">1776&nbsp;&#129413;</option>
-                        <option value="invincible">Invincible</option>
+<div class="trail-controls">
+    
+    <div class="trail-section">
+        <label for="trail-preset" >Plot Palette</label>
+        <select id="trail-preset" style="font-size: 0.81rem;">
+            <option value="">Custom</option>
+            <option value="elevation">Elevation</option>
+            <option value="neon">Neon</option>
+            <option value="america">1776 &#129413;</option>
+            <option value="invincible">Invincible</option>
+        </select>
+    </div>
 
-                    </select>
-                </div>
+    <div class="trail-grid">
+        
+        <div class="trail-group">
+            <label for="trail-head-color">Head</label>
+            <input type="color" id="trail-head-color" class="color-picker" value="#FF0000">
+        </div>
 
-                <!-- Color controls -->
-                <div style="display: flex; justify-content: space-between; margin-top: 0px;  font-size: 0.85em;">
-                    <span style="text-align: left;">
-                        <label for="trail-head-color" style="display: block; transform: translateX(2px);">Head</label>
-                        <input type="color" id="trail-head-color" name="trail-head-color" value="#FF0000"
-                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                    </span>
-                    <span style="text-align: left;">
-                        <label for="trail-tail-color" style="display: block; transform: translateX(2px);">Tail</label>
-                        <input type="color" id="trail-tail-color" name="trail-tail-color" value="#FF0000"
-                            style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                    </span>
-                    <span style="text-align: center;">
-                        <label for="trail-line-color" style="display: block; transform: translateX(-19px);">Line</label>
-                        <div style="display: flex; align-items: center; justify-content: center; margin-top: 0px;">
-                            <input type="color" id="trail-line-color" name="trail-line-color" value="#FF0000"
-                                style="width: 45px; height: 25px; border: none; padding: 0; background: none;">
-                            <input type="checkbox" id="show-lines-toggle" name="show-lines-toggle" checked
-                                style="margin-left: 5px; transform: scale(1.25); border-radius: 0px;">
-                        </div>
-                    </span>
-                </div>
+        <div class="trail-group">
+            <label for="trail-tail-color">Tail</label>
+            <input type="color" id="trail-tail-color" class="color-picker" value="#FF0000">
+        </div>
 
-            </div>
+        <div class="trail-group line-composite">
+            <label for="trail-line-color">Line</label>
+            <input type="color" id="trail-line-color" class="color-picker" value="#FF0000">
+            <input type="checkbox" id="show-lines-toggle" class="trail-toggle" style="transform: translateY(2px);" checked title="Toggle Lines" >
+        </div>
+
+<div class="trail-group" style="transform: translateY(-5px);">
+    <label for="show-label-toggle" style="transform: translateX(8.5px);">
+        Tags
+    </label>
+    <input type="checkbox"
+           id="show-label-toggle"
+           class="trail-toggle"
+           style="transform: translateY(2px);"
+           checked>
+</div>
+
+    </div>
+</div>
+
+
+
+            
         </div>
 
         <script type="module">
@@ -330,13 +328,13 @@
                 Radar Track Stats
             </h3>
             <table><tbody>
-                <tr><td>Points:</td><td><span id="${radarintID}-points-stat">0</span></td></tr>
-                <tr><td>Track ID:</td><td><a href="https://globe.adsbexchange.com">?</a></td></tr>
-                <tr><td>Latitude:</td><td><span id="${radarintID}-lat-stat">0.0</span>&deg;</td></tr>
-                <tr><td>Longitude:</td><td><span id="${radarintID}-long-stat">0.0</span>&deg;</td></tr>
-                <tr><td>Alt (WGS84):</td><td><span id="${radarintID}-geoalt-stat">0.0</span> m</td></tr>
-                <tr><td>Vel:</td><td><span id="${radarintID}-vel-stat">0.0</span> m/s</td></tr>
-                <tr><td>Duration:</td><td><span id="${radarintID}-duration-stat">0.0</span> s</td></tr>
+                <tr><td>Points:</td><td><span id="${radar}-points-stat">0</span></td></tr>
+                <tr><td>RCS:</td><td><span id="${radar}-points-stat">0</span> m&sup2;</td></tr>
+                <tr><td>Latitude:</td><td><span id="${radar}-lat-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Longitude:</td><td><span id="${radar}-long-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Alt:</td><td><span id="${radar}-geoalt-stat">0.0</span> m</td></tr>
+                <tr><td>Vel:</td><td><span id="${radar}-vel-stat">0.0</span> m/s</td></tr>
+                <tr><td>Duration:</td><td><span id="${radar}-duration-stat">0.0</span> s</td></tr>
             </tbody></table>
         </div>
     </div>

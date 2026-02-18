@@ -1,6 +1,7 @@
 // playback.js
 import { extractGpsPointsFromText } from "./parser.js";
 import { extractAdsbPointsFromText } from "./adsbParser.js";
+import { extractRadarPointsFromText } from "./radarParser.js";
 import { getActiveFileType } from "./fileManager.js";
 import { updateStats } from "./statsUI.js";
 import { plotGpsData } from "./plotManager.js";
@@ -33,8 +34,8 @@ function rebuildSortedTimeline() {
 
 // ─── Getters / Setters ────────────────────────────────────────────────────────
 
-export function getPlaybackSpeed()         { return currentPlaybackSpeed; }
-export function getAllFileLines()           { return allFileLines; }
+export function getPlaybackSpeed()  { return currentPlaybackSpeed; }
+export function getAllFileLines()    { return allFileLines; }
 
 export function setPlaybackSpeed(speed) {
     const old = currentPlaybackSpeed;
@@ -64,7 +65,6 @@ export function getPlaybackState() {
 /**
  * Provide pre-parsed overlay points so the playback scrubber can time-filter them.
  * Called by fileManager whenever overlays change.
- * @param {Array} pts - Combined points from all currently overlaid files.
  */
 export function setOverlayPoints(pts) {
     overlayPoints = pts || [];
@@ -76,10 +76,18 @@ export function setPlaybackLines(lines) {
     allFileLines = lines;
     const type = getActiveFileType();
 
-    cachedPointsPerLine = lines.map(line => {
-        if (type === 'adsb') return extractAdsbPointsFromText(line) || [];
-        return extractGpsPointsFromText(line) || [];
-    });
+    if (type === 'radar') {
+        // Radar CSV must be parsed as a whole — line 0 is the header row.
+        // fileManager passes the entire file text as a single element array.
+        const fullText = lines.join('\n');
+        const pts = extractRadarPointsFromText(fullText) || [];
+        cachedPointsPerLine = [pts];
+    } else {
+        cachedPointsPerLine = lines.map(line => {
+            if (type === 'adsb') return extractAdsbPointsFromText(line) || [];
+            return extractGpsPointsFromText(line) || [];
+        });
+    }
 
     rebuildSortedTimeline();
     currentPointIndex = Math.max(0, allActiveSortedPoints.length - 1);
@@ -174,7 +182,6 @@ function updatePlotToCurrentPosition() {
     }
 
     plotGpsData(combinedPts, false);
-    // Pass all visible points to stats so overlay talkers get their own panels
     updateStats(combinedPts, type);
 }
 

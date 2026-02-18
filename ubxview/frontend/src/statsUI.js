@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { getTrackVariantColor, isElevationModeActive, getElevationColorForTrack } from './trailControls.js';
 import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
+import { groupRadarByTrack, calculateRadarTrackStats } from './radarParser.js';
 
 let currentlyTrackedId = null;
 let statsContainerInitialized = false;
@@ -16,6 +17,7 @@ let statsContainerInitialized = false;
  */
 function pointDataType(p) {
     if (!p) return 'nmea';
+    if (p.dataType === 'radar') return 'radar';
     if (p.dataType === 'adsb') return 'adsb';
     if (p.dataType === 'nmea') return 'nmea';
     // Heuristics
@@ -29,12 +31,14 @@ function pointDataType(p) {
  * Split a flat point array into { nmea: [...], adsb: [...] }.
  */
 function partitionByDataType(points) {
-    const nmea = [], adsb = [];
+    const nmea = [], adsb = [], radar = [];
     for (const p of points) {
-        if (pointDataType(p) === 'adsb') adsb.push(p);
-        else nmea.push(p);
+        const t = pointDataType(p);
+        if (t === 'adsb')        adsb.push(p);
+        else if (t === 'radar')  radar.push(p);
+        else                     nmea.push(p);
     }
-    return { nmea, adsb };
+    return { nmea, adsb, radar };
 }
 
 // ─── Aircraft Lookup Cache ────────────────────────────────────────────────────
@@ -310,6 +314,64 @@ function updateAdsbStatsDOM(icao, stats) {
     }
 }
 
+
+// ─── Radar Panel ──────────────────────────────────────────────────────────────
+function createRadarStatsHTML(trackId, headerColor) {
+    const rid = `radar_${trackId}`;
+    return `
+        <div class="stats-group" data-data-type="radar" data-panel-id="${rid}">
+            <h3 style="color: ${headerColor};" class="talker-header" data-talker-id="${rid}" tabindex="0" role="button" title="Click to follow">
+                <span>Track ${trackId}</span>
+            </h3>
+            <table><tbody>
+                <tr><td>Points:</td><td><span id="${rid}-points-stat">0</span></td></tr>
+                <tr><td>RCS:</td><td><span id="${rid}-rcs-stat">--</span> m&sup2;</td></tr>
+                <tr><td>Latitude:</td><td><span id="${rid}-lat-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Longitude:</td><td><span id="${rid}-long-stat">0.0</span>&deg;</td></tr>
+                <tr><td>Alt:</td><td><span id="${rid}-alt-stat">0.0</span> m</td></tr>
+                <tr><td>Vel:</td><td><span id="${rid}-vel-stat">0.0</span> m/s</td></tr>
+                <tr><td>Duration:</td><td><span id="${rid}-duration-stat">0.0</span> s</td></tr>
+            </tbody></table>
+        </div>`;
+}
+
+function updateRadarStatsDOM(trackId, stats) {
+    const rid = `radar_${trackId}`;
+    const s = id => document.getElementById(`${rid}-${id}`);
+    if (!s('points-stat')) return;
+    s('points-stat').textContent = stats.totalPoints;
+    s('rcs-stat').textContent    = stats.currentRcs != null ? stats.currentRcs.toFixed(4) : '--';
+    s('lat-stat').textContent    = stats.currentLat.toFixed(7);
+    s('long-stat').textContent   = stats.currentLon.toFixed(7);
+    s('alt-stat').textContent    = stats.currentAlt.toFixed(1);
+    s('vel-stat').textContent    = stats.currentVel != null ? stats.currentVel.toFixed(2) : '--';
+    s('duration-stat').textContent = stats.duration.toFixed(1);
+}
+
+function updateRadarStats(container, points, baseColor, isElevation) {
+    if (points.length === 0) {
+        container.querySelectorAll('.stats-group[data-data-type="radar"]').forEach(p => p.remove());
+        return;
+    }
+    const byTrack = groupRadarByTrack(points);
+    const ids     = Object.keys(byTrack).sort((a, b) => Number(a) - Number(b));
+    removeStalePanels(container, ids.map(id => `radar_${id}`), 'radar');
+    ids.forEach(trackId => {
+        const rid = `radar_${trackId}`;
+        if (!document.getElementById(`${rid}-points-stat`)) {
+            const colorHex = isElevation
+                ? `#${getElevationColorForTrack(rid).getHexString()}`
+                : `#${getTrackVariantColor(baseColor, rid).getHexString()}`;
+            container.insertAdjacentHTML('beforeend', createRadarStatsHTML(trackId, colorHex));
+        }
+        const stats = calculateRadarTrackStats(byTrack[trackId]);
+        if (stats) updateRadarStatsDOM(trackId, stats);
+    });
+}
+
+
+
+
 // ─── Shared Helpers ───────────────────────────────────────────────────────────
 function formatTime(timeInSeconds) {
     const h = Math.floor(timeInSeconds / 3600).toString().padStart(2, '0');
@@ -363,7 +425,7 @@ export function updateStats(points, _dataTypeHint) {
 
     if (!points || points.length === 0) return;
 
-    const { nmea: nmeaPoints, adsb: adsbPoints } = partitionByDataType(points);
+    const { nmea: nmeaPoints, adsb: adsbPoints, radar: radarPoints } = partitionByDataType(points);
 
     const tailPicker = document.getElementById('trail-tail-color');
     const baseColor = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
@@ -372,6 +434,7 @@ export function updateStats(points, _dataTypeHint) {
     // Each renderer manages only its own panel type — no cross-contamination.
     updateNmeaStats(statsContainer, nmeaPoints, baseColor, isElevation);
     updateAdsbStats(statsContainer, adsbPoints, baseColor, isElevation);
+    updateRadarStats(statsContainer, radarPoints, baseColor, isElevation);
 
     // Total panel count drives search bar visibility
     const totalPanels = statsContainer.querySelectorAll('.stats-group').length;

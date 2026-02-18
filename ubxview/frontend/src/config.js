@@ -20,5 +20,6 @@ export const DEFAULTS = {
     initialTileService: 'satellite',
     zoomLevel: 17,           // NMEA / rover (< 5 km spread)
     adsbZoomLevel: 11,       // ADS-B / wide-area aircraft
-    initialRenderDistance: 7
+    radarZoomLevel: 11,       // Radar
+    initialRenderDistance: 5
 };
