@@ -13,7 +13,7 @@
 > [u-center](https://www.u-blox.com/en/product/u-center) - GPS utility<br>
 
 ## Databases
-> ICAO24 Lookup: https://opensky-network.org/datasets/#metadata/
+> ICAO24 Lookup: https://hexdb.io/
 
 ## Get Running
 
