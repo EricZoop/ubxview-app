@@ -388,42 +388,48 @@
     </div>
 
 
-    <div id="playback">
-        <div class="controls">
-            <button id="rewind">
-                <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
-            </button>
+ <div id="playback">
+    <div class="controls">
+        <button id="rewind">
+            <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
+        </button>
 
-            <button id="playPause">
-                <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
-                <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
-            </button>
+        <button id="playPause">
+            <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
+            <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
+        </button>
 
-            <button id="forward">
-                <img src="assets/seek.png" title="Seek" />
-            </button>
-        </div>
-
-        <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="1" />
-
-        <div class="speed-control-container">
-            <div id="speedOptions" class="speed-options">
-                <button class="speed-option" data-speed="0.5">0.5x</button>
-                <button class="speed-option active" data-speed="1">1x</button>
-                <button class="speed-option" data-speed="2.5">2.5x</button>
-                <button class="speed-option" data-speed="5">5x</button>
-                <button class="speed-option" data-speed="10">10x</button>
-            </div>
-
-            <button id="adjustSpeed">
-                <img src="/assets/tachometer.png" title="Adjust Speed" />
-            </button>
-        </div>
-
-        <button id="goLive">
-            <img src="/assets/stream.png" title="Go to Live" />
+        <button id="forward">
+            <img src="assets/seek.png" title="Seek" />
         </button>
     </div>
+
+    <div class="slider-container" style="display: flex; flex-direction: column; flex-grow: 1; align-items: center; margin: 0 15px;">
+        <input type="range" id="timeSlider" min="0" max="1" step="1" value="1" style="width: 100%; margin-bottom: 4px;" />
+        
+    </div>
+
+    <span id="timeDisplay" style="font-variant-numeric: tabular-nums;">--:--:-- / --:--:--</span>
+
+    <div class="speed-control-container">
+        <div id="speedOptions" class="speed-options">
+            <button class="speed-option" data-speed="0.5">0.5x</button>
+            <button class="speed-option active" data-speed="1">1x</button>
+            <button class="speed-option" data-speed="2.5">2.5x</button>
+            <button class="speed-option" data-speed="5">5x</button>
+            <button class="speed-option" data-speed="10">10x</button>
+            <button class="speed-option" data-speed="100">100x</button>
+        </div>
+
+        <button id="adjustSpeed">
+            <img src="/assets/tachometer.png" title="Adjust Speed" />
+        </button>
+    </div>
+
+    <button id="goLive">
+        <img src="/assets/stream.png" title="Go to Live" />
+    </button>
+</div>
 
     <div id="com-reader" class="noselect">
 

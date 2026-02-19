@@ -8,43 +8,80 @@ import { plotGpsData } from "./plotManager.js";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let allFileLines = [];
-let cachedPointsPerLine = [];          // raw per-line parse cache (still used by watcher)
-let allActiveSortedPoints = [];        // flat, time-sorted points from the active file
-let overlayPoints = [];                // pre-parsed points from overlaid files
+let cachedPointsPerLine = [];
+let allActiveSortedPoints = [];
+let overlayPoints = [];
 
 let currentPointIndex = 0;
 let isPlaying = false;
 let isLiveMode = true;
-let playbackInterval = null;
+let playbackTimer = null;
 let currentPlaybackSpeed = 1.0;
 
-const BASE_PLAYBACK_SPEED_MS = 100;
+const FALLBACK_INTERVAL_MS = 100;
 const SEEK_POINTS = 100;
+
+// ─── Timestamp Normalisation ───────────────────────────────────────────────────
+/**
+ * Convert a raw `point.time` value to milliseconds (JS Date-compatible).
+ *
+ * Parsers may store time as:
+ *   • Unix milliseconds  (~1.7 × 10¹²)  → use as-is
+ *   • Unix seconds       (~1.7 × 10⁹)   → multiply × 1000
+ *   • Seconds of day     (0 – 86 400)    → add today's UTC midnight offset
+ *
+ * Threshold: anything below 1 × 10¹⁰ is treated as seconds.
+ */
+function normalizeTs(ts) {
+    if (ts == null || ts === 0) return null;
+    return ts < 1e10 ? ts * 1000 : ts;   // seconds → ms  |  ms → ms
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Rebuild allActiveSortedPoints from the cached per-line arrays. */
 function rebuildSortedTimeline() {
     const flat = [];
     for (const pts of cachedPointsPerLine) {
         if (pts && pts.length) flat.push(...pts);
     }
-    allActiveSortedPoints = flat.sort((a, b) => a.time - b.time);
+    // Sort by normalised timestamp so the timeline is always wall-clock order
+    allActiveSortedPoints = flat.sort((a, b) => {
+        const ta = normalizeTs(a.time) ?? Infinity;
+        const tb = normalizeTs(b.time) ?? Infinity;
+        return ta - tb;
+    });
+}
+
+function formatTimestamp(ts) {
+    const ms = normalizeTs(ts);
+    if (!ms) return "--:--:--";
+    const date = new Date(ms);
+    return date.toLocaleTimeString('en-US', {
+        hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+}
+
+/**
+ * Wall-clock delay (ms) before the *next* point should appear, scaled by speed.
+ * Uses normalised timestamps so the unit mismatch can't affect it.
+ */
+function delayToNextPoint(idx) {
+    const curMs  = normalizeTs(allActiveSortedPoints[idx]?.time);
+    const nextMs = normalizeTs(allActiveSortedPoints[idx + 1]?.time);
+    if (curMs != null && nextMs != null && nextMs > curMs) {
+        return Math.max(0, (nextMs - curMs) / currentPlaybackSpeed);
+    }
+    return FALLBACK_INTERVAL_MS / currentPlaybackSpeed;
 }
 
 // ─── Getters / Setters ────────────────────────────────────────────────────────
 
-export function getPlaybackSpeed()  { return currentPlaybackSpeed; }
-export function getAllFileLines()    { return allFileLines; }
+export function getPlaybackSpeed() { return currentPlaybackSpeed; }
+export function getAllFileLines()   { return allFileLines; }
 
 export function setPlaybackSpeed(speed) {
-    const old = currentPlaybackSpeed;
     currentPlaybackSpeed = speed;
-    console.log(`Playback speed ${old}x → ${speed}x`);
-    if (isPlaying && playbackInterval) {
-        clearInterval(playbackInterval);
-        startPlaybackInterval();
-    }
+    if (isPlaying) { cancelTimer(); scheduleNextPoint(); }
     updateSpeedDisplay();
 }
 
@@ -62,13 +99,7 @@ export function getPlaybackState() {
     };
 }
 
-/**
- * Provide pre-parsed overlay points so the playback scrubber can time-filter them.
- * Called by fileManager whenever overlays change.
- */
-export function setOverlayPoints(pts) {
-    overlayPoints = pts || [];
-}
+export function setOverlayPoints(pts) { overlayPoints = pts || []; }
 
 // ─── Line / Timeline Management ───────────────────────────────────────────────
 
@@ -77,11 +108,8 @@ export function setPlaybackLines(lines) {
     const type = getActiveFileType();
 
     if (type === 'radar') {
-        // Radar CSV must be parsed as a whole — line 0 is the header row.
-        // fileManager passes the entire file text as a single element array.
         const fullText = lines.join('\n');
-        const pts = extractRadarPointsFromText(fullText) || [];
-        cachedPointsPerLine = [pts];
+        cachedPointsPerLine = [extractRadarPointsFromText(fullText) || []];
     } else {
         cachedPointsPerLine = lines.map(line => {
             if (type === 'adsb') return extractAdsbPointsFromText(line) || [];
@@ -107,33 +135,35 @@ export function updateSliderRange() {
 
 // ─── Core Playback ────────────────────────────────────────────────────────────
 
-function getCurrentPlaybackInterval() {
-    return BASE_PLAYBACK_SPEED_MS / currentPlaybackSpeed;
+function cancelTimer() {
+    if (playbackTimer !== null) { clearTimeout(playbackTimer); playbackTimer = null; }
 }
 
-function startPlaybackInterval() {
-    if (currentPointIndex >= allActiveSortedPoints.length - 1) currentPointIndex = 0;
+function scheduleNextPoint() {
+    if (!isPlaying) return;
+    if (currentPointIndex >= allActiveSortedPoints.length - 1) { pausePlayback(); return; }
 
-    playbackInterval = setInterval(() => {
-        if (currentPointIndex < allActiveSortedPoints.length - 1) {
-            currentPointIndex++;
-            updateTimeSlider();
-            updatePlotToCurrentPosition();
-        } else {
-            pausePlayback();
-        }
-    }, getCurrentPlaybackInterval());
+    const delay = delayToNextPoint(currentPointIndex);
+
+    playbackTimer = setTimeout(() => {
+        if (!isPlaying) return;
+        currentPointIndex++;
+        updateTimeSlider();
+        updatePlotToCurrentPosition();
+        scheduleNextPoint();
+    }, delay);
 }
 
 export function startPlayback() {
-    if (playbackInterval) clearInterval(playbackInterval);
+    cancelTimer();
+    if (currentPointIndex >= allActiveSortedPoints.length - 1) currentPointIndex = 0;
     isPlaying = true;
     updatePlayPauseButton();
-    startPlaybackInterval();
+    scheduleNextPoint();
 }
 
 export function pausePlayback() {
-    if (playbackInterval) { clearInterval(playbackInterval); playbackInterval = null; }
+    cancelTimer();
     isPlaying = false;
     updatePlayPauseButton();
 }
@@ -143,6 +173,7 @@ export function rewind() {
     currentPointIndex = Math.max(0, currentPointIndex - SEEK_POINTS);
     updateTimeSlider();
     updatePlotToCurrentPosition();
+    if (isPlaying) { cancelTimer(); scheduleNextPoint(); }
 }
 
 export function forward() {
@@ -150,12 +181,10 @@ export function forward() {
     currentPointIndex = Math.min(allActiveSortedPoints.length - 1, currentPointIndex + SEEK_POINTS);
     updateTimeSlider();
     updatePlotToCurrentPosition();
+    if (isPlaying) { cancelTimer(); scheduleNextPoint(); }
 }
 
-export function enterPlaybackMode() {
-    isLiveMode = false;
-    updateGoLiveButton();
-}
+export function enterPlaybackMode() { isLiveMode = false; updateGoLiveButton(); }
 
 export function goLive() {
     isLiveMode = true;
@@ -173,11 +202,9 @@ function updatePlotToCurrentPosition() {
     const activePts = allActiveSortedPoints.slice(0, currentPointIndex + 1);
 
     let combinedPts = activePts;
-
     if (overlayPoints.length > 0) {
-        // Show overlay points whose timestamp is <= current active time
-        const currentTime = allActiveSortedPoints[currentPointIndex]?.time ?? Infinity;
-        const visibleOverlay = overlayPoints.filter(p => p.time <= currentTime);
+        const currentTime = normalizeTs(allActiveSortedPoints[currentPointIndex]?.time) ?? Infinity;
+        const visibleOverlay = overlayPoints.filter(p => (normalizeTs(p.time) ?? Infinity) <= currentTime);
         combinedPts = [...activePts, ...visibleOverlay];
     }
 
@@ -188,10 +215,17 @@ function updatePlotToCurrentPosition() {
 // ─── UI Helpers ───────────────────────────────────────────────────────────────
 
 function updateTimeSlider() {
-    const slider = document.getElementById("timeSlider");
-    if (slider && allActiveSortedPoints.length > 0) {
-        slider.max = allActiveSortedPoints.length - 1;
-        slider.value = currentPointIndex;
+    const slider      = document.getElementById("timeSlider");
+    const timeDisplay = document.getElementById("timeDisplay");
+
+    if (allActiveSortedPoints.length > 0) {
+        const maxIndex = allActiveSortedPoints.length - 1;
+        if (slider) { slider.max = maxIndex; slider.value = currentPointIndex; }
+        if (timeDisplay) {
+            const curTs = allActiveSortedPoints[currentPointIndex]?.time;
+            const endTs = allActiveSortedPoints[maxIndex]?.time;
+            timeDisplay.textContent = `${formatTimestamp(curTs)} / ${formatTimestamp(endTs)}`;
+        }
     }
 }
 
@@ -225,7 +259,9 @@ function updateSpeedDisplay() {
 export function handleTimeSliderChange(event) {
     if (isLiveMode) enterPlaybackMode();
     currentPointIndex = parseInt(event.target.value);
+    updateTimeSlider();
     updatePlotToCurrentPosition();
+    if (isPlaying) { cancelTimer(); scheduleNextPoint(); }
 }
 
 export function handleSpeedSelection(event) {
