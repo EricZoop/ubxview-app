@@ -1112,11 +1112,19 @@ select:hover {
    ═══════════════════════════════════════════════════════════════ */
 
 .stats-search-wrapper {
-    position: absolute;
+    position: relative;
     max-width: 100%;
     box-sizing: border-box;
     margin-bottom: 8px;
+    top: 0;
 
+}
+
+.your-sidebar-container { 
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Forces the container to fit the screen */
+    overflow: hidden; /* Stops the whole sidebar from scrolling */
 }
 
 .stats-search-input {
@@ -1128,7 +1136,7 @@ select:hover {
     color: #eee;
     font-family: inherit;
     font-size: 0.8rem;
-    padding: 6px 24px 6px 0; /* Right padding ensures text doesn't overlap icon */
+    padding: 6px 24px 6px 0px; /* Right padding ensures text doesn't overlap icon */
     border-radius: 0;
     outline: none;
     transition: border-color 0.2s ease;
