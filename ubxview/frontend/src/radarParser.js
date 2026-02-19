@@ -45,6 +45,7 @@ function parseDateTimeToSeconds(dtStr) {
  * Parse radar CSV text into an array of point objects.
  * Each point carries { dataType:'radar', talkerId, id, lat, lon, alt, time, rcs, velAbs, extId, dateTime }.
  * talkerId follows the convention "radar_<ID>" so it is unique across NMEA/ADS-B namespaces.
+ * Filters out tracks that have 10 or fewer points.
  */
 export function extractRadarPointsFromText(text) {
     if (!text || !text.trim()) return [];
@@ -71,6 +72,7 @@ export function extractRadarPointsFromText(text) {
     }
 
     const points = [];
+    const trackCounts = {}; // Keep track of point counts per ID
 
     for (let i = 1; i < lines.length; i++) {
         const c = lines[i].split(',');
@@ -100,12 +102,16 @@ export function extractRadarPointsFromText(text) {
                 extId,
                 dateTime,
             });
+
+            // Increment count for this specific track ID
+            trackCounts[id] = (trackCounts[id] || 0) + 1;
         } catch (_) {
             continue;
         }
     }
 
-    return points;
+    // Only return points belonging to a track that has more than 10 points
+    return points.filter(p => trackCounts[p.id] > 20);
 }
 
 /**
@@ -137,7 +143,7 @@ export function calculateRadarTrackStats(trackPoints) {
         currentAlt   : last.alt,
         currentVel   : last.velAbs,
         currentRcs   : last.rcs,
-        currentExtId : sorted.length > 10 ? (last.extId || null) : null,
+        currentExtId : last.extId,
         startTime    : first.time,
         endTime      : last.time,
     };

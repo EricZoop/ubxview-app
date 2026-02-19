@@ -2,7 +2,7 @@
 // DOM manipulation and UI updates for statistics panel
 
 import * as THREE from 'three';
-import { getTrackVariantColor, isElevationModeActive, getElevationColorForTrack } from './trailControls.js';
+import { getTrackVariantColor, isElevationModeActive, getElevationColorForTrack, isClassifyModeActive, getClassifyColorForTrack } from './trailControls.js';
 import { groupPointsByTalker, calculateTalkerStats } from './parser.js';
 import { groupAdsbByAircraft, calculateAdsbAircraftStats, emitterTypeLabel } from './adsbParser.js';
 import { groupRadarByTrack, calculateRadarTrackStats } from './radarParser.js';
@@ -83,12 +83,15 @@ export function updateStatsHeaderColors() {
     const tailPicker = document.getElementById('trail-tail-color');
     const base = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
     const isElevation = isElevationModeActive();
+    const isClassify  = isClassifyModeActive();
 
     document.querySelectorAll('.talker-header').forEach(header => {
         const talkerId = header.dataset.talkerId;
         const color = isElevation
             ? getElevationColorForTrack(talkerId)
-            : getTrackVariantColor(base, talkerId);
+            : isClassify
+                ? getClassifyColorForTrack(talkerId)
+                : getTrackVariantColor(base, talkerId);
         header.style.color = `#${color.getHexString()}`;
     });
 }
@@ -117,11 +120,12 @@ export function updateStats(points, _dataTypeHint) {
     const tailPicker = document.getElementById('trail-tail-color');
     const baseColor = new THREE.Color(tailPicker ? tailPicker.value : '#00ffaa');
     const isElevation = isElevationModeActive();
+    const isClassify  = isClassifyModeActive();
 
     // Each renderer manages only its own panel type — no cross-contamination.
-    updateNmeaStats(statsContainer, nmeaPoints, baseColor, isElevation);
-    updateAdsbStats(statsContainer, adsbPoints, baseColor, isElevation);
-    updateRadarStats(statsContainer, radarPoints, baseColor, isElevation);
+    updateNmeaStats(statsContainer, nmeaPoints, baseColor, isElevation, isClassify);
+    updateAdsbStats(statsContainer, adsbPoints, baseColor, isElevation, isClassify);
+    updateRadarStats(statsContainer, radarPoints, baseColor, isElevation, isClassify);
 
     // Total panel count drives search bar visibility
     const totalPanels = statsContainer.querySelectorAll('.stats-group').length;
@@ -177,7 +181,7 @@ function updateNmeaStatsDOM(talkerId, stats) {
     s('end-stat').textContent = formatTime(stats.endTime);
 }
 
-function updateNmeaStats(container, points, baseColor, isElevation) {
+function updateNmeaStats(container, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
         container.querySelectorAll('.stats-group[data-data-type="nmea"]').forEach(p => p.remove());
         return;
@@ -192,7 +196,9 @@ function updateNmeaStats(container, points, baseColor, isElevation) {
         if (!document.getElementById(`${talkerId}-points-stat`)) {
             const colorHex = isElevation
                 ? `#${getElevationColorForTrack(talkerId).getHexString()}`
-                : `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
+                : isClassify
+                    ? `#${getClassifyColorForTrack(talkerId).getHexString()}`
+                    : `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
             container.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, colorHex));
         }
         const stats = calculateTalkerStats(byTalker[talkerId]);
@@ -256,7 +262,7 @@ function updateAdsbStatsDOM(icao, stats) {
     }
 }
 
-function updateAdsbStats(container, points, baseColor, isElevation) {
+function updateAdsbStats(container, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
         container.querySelectorAll('.stats-group[data-data-type="adsb"]').forEach(p => p.remove());
         return;
@@ -271,7 +277,9 @@ function updateAdsbStats(container, points, baseColor, isElevation) {
         if (!document.getElementById(`${icao}-points-stat`)) {
             const colorHex = isElevation
                 ? `#${getElevationColorForTrack(icao).getHexString()}`
-                : `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
+                : isClassify
+                    ? `#${getClassifyColorForTrack(icao).getHexString()}`
+                    : `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
             container.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, colorHex));
             fetchAircraftInfo(icao);
         }
@@ -315,7 +323,7 @@ function updateRadarStatsDOM(trackId, stats) {
     s('duration-stat').textContent = stats.duration.toFixed(1);
 }
 
-function updateRadarStats(container, points, baseColor, isElevation) {
+function updateRadarStats(container, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
         container.querySelectorAll('.stats-group[data-data-type="radar"]').forEach(p => p.remove());
         return;
@@ -328,7 +336,9 @@ function updateRadarStats(container, points, baseColor, isElevation) {
         if (!document.getElementById(`${rid}-points-stat`)) {
             const colorHex = isElevation
                 ? `#${getElevationColorForTrack(rid).getHexString()}`
-                : `#${getTrackVariantColor(baseColor, rid).getHexString()}`;
+                : isClassify
+                    ? `#${getClassifyColorForTrack(rid).getHexString()}`
+                    : `#${getTrackVariantColor(baseColor, rid).getHexString()}`;
             container.insertAdjacentHTML('beforeend', createRadarStatsHTML(trackId, colorHex));
         }
         const stats = calculateRadarTrackStats(byTrack[trackId]);

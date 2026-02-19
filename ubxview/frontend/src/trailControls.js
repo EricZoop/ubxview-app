@@ -10,6 +10,24 @@ let masterGpsPoints = [];
 let bounds = null;
 let isElevationMode = false;
 let elevationColorData = null; // { minElevation, maxElevation, elevationRange } across all tracks
+let isClassifyMode = false;
+
+// Classify mode: fixed colors per data type
+const CLASSIFY_COLORS = {
+    radar: new THREE.Color(0xff2222),   // red
+    adsb:  new THREE.Color(0x2266ff),   // blue
+    nmea:  new THREE.Color(0xffdd00),   // yellow (drone)
+};
+
+function pointDataTypeClassify(p) {
+    if (!p) return 'nmea';
+    if (p.dataType === 'radar') return 'radar';
+    if (p.dataType === 'adsb')  return 'adsb';
+    if (p.dataType === 'nmea')  return 'nmea';
+    if (p.icaoAddress !== undefined || p.heading !== undefined || p.horizontalVelocity !== undefined) return 'adsb';
+    if (p.talkerId && /^[A-Z]{2}$/.test(p.talkerId)) return 'nmea';
+    return 'nmea';
+}
 
 // ─── Stable Color Assignment ────────────────────────────────────────────────
 const GOLDEN_ANGLE = 0.618033988749895;
@@ -40,6 +58,71 @@ export function resetStableColors() {
     stableColorMap.clear();
     nextColorIndex = 0;
 }
+
+// ─── Color Picker State ──────────────────────────────────────────────────────
+const COLOR_PICKER_IDS = ['trail-head-color', 'trail-tail-color', 'trail-line-color'];
+
+function updateColorPickerState() {
+    const disabled = isElevationMode || isClassifyMode;
+    COLOR_PICKER_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = disabled;
+        el.style.opacity = disabled ? '0.35' : '1';
+        el.style.cursor  = disabled ? 'not-allowed' : 'pointer';
+        // Wrap label too if present
+        const group = el.closest('.trail-group');
+        if (group) group.style.cursor = disabled ? 'not-allowed' : '';
+    });
+}
+
+// ─── Classify Mode ───────────────────────────────────────────────────────────
+export function getClassifyColorForTrack(talkerId) {
+    const track = plotObjects.get(talkerId);
+    if (!track || !track.gpsPoints || !track.gpsPoints.length) {
+        return new THREE.Color(0xffffff);
+    }
+    // Determine type from first available point
+    const p = track.gpsPoints[0];
+    const type = pointDataTypeClassify(p);
+    return CLASSIFY_COLORS[type] ? CLASSIFY_COLORS[type].clone() : new THREE.Color(0xffffff);
+}
+
+function updateClassifyPointColors() {
+    if (!plotObjects) return;
+    plotObjects.forEach(({ points: pointsObject, gpsPoints }) => {
+        if (!pointsObject) return;
+        const colors = pointsObject.geometry.attributes.color.array;
+        gpsPoints.forEach((point, i) => {
+            const type = pointDataTypeClassify(point);
+            const color = CLASSIFY_COLORS[type] || new THREE.Color(0xffffff);
+            const ci = i * 3;
+            colors[ci]     = color.r;
+            colors[ci + 1] = color.g;
+            colors[ci + 2] = color.b;
+        });
+        pointsObject.geometry.attributes.color.needsUpdate = true;
+    });
+}
+
+export function enableClassifyMode() {
+    isClassifyMode = true;
+    updateClassifyPointColors();
+    updateLineColor();
+    updateLabelColors(getClassifyColorForTrack);
+    updateStatsHeaderColors(plotObjects);
+    updateColorPickerState();
+}
+
+export function disableClassifyMode() {
+    isClassifyMode = false;
+    updatePointColors();
+    updateLineColor();
+    updateStatsHeaderColors(plotObjects);
+    updateColorPickerState();
+}
+
+export function isClassifyModeActive() { return isClassifyMode; }
 
 
 // ─── Comet Point Sizing ─────────────────────────────────────────────────────
@@ -157,6 +240,7 @@ export function enableElevationMode() {
     // Stats UI: now triggered to update with elevation awareness
     updateStatsHeaderColors(plotObjects);
     
+    updateColorPickerState();
     return true;
 }
 
@@ -166,6 +250,7 @@ export function disableElevationMode() {
     updatePointColors();
     updateLineColor();
     updateStatsHeaderColors(plotObjects);
+    updateColorPickerState();
 }
 
 export function isElevationModeActive() { return isElevationMode; }
@@ -180,6 +265,13 @@ export function updatePointColors() {
         updateElevationPointColors();
         updatePointSizes();
         updateLabelColors(getElevationColorForTrack);
+        return;
+    }
+
+    if (isClassifyMode) {
+        updateClassifyPointColors();
+        updatePointSizes();
+        updateLabelColors(getClassifyColorForTrack);
         return;
     }
 
@@ -232,7 +324,7 @@ export function updatePointColors() {
 export function updateLineColor() {
     if (!plotObjects) return;
     const baseLineColor = new THREE.Color(document.getElementById('trail-line-color').value);
-    const translucent = isElevationMode;
+    const translucent = isElevationMode || isClassifyMode;
 
     plotObjects.forEach(({ line: lineObject }, talkerId) => {
         if (!lineObject || !lineObject.material) return;
@@ -283,21 +375,25 @@ export function setupTrailControlListeners() {
         statsPanel.addEventListener("wheel", (event) => event.stopPropagation());
     }
 
-    const disableElevationAndResetPreset = () => {
-        if (isElevationMode) {
-            disableElevationMode();
-            const presetSelect = document.getElementById("trail-preset");
-            if (presetSelect) presetSelect.value = "";
-        }
+    // Color pickers are disabled during elevation/classify, so this only fires
+    // in normal mode. Still reset preset label to "Custom" to stay consistent.
+    const onColorPickerChange = () => {
+        const presetSelect = document.getElementById("trail-preset");
+        if (presetSelect) presetSelect.value = "";
         updatePointColors();
         updateLineColor();
         updateStatsHeaderColors(plotObjects);
     };
 
-    if (headColorInput) headColorInput.addEventListener("input", disableElevationAndResetPreset);
-    if (tailColorInput) tailColorInput.addEventListener("input", disableElevationAndResetPreset);
-    if (lineColorInput) lineColorInput.addEventListener("input", disableElevationAndResetPreset);
-    if (lineToggle) lineToggle.addEventListener("change", toggleLineVisibility);
+    // Line toggle: just toggle visibility, no mode changes or preset reset.
+    const onLineToggleChange = () => {
+        toggleLineVisibility();
+    };
+
+    if (headColorInput) headColorInput.addEventListener("input", onColorPickerChange);
+    if (tailColorInput) tailColorInput.addEventListener("input", onColorPickerChange);
+    if (lineColorInput) lineColorInput.addEventListener("input", onColorPickerChange);
+    if (lineToggle) lineToggle.addEventListener("change", onLineToggleChange);
 }
 
 
@@ -311,11 +407,18 @@ export function resetTrailControls() {
 }
 
 export function refreshColorsFromUI() {
-    if (isElevationModeActive()) {
-        disableElevationMode();
-    } else {
-        updatePointColors();
-        updateLineColor();
-        updateStatsHeaderColors(plotObjects);
+    // Inline-clear any special modes so updatePointColors reads clean state,
+    // then always do a full repaint from the current UI picker values.
+    if (isElevationMode) {
+        isElevationMode = false;
+        elevationColorData = null;
+        updateColorPickerState();
     }
+    if (isClassifyMode) {
+        isClassifyMode = false;
+        updateColorPickerState();
+    }
+    updatePointColors();
+    updateLineColor();
+    updateStatsHeaderColors(plotObjects);
 }

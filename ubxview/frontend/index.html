@@ -127,12 +127,13 @@
 
 
 
-            <div class="trail-controls">
+<div class="trail-controls">
                 <div class="trail-section">
                     <label for="trail-preset">Plot Palette</label>
                     <select id="trail-preset" style="font-size: 11.56px; font-weight: 400;">
                         <option value="">Custom</option>
                         <option value="elevation">Elevation</option>
+                        <option value="classify">Classify</option>
                         <option value="neon">Neon</option>
                         <option value="invincible">Invincible</option>
                     </select>
@@ -173,9 +174,7 @@
                 import {
                     refreshColorsFromUI,
                     enableElevationMode,
-                    disableElevationMode,
-                    isElevationModeActive,
-                    toggleLineVisibility
+                    enableClassifyMode
                 } from './src/trailControls.js';
 
                 const presets = {
@@ -192,11 +191,12 @@
                         showLines: true
                     },
                     elevation: {
-                        head: '#FF4444',
-                        tail: '#4444FF',
-                        line: '#888888',
                         showLines: true,
                         isElevationBased: true
+                    },
+                    classify: {
+                        showLines: true,
+                        isClassifyBased: true
                     }
                 };
 
@@ -232,10 +232,12 @@
                         const success = enableElevationMode();
                         if (!success) {
                             console.warn('Elevation mode failed, falling back to preset colors.');
-                            applyValues(preset); // Apply colors normally if elevation fails
+                            applyValues(preset);
                         }
+                    } else if (preset.isClassifyBased) {
+                        enableClassifyMode();
                     } else {
-                        applyValues(preset); // For all non-elevation presets
+                        applyValues(preset); // For all non-special presets
                     }
                 }
 
@@ -246,8 +248,13 @@
                     if (selectedPreset) {
                         applyPreset(selectedPreset);
                     } else {
-                        // User chose "Custom" — reapply custom settings
-                        applyValues(customValues);
+                        // User chose "Custom" — refreshColorsFromUI clears any active mode
+                        // then repaints with current picker values. Then restore saved custom values.
+                        document.getElementById('trail-head-color').value = customValues.head;
+                        document.getElementById('trail-tail-color').value = customValues.tail;
+                        document.getElementById('trail-line-color').value = customValues.line;
+                        document.getElementById('show-lines-toggle').checked = customValues.showLines;
+                        refreshColorsFromUI();
                     }
                 });
 
@@ -261,16 +268,14 @@
                         customValues.tail = document.getElementById('trail-tail-color').value;
                         customValues.line = document.getElementById('trail-line-color').value;
 
-                        // Trigger the refresh with the new custom values
+                        // refreshColorsFromUI clears any active mode then repaints
                         refreshColorsFromUI();
                     });
                 });
 
-                // Save toggle state as well
+                // Line toggle: just save state — trailControls handles the actual visibility.
                 document.getElementById('show-lines-toggle').addEventListener('change', function () {
-                    document.getElementById('trail-preset').value = ''; // Custom mode
                     customValues.showLines = this.checked;
-                    toggleLineVisibility(); // This is a simple toggle, no full refresh needed
                 });
 
                 console.log('Trail controls with centralized refresh logic initialized');

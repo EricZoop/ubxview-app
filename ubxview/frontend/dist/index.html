@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-Bx3f5Bgq.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-C4MZHaYg.css">
+  <script type="module" crossorigin src="./assets/index-CWv8FELY.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BKtimEbw.css">
 </head>
 
 <body>
@@ -18,12 +18,13 @@
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v6.0.1</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v6.0.2</a></p>
         </div>
 
 
-        
-        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drones and ADS-B data live for radar auto-registration workflows, powered by u-blox and uAvionix.</div>
+
+        <div style="font-weight: 350; font-size: 12px;">Model real-time kinematic (RTK) drones and ADS-B data live for
+            radar auto-registration workflows, powered by u-blox and uAvionix.</div>
         <hr style="border-width: 0px;">
 
         <!--<h2>Read Capture </h2>-->
@@ -40,25 +41,39 @@
             </div>
 
 
-            <button id="openFileBtn" class="custom-file" style="cursor:pointer;">
+            <button id="openFileBtn" class="custom-file">
                 <span id="fileLabel">
-                    .ubx, .txt, .csv, .log, .ndjson&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512" style="margin-left:auto; flex-shrink:0;">
-                        <path fill="#fff" d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z"/>
-                    </svg>
+                    .ubx, .txt, .csv, .log, .ndjson
                 </span>
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    height="14"
+                    width="14"
+                    viewBox="0 0 512 512"
+                    style="margin-left: auto; margin-right: 0;">
+                    <path fill="#fff"
+                        d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+
+                    </svg>
             </button>
 
             <button id="addFileBtn" class="custom-file" style="cursor:pointer; display:none;">
                 <span id="fileLabel">
-                    .ubx, .txt, .csv, .log, .ndjson&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 512 512" style="margin-left:auto; flex-shrink:0;">
-                        <path fill="#fff" d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z"/>
-                    </svg>
+                    .ubx, .txt, .csv, .log, .ndjson
                 </span>
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    height="14"
+                    width="14"
+                    viewBox="0 0 512 512"
+                    style="margin-left: auto; margin-right: 0;">
+                    <path fill="#fff"
+                        d="M128 64c0-35.3 28.7-64 64-64L352 0l0 128c0 17.7 14.3 32 32 32l128 0 0 288c0 35.3-28.7 64-64 64l-256 0c-35.3 0-64-28.7-64-64l0-112 174.1 0-39 39c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l80-80c9.4-9.4 9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l39 39L128 288l0-224zm0 224l0 48L24 336c-13.3 0-24-10.7-24-24s10.7-24 24-24l104 0zM512 128l-128 0L384 0 512 128z" />
+
+                    </svg>
             </button>
 
-            
+
             <div style="font-weight: 500;" class="noselect">Poll Rate (ms)</div>
             <div class="polling-rate-container">
                 <div class="polling-rate-controls">
@@ -67,7 +82,7 @@
                     <button id="updatePollRateBtn" class="polling-button">Set</button>
                 </div>
             </div>
-            
+
 
 
 
@@ -99,72 +114,65 @@
                 <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
-            
+
             <div style="font-weight: 500;" class="noselect">Render Distance</div>
             <div class="plus-minus-selector">
                 <button id="renderMinus" type="button">&#8722;</button>
                 <div id="renderValue" class="value-display">17</div>
                 <button id="renderPlus" type="button">&#x2b;</button>
             </div>
-            
+
 
 
 <div class="trail-controls">
-    
-    <div class="trail-section">
-        <label for="trail-preset" >Plot Palette</label>
-        <select id="trail-preset" style="font-size: 0.81rem;">
-            <option value="">Custom</option>
-            <option value="elevation">Elevation</option>
-            <option value="neon">Neon</option>
-            <option value="america">1776 &#129413;</option>
-            <option value="invincible">Invincible</option>
-        </select>
-    </div>
+                <div class="trail-section">
+                    <label for="trail-preset">Plot Palette</label>
+                    <select id="trail-preset" style="font-size: 11.56px; font-weight: 400;">
+                        <option value="">Custom</option>
+                        <option value="elevation">Elevation</option>
+                        <option value="classify">Classify</option>
+                        <option value="neon">Neon</option>
+                        <option value="invincible">Invincible</option>
+                    </select>
+                </div>
 
-    <div class="trail-grid">
-        
-        <div class="trail-group">
-            <label for="trail-head-color">Head</label>
-            <input type="color" id="trail-head-color" class="color-picker" value="#FF0000">
-        </div>
+                <div class="trail-grid">
 
-        <div class="trail-group">
-            <label for="trail-tail-color">Tail</label>
-            <input type="color" id="trail-tail-color" class="color-picker" value="#FF0000">
-        </div>
+                    <div class="trail-group">
+                        <label for="trail-head-color">Head</label>
+                        <input type="color" id="trail-head-color" class="color-picker" value="#FF0000">
+                    </div>
 
-        <div class="trail-group line-composite">
-            <label for="trail-line-color">Line</label>
-            <input type="color" id="trail-line-color" class="color-picker" value="#FF0000">
-            <input type="checkbox" id="show-lines-toggle" class="trail-toggle" style="transform: translateY(2px);" checked title="Toggle Lines" >
-        </div>
+                    <div class="trail-group">
+                        <label for="trail-tail-color">Tail</label>
+                        <input type="color" id="trail-tail-color" class="color-picker" value="#FF0000">
+                    </div>
 
-<div class="trail-group" style="transform: translateY(-5px);">
-    <label for="show-label-toggle" style="transform: translateX(8.5px);">
-        Tags
-    </label>
-    <input type="checkbox"
-           id="show-label-toggle"
-           class="trail-toggle"
-           style="transform: translateY(2px);"
-           checked>
-</div>
+                    <div class="trail-group line-composite">
+                        <label for="trail-line-color">Line</label>
+                        <input type="color" id="trail-line-color" class="color-picker" value="#FF0000">
+                        <input type="checkbox" id="show-lines-toggle" class="trail-toggle"
+                            style="transform: translateY(2px);" checked title="Toggle Lines">
+                    </div>
 
-    </div>
-</div>
+                    <div class="trail-group" style="transform: translateY(-5px);">
+                        <label for="show-label-toggle" style="transform: translateX(8.5px);">
+                            Tags
+                        </label>
+                        <input type="checkbox" id="show-label-toggle" class="trail-toggle"
+                            style="transform: translateY(2px);" checked>
+                    </div>
 
-
-
-            
+                </div>
+            </div>
         </div>
 
 
 
-
     </div>
 
-    <div id="stats">
+
+        <div id="stats">
         <div class="stats-group">
             <h3>
                 Rover Stats
@@ -214,6 +222,7 @@
             </h3>
             <table><tbody>
                 <tr><td>Points:</td><td><span id="${radar}-points-stat">0</span></td></tr>
+                <tr><td>Ext ID:</td><td><span id="${radar}-points-stat">?</span></td></tr>
                 <tr><td>RCS:</td><td><span id="${radar}-points-stat">0</span> m&sup2;</td></tr>
                 <tr><td>Latitude:</td><td><span id="${radar}-lat-stat">0.0</span>&deg;</td></tr>
                 <tr><td>Longitude:</td><td><span id="${radar}-long-stat">0.0</span>&deg;</td></tr>
@@ -273,48 +282,48 @@
     </div>
 
 
- <div id="playback">
-    <div class="controls">
-        <button id="rewind">
-            <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
-        </button>
+    <div id="playback">
+        <div class="controls">
+            <button id="rewind">
+                <img src="assets/seek.png" title="Rewind" style="transform: scaleX(-1);" />
+            </button>
 
-        <button id="playPause">
-            <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
-            <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
-        </button>
+            <button id="playPause">
+                <span id="playIcon"><img src="assets/play.png" title="Play" /></span>
+                <span id="pauseIcon" style="display:none;"><img src="assets/pause.png" title="Pause" /></span>
+            </button>
 
-        <button id="forward">
-            <img src="assets/seek.png" title="Seek" />
-        </button>
-    </div>
-
-    <div class="slider-container" style="display: flex; flex-direction: column; flex-grow: 1; align-items: center; margin: 0 15px;">
-        <input type="range" id="timeSlider" min="0" max="1" step="1" value="1" style="width: 100%; margin-bottom: 4px;" />
-        
-    </div>
-
-    <span id="timeDisplay" style="font-variant-numeric: tabular-nums;">--:--:-- / --:--:--</span>
-
-    <div class="speed-control-container">
-        <div id="speedOptions" class="speed-options">
-            <button class="speed-option" data-speed="0.5">0.5x</button>
-            <button class="speed-option active" data-speed="1">1x</button>
-            <button class="speed-option" data-speed="2.5">2.5x</button>
-            <button class="speed-option" data-speed="5">5x</button>
-            <button class="speed-option" data-speed="10">10x</button>
-            <button class="speed-option" data-speed="100">100x</button>
+            <button id="forward">
+                <img src="assets/seek.png" title="Seek" />
+            </button>
         </div>
 
-        <button id="adjustSpeed">
-            <img src="./assets/tachometer.png" title="Adjust Speed" />
+        <div class="slider-container"
+            style="display: flex; flex-direction: column; flex-grow: 1; align-items: center; margin: 0 15px;">
+            <input type="range" id="timeSlider" min="0" max="1" step="1" value="1" style="width: 100%;" />
+
+        </div>
+
+        <span id="timeDisplay" style="font-variant-numeric: tabular-nums;">--:--:-- / --:--:--</span>
+
+        <div class="speed-control-container">
+            <div id="speedOptions" class="speed-options">
+                <button class="speed-option" data-speed="0.5">0.5x</button>
+                <button class="speed-option active" data-speed="1">1x</button>
+                <button class="speed-option" data-speed="2.5">2.5x</button>
+                <button class="speed-option" data-speed="5">5x</button>
+                <button class="speed-option" data-speed="10">10x</button>
+            </div>
+
+            <button id="adjustSpeed">
+                <img src="./assets/tachometer.png" title="Adjust Speed" />
+            </button>
+        </div>
+
+        <button id="goLive">
+            <img src="./assets/stream.png" title="Go to Live" />
         </button>
     </div>
-
-    <button id="goLive">
-        <img src="./assets/stream.png" title="Go to Live" />
-    </button>
-</div>
 
     <div id="com-reader" class="noselect">
 
@@ -331,9 +340,7 @@
         </div>
 
         <div class="com-reader-row top-row">
-            <input type="text" id="url-input"
-                placeholder="http://###.###.###.###/api/v1/traffic"
-                value="">
+            <input type="text" id="url-input" placeholder="http://###.###.###.###/api/v1/traffic" value="">
         </div>
 
         <div class="com-reader-row bottom-row">
