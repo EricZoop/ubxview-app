@@ -27,7 +27,7 @@ body {
 #com-reader,
 #playback {
     position: absolute;
-    padding: 12px 18px;
+    padding: 12px 16px;
     background: linear-gradient(180deg, rgba(15, 15, 15, 0.6), rgba(29, 31, 33, 0.4));
     border-radius: 4px;
     font-size: .85rem;
@@ -215,9 +215,7 @@ input {
 }
 
 .custom-file svg {
-    vertical-align: middle;
     flex-shrink: 0;
-    display: inline-block;
 }
 
 #fileLabel {
@@ -680,8 +678,8 @@ select:hover {
 }
 
 #stats::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0);
+
 }
 
 #stats::-webkit-scrollbar-thumb {
@@ -965,9 +963,8 @@ select:hover {
 
 #com-reader .section-label {
     font-weight: 500;
-    font-size: 0.86rem;
+    font-size: 0.85rem;
     color: white;
-    margin-bottom: 4px;
 }
 
 #url-input {
@@ -1135,7 +1132,7 @@ select:hover {
     border-bottom: 1px solid #444;
     color: #eee;
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: 1rem;
     padding: 6px 24px 6px 0px; /* Right padding ensures text doesn't overlap icon */
     border-radius: 0;
     outline: none;

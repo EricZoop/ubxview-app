@@ -137,6 +137,7 @@ export function calculateRadarTrackStats(trackPoints) {
         currentAlt   : last.alt,
         currentVel   : last.velAbs,
         currentRcs   : last.rcs,
+        currentExtId : sorted.length > 10 ? (last.extId || null) : null,
         startTime    : first.time,
         endTime      : last.time,
     };
