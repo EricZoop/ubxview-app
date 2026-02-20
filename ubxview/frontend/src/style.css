@@ -1039,6 +1039,7 @@ select:hover {
     font-weight: 400;
     font-size: 0.9em;
     color: #aaacaa;
+    font-variant-numeric: tabular-nums;
 }
 
 #com-reader button {

@@ -1,5 +1,6 @@
 // Import the NMEASorter class
 import NMEASorter from './nmea_sorter.js';
+import { WeatherRecorder } from './weatherapp.js';
 
 class SerialRecorder {
     constructor() {
@@ -10,6 +11,9 @@ class SerialRecorder {
         this.baudRateSelect = document.getElementById('baud-rate');
         this.selectPortButton = document.getElementById('select-port-button');
         this.urlInput = document.getElementById('url-input');
+
+        this.weatherRecorder = new WeatherRecorder(); // Fire location request immediately on page load (non-blocking)
+        this.weatherRecorder.requestLocation();
 
         // Prevent keystrokes in the URL input from reaching the 3D environment
         this.urlInput.addEventListener('keydown', (e) => e.stopPropagation());
@@ -258,6 +262,8 @@ class SerialRecorder {
             }
         }
 
+        await this.weatherRecorder.start(this.outputDirHandle, this.currentTimestamp);
+
         // Reset counters
         this.totalBytesWritten = 0;
         this.bytesReceived = 0;
@@ -306,6 +312,9 @@ class SerialRecorder {
 
         // Stop URL polling
         this.stopUrlPolling();
+
+        // Stop Weather
+        await this.weatherRecorder.stop();
 
         // Cancel serial reader
         if (this.reader) {
@@ -515,6 +524,8 @@ class SerialRecorder {
     handlePageHide() {
         if (this.isRecording) {
             console.warn('pagehide: Attempting emergency close of resources.');
+
+            this.weatherRecorder.stopEmergency();
 
             clearInterval(this.rateInterval);
             this.rateInterval = null;

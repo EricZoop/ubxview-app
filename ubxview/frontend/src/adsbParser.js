@@ -31,28 +31,27 @@ export function detectDataFormat(text) {
  */
 export function extractAdsbPointsFromText(text) {
     const points = [];
-    const lines = text.split('\n').filter(l => l.trim());
+    const lines  = text.split('\n').filter(l => l.trim());
 
     for (const line of lines) {
         let packet;
-        try {
-            packet = JSON.parse(line);
-        } catch (_) {
-            continue;
-        }
+        try { packet = JSON.parse(line); } catch (_) { continue; }
 
-        const receivedAt = packet.receivedAt || null;
         const aircraft = packet.data?.aircraft;
         if (!Array.isArray(aircraft) || aircraft.length === 0) continue;
 
         for (const ac of aircraft) {
-            if (!ac.icaoAddress || ac.latDD == null || ac.lonDD == null || ac.altitudeMM == null) continue;
+            // Require position, altitude, ICAO address, and an aircraft-level timestamp
+            if (!ac.icaoAddress || ac.latDD == null || ac.lonDD == null ||
+                ac.altitudeMM == null || !ac.timeStamp) continue;
+
             if (Math.abs(ac.latDD) > 90 || Math.abs(ac.lonDD) > 180) continue;
 
+            // ── Altitude ──────────────────────────────────────────────
             const rawAltM = ac.altitudeMM / 1000;
-            const diffM = (ac.detail && ac.detail.baroaltDiffMM != null) 
-                          ? ac.detail.baroaltDiffMM / 1000 
-                          : null;
+            const diffM   = ac.detail?.baroaltDiffMM != null
+                            ? ac.detail.baroaltDiffMM / 1000
+                            : null;
 
             let baroAlt = null;
             let geoAlt  = null;
@@ -60,50 +59,38 @@ export function extractAdsbPointsFromText(text) {
             // altitudeType 0 = Barometric, 1 = Geometric (GNSS)
             if (ac.altitudeType === 0) {
                 baroAlt = rawAltM;
-                // If we have the difference, calculate Geometric: Geo = Baro + Diff
-                if (diffM !== null) {
-                    geoAlt = baroAlt + diffM;
-                }
+                if (diffM !== null) geoAlt = baroAlt + diffM;
             } else if (ac.altitudeType === 1) {
-                geoAlt = rawAltM;
-                // If we have the difference, calculate Barometric: Baro = Geo - Diff
-                if (diffM !== null) {
-                    baroAlt = geoAlt - diffM;
-                }
+                geoAlt  = rawAltM;
+                if (diffM !== null) baroAlt = geoAlt - diffM;
             }
 
-            const horVelMs   = (ac.horVelocityCMS || 0) / 100;
-            const verVelMs   = (ac.verVelocityCMS || 0) / 100;
-            const headingDeg = (ac.headingDE2 || 0) / 100;
-
-            const ts   = ac.timeStamp || receivedAt;
-            const date = ts ? new Date(ts) : new Date();
-            // Convert to seconds of day (UTC)
-            const time = date.getUTCHours() * 3600
-                       + date.getUTCMinutes() * 60
+            // ── Time (aircraft measurement only, never receivedAt) ────
+            const date = new Date(ac.timeStamp);
+            const time = date.getUTCHours()   * 3600
+                       + date.getUTCMinutes()  * 60
                        + date.getUTCSeconds()
                        + date.getUTCMilliseconds() / 1000;
 
             points.push({
-                lat:        ac.latDD,
-                lon:        ac.lonDD,
-                alt:        geoAlt !== null ? geoAlt : baroAlt, // Prefer Geo for 3D plotting if available
+                lat:          ac.latDD,
+                lon:          ac.lonDD,
+                alt:          geoAlt !== null ? geoAlt : baroAlt, // prefer geometric for 3D plotting
                 baroAlt,
                 geoAlt,
                 time,
-                satellites: 0,
-                undulation: 0,
-                talkerId:   ac.icaoAddress,
-                dataType:   'adsb',
+                satellites:   0,
+                undulation:   0,
+                talkerId:     ac.icaoAddress,
+                dataType:     'adsb',
 
-                icaoAddress:   ac.icaoAddress,
-                heading:       headingDeg,
-                horVelocity:   horVelMs,
-                verVelocity:   verVelMs,
-                altitudeType:  ac.altitudeType ?? null,
-                emitterType:   ac.emitterType  ?? null,
-                receivedAt,
-                rawAltitudeMM: ac.altitudeMM,
+                icaoAddress:  ac.icaoAddress,
+                heading:      (ac.headingDE2    || 0) / 100,
+                horVelocity:  (ac.horVelocityCMS || 0) / 100,
+                verVelocity:  (ac.verVelocityCMS || 0) / 100,
+                altitudeType: ac.altitudeType  ?? null,
+                emitterType:  ac.emitterType   ?? null,
+                timeStamp:    ac.timeStamp,
             });
         }
     }
@@ -118,8 +105,7 @@ export function extractAdsbPointsFromText(text) {
  */
 export function groupAdsbByAircraft(points) {
     return points.reduce((acc, p) => {
-        const key = p.icaoAddress || p.talkerId;
-        (acc[key] ??= []).push(p);
+        (acc[p.icaoAddress] ??= []).push(p);
         return acc;
     }, {});
 }
@@ -130,55 +116,57 @@ export function groupAdsbByAircraft(points) {
  * @returns {Object|null}
  */
 export function calculateAdsbAircraftStats(pts) {
-    if (!pts || pts.length === 0) return null;
+    if (!pts?.length) return null;
 
     const first = pts[0];
     const last  = pts[pts.length - 1];
 
     let totalGroundDist = 0;
     for (let i = 1; i < pts.length; i++) {
-        totalGroundDist += _haversine(pts[i - 1].lat, pts[i - 1].lon, pts[i].lat, pts[i].lon);
+        totalGroundDist += _haversine(pts[i-1].lat, pts[i-1].lon, pts[i].lat, pts[i].lon);
     }
 
     return {
-        icaoAddress:   last.icaoAddress,
-        totalPoints:   pts.length,
-        currentLat:    last.lat,
-        currentLon:    last.lon,
-        // UI expects these keys:
+        icaoAddress:     last.icaoAddress,
+        totalPoints:     pts.length,
+        currentLat:      last.lat,
+        currentLon:      last.lon,
         currentAltM:     last.alt,
         currentBaroAltM: last.baroAlt,
         currentGeoAltM:  last.geoAlt,
-        heading:       last.heading,
-        horVelocityMs: last.horVelocity,
-        verVelocityMs: last.verVelocity,
-        emitterType:   last.emitterType,
-        altitudeType:  last.altitudeType,
-        startTime:     first.time,
-        endTime:       last.time,
-        duration:      last.time - first.time,
-        lastSeen:      last.receivedAt,
+        heading:         last.heading,
+        horVelocityMs:   last.horVelocity,
+        verVelocityMs:   last.verVelocity,
+        emitterType:     last.emitterType,
+        altitudeType:    last.altitudeType,
+        startTime:       first.time,
+        endTime:         last.time,
+        duration:        last.time - first.time,
+        lastSeen:        last.timeStamp,
         totalGroundDist,
     };
 }
 
 /**
- * Emitter type code to label.
+ * Emitter type code to human-readable label.
  * @param {number} code
  * @returns {string}
  */
 export function emitterTypeLabel(code) {
     const map = {
-        0: 'Unknown', 1: 'Light', 2: 'Small', 3: 'Large',
-        4: 'High Vortex', 5: 'Heavy', 6: 'Maneuverable',
-        7: 'Rotorcraft', 9: 'Glider', 10: 'Balloon',
-        11: 'Parachutist', 12: 'Ultralight', 14: 'UAV', 15: 'Space',
+        0: 'Unknown',      1: 'Light',        2: 'Small',
+        3: 'Large',        4: 'High Vortex',  5: 'Heavy',
+        6: 'Maneuverable', 7: 'Rotorcraft',   9: 'Glider',
+        10: 'Balloon',     11: 'Parachutist', 12: 'Ultralight',
+        14: 'UAV',         15: 'Space',
     };
     return map[code] ?? `Type ${code}`;
 }
 
+// ─── Internal Helpers ─────────────────────────────────────────────────────────
+
 function _haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
+    const R    = 6_371_000;
     const toRad = d => d * (Math.PI / 180);
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
