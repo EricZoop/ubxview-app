@@ -261,13 +261,7 @@ async function switchToFile(fileId) {
 
     activeFileId = fileId;
     
-    // FIX: Added explicit check for 'radar' type so it uses the correct zoom level (11)
-    // instead of defaulting to the rover/NMEA zoom level (17).
-    setZoomLevel(
-        entry.type === 'adsb' ? DEFAULTS.adsbZoomLevel :
-        entry.type === 'radar' ? DEFAULTS.radarZoomLevel :
-        DEFAULTS.zoomLevel
-    );
+    setZoomLevel(null); // let tileManager auto-compute from bounding box
 
     const file = await entry.handle.getFile();
     const text = await file.text();
@@ -377,10 +371,8 @@ export async function openFile(onPlotComplete) {
         setOverlayPoints([]);
         activeFileId = fileId;
 
-        setZoomLevel(dataType === 'adsb'  ? DEFAULTS.adsbZoomLevel
-           : dataType === 'radar' ? DEFAULTS.radarZoomLevel
-           : DEFAULTS.zoomLevel);
-
+        setZoomLevel(null);
+        
         // Radar: treat entire file as one unit for the playback timeline
         const allFileLines = dataType === 'radar'
             ? [text]
