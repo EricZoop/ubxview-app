@@ -14,6 +14,11 @@ import {
     updateSliderRange
 } from "./playback.js";
 
+// ─── SVGs ─────────────────────────────────────────────────────────────────────
+import EYE_OPEN_SVG from './assets/eye-open.svg?raw';
+import TRASH_SVG from './assets/trash.svg?raw';
+import OVERLAY_SVG from './assets/overlay.svg?raw';
+
 // ─── File Registry ────────────────────────────────────────────────────────────
 // Map<number, { id, handle, name, type:'nmea'|'adsb'|'radar', readOffset, watcherInterval, isWatcherRunning }>
 const fileRegistry = new Map();
@@ -25,10 +30,6 @@ let POLLING_RATE_MS = 10;
 // Set of fileIds whose data is currently overlaid on the active scene
 const overlayedFileIds = new Set();
 
-// ─── SVGs ─────────────────────────────────────────────────────────────────────
-const EYE_OPEN_SVG = `<svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 576 512"><path fill="currentColor" d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 92.9-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.8-35.7-46.1-87.7-92.9-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0a144 144 0 1 1-288 0zm144-64a64 64 0 1 1 0 128a64 64 0 0 1 0-128z"/></svg>`;
-const TRASH_SVG = `<svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 448 512"><path fill="currentColor" d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg>`;
-const OVERLAY_SVG = `<svg class="overlay-icon" fill="currentColor" width="14" height="14" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M28,8H24V4a2.0023,2.0023,0,0,0-2-2H4A2.0023,2.0023,0,0,0,2,4V22a2.0023,2.0023,0,0,0,2,2H8v4a2.0023,2.0023,0,0,0,2,2H28a2.0023,2.0023,0,0,0,2-2V10A2.0023,2.0023,0,0,0,28,8ZM4,22V4H22V8H10a2.0023,2.0023,0,0,0-2,2V22Zm18,0H19.4141L10,12.586V10h2.5859l9.4153,9.4156ZM10,15.4141,16.5859,22H10ZM22.001,16.587,15.4141,10H22ZM10,28V24H22a2.0023,2.0023,0,0,0,2-2V10h4V28Z"/></svg>`;
 
 // ─── Parse Helper ─────────────────────────────────────────────────────────────
 
@@ -180,14 +181,14 @@ function renderFileList() {
         `;
 
         if (!isActive) {
-            const overlayColor = isOverlaid ? '#4e9bff' : '#8888884c';
+            const overlayColor = isOverlaid ? '#4e9bff' : '#88888888';
             htmlContent += `
                 <span class="overlay-btn" data-overlaid="${isOverlaid}"
                       style="flex-shrink:0; line-height:0; color:${overlayColor}; transition:color 0.15s ease;"
                       title="${isOverlaid ? 'Remove overlay' : 'Overlay onto current scene'}">
                     ${OVERLAY_SVG}
                 </span>
-                <span class="trash-btn" style="flex-shrink:0; line-height:0; color:#8888884c; transition:color 0.15s ease;" title="Remove">
+                <span class="trash-btn" style="flex-shrink:0; line-height:0; color:#88888888; transition:color 0.15s ease;" title="Remove">
                     ${TRASH_SVG}
                 </span>
             `;
@@ -205,7 +206,7 @@ function renderFileList() {
             const trashBtn = item.querySelector('.trash-btn');
             if (trashBtn) {
                 trashBtn.addEventListener('mouseenter', () => { trashBtn.style.color = '#e03c3c'; });
-                trashBtn.addEventListener('mouseleave', () => { trashBtn.style.color = '#8888884c'; });
+                trashBtn.addEventListener('mouseleave', () => { trashBtn.style.color = '#88888888'; });
                 trashBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     removeFile(id);
@@ -218,7 +219,7 @@ function renderFileList() {
                     if (!overlayedFileIds.has(id)) overlayBtn.style.color = '#4e9bff';
                 });
                 overlayBtn.addEventListener('mouseleave', () => {
-                    overlayBtn.style.color = overlayedFileIds.has(id) ? '#4e9bff' : '#8888884c';
+                    overlayBtn.style.color = overlayedFileIds.has(id) ? '#4e9bff' : '#88888888';
                 });
                 overlayBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
