@@ -34,8 +34,9 @@ class SerialRecorder {
 
         // Shared Recording State
         this.isRecording = false;
-        this.outputDirHandle = null;
-        this.currentSubDirHandle = null;
+        this.outputDirHandle = null;   // The root user-selected directory
+        this.sessionDirHandle = null;  // The UBXView_{timestamp} wrapper directory
+        this.currentSubDirHandle = null; // The NMEAmsgs_{timestamp} sub-directory
         this.currentTimestamp = null;
 
         // Serial File State
@@ -53,6 +54,18 @@ class SerialRecorder {
 
         if (!('serial' in navigator)) {
             this.handleUnsupportedBrowser();
+        } else {
+            // Watch for physical disconnections to reset the COM port state
+            navigator.serial.addEventListener('disconnect', (event) => {
+                if (this.port && event.target === this.port) {
+                    console.log('Active COM port physically disconnected.');
+                    this.port = null;
+                    this.selectPortButton.textContent = 'Select Port';
+                    if (this.isRecording) {
+                        this.endRecording();
+                    }
+                }
+            });
         }
 
         this.initEventListeners();
@@ -74,10 +87,6 @@ class SerialRecorder {
 
     // ─── URL Reader Methods ───────────────────────────────────────────
 
-    /**
-     * Validates the URL endpoint with a test fetch.
-     * @returns {boolean} True if the endpoint responded with valid JSON.
-     */
     async validateUrl() {
         const url = this.urlInput.value.trim();
         if (!url) return false;
@@ -143,7 +152,7 @@ class SerialRecorder {
             this.port = await navigator.serial.requestPort();
             const info = this.port.getInfo();
             const portName = info.usbProductId
-                ? `COM (${info.usbVendorId || ''}:${info.usbProductId})`
+                ? `COM ${info.usbVendorId || ''}:${info.usbProductId}`
                 : 'Unknown COM Port';
             this.selectPortButton.textContent = portName;
             console.log('Port selected.');
@@ -163,30 +172,25 @@ class SerialRecorder {
         const hasSerial = !!this.port;
         const hasUrl = !!this.urlInput.value.trim();
 
-        // Need at least one source configured
         if (!hasSerial && !hasUrl) {
             alert('Please select a serial port and/or enter a URL endpoint before recording.');
             return;
         }
 
-        // Validate URL endpoint if one was entered
         let urlValid = false;
         if (hasUrl) {
             this.statusMessage.textContent = 'Validating URL...';
             urlValid = await this.validateUrl();
             if (!urlValid && !hasSerial) {
-                // URL was the only source and it failed
                 this.statusMessage.textContent = 'Disconnected';
                 return;
             }
-            // If URL failed but serial is available, warn and continue with serial only
             if (!urlValid && hasSerial) {
                 console.warn('URL validation failed — continuing with serial only.');
             }
         }
         this.urlActive = urlValid;
 
-        // If no serial port selected, prompt for one (only if serial API exists)
         if (!hasSerial && 'serial' in navigator && !this.urlActive) {
             await this.selectPort();
             if (!this.port) {
@@ -195,7 +199,6 @@ class SerialRecorder {
             }
         }
 
-        // Ask user for output folder once per session
         if (!this.outputDirHandle) {
             try {
                 this.outputDirHandle = await window.showDirectoryPicker({
@@ -216,19 +219,26 @@ class SerialRecorder {
             }
         }
 
-        // Generate timestamp
         const timestamp = new Date().toISOString()
             .replace('T', '_')
             .replace(/\..+Z$/, '')
             .replace(/[:]/g, '-');
         this.currentTimestamp = timestamp;
 
-        // Create the NMEA sub-directory (only if serial is active)
+        const sessionFolderName = `UBXView_${timestamp}`;
+        try {
+            this.sessionDirHandle = await this.outputDirHandle.getDirectoryHandle(sessionFolderName, { create: true });
+            console.log(`Session directory created: ${sessionFolderName}`);
+        } catch (error) {
+            console.error('Error creating session directory:', error);
+            alert(`Failed to create session folder "${sessionFolderName}": ${error.message}`);
+            return;
+        }
+
         if (this.port) {
             const folderName = `NMEAmsgs_${this.currentTimestamp}`;
             try {
-                this.currentSubDirHandle = await this.outputDirHandle.getDirectoryHandle(folderName, { create: true });
-                console.log(`NMEA sub-directory created: ${folderName}`);
+                this.currentSubDirHandle = await this.sessionDirHandle.getDirectoryHandle(folderName, { create: true });
             } catch (error) {
                 console.error('Error creating NMEA sub-directory:', error);
                 alert(`Failed to create folder "${folderName}": ${error.message}`);
@@ -247,40 +257,42 @@ class SerialRecorder {
             }
         }
 
-        // Create traffic JSON file in PARENT directory (if URL validated)
         if (this.urlActive) {
             const trafficFileName = `pingStation_${this.currentTimestamp}.ndjson`;
             try {
-                this.trafficFileHandle = await this.outputDirHandle.getFileHandle(trafficFileName, { create: true });
+                this.trafficFileHandle = await this.sessionDirHandle.getFileHandle(trafficFileName, { create: true });
                 this.trafficWritableStream = await this.trafficFileHandle.createWritable();
-                console.log(`Traffic file created: ${trafficFileName}`);
             } catch (error) {
                 console.error('Error creating traffic file:', error);
                 alert(`Traffic file creation failed: ${error.message}`);
                 if (!this.port) return;
-                this.urlActive = false; // Degrade gracefully — continue with serial
+                this.urlActive = false; 
             }
         }
 
-        await this.weatherRecorder.start(this.outputDirHandle, this.currentTimestamp);
+        await this.weatherRecorder.start(this.sessionDirHandle, this.currentTimestamp);
 
-        // Reset counters
         this.totalBytesWritten = 0;
         this.bytesReceived = 0;
         this.trafficData = [];
         this.capturedData = [];
 
-        // Open serial port (if selected)
         if (this.port) {
             try {
                 const baudRate = parseInt(this.baudRateSelect.value);
+                // This naturally re-opens the retained port without a permission prompt
                 await this.port.open({ baudRate });
             } catch (error) {
                 console.error(`Serial open error: ${error.message}`);
+                // If it fails to open, it was likely unplugged or claimed by another app
+                this.port = null; 
+                this.selectPortButton.textContent = 'Select Port';
+                
                 if (this.writableStream) await this.writableStream.close();
                 if (this.trafficWritableStream) await this.trafficWritableStream.close();
                 this.resetFileState();
                 this.resetUIToIdle();
+                alert('Could not open the COM port. It may be disconnected or in use by another application.');
                 return;
             }
         }
@@ -288,7 +300,6 @@ class SerialRecorder {
         this.isRecording = true;
         console.log('Recording started.');
 
-        // --- UI Updates ---
         this.startButton.disabled = true;
         this.endButton.disabled = false;
         this.baudRateSelect.disabled = true;
@@ -299,7 +310,6 @@ class SerialRecorder {
         this.lastTime = performance.now();
         this.rateInterval = setInterval(() => this.updateRateDisplay(), 1000);
 
-        // Start both readers
         if (this.port) this.readAndWriteLoop();
         this.startUrlPolling();
     }
@@ -310,31 +320,25 @@ class SerialRecorder {
         clearInterval(this.rateInterval);
         this.rateInterval = null;
 
-        // Stop URL polling
         this.stopUrlPolling();
-
-        // Stop Weather
         await this.weatherRecorder.stop();
 
-        // Cancel serial reader
         if (this.reader) {
             try { await this.reader.cancel(); } catch (e) {
                 console.error('Error cancelling reader:', e);
             }
         }
 
-        // Close serial writable stream
         if (this.writableStream) {
             await this.writableStream.close();
         }
 
-        // Close traffic writable stream
         if (this.trafficWritableStream) {
             await this.trafficWritableStream.close();
-            console.log(`Traffic data saved: ${this.trafficData.length} packets.`);
         }
 
-        // Close serial port
+        // We close the port cleanly to free up system resources between runs, 
+        // but we NO LONGER set this.port to null. It will be reused.
         if (this.port) {
             try { await this.port.close(); } catch (e) {
                 console.error('Error closing port:', e);
@@ -345,9 +349,7 @@ class SerialRecorder {
         console.log(`Recording stopped. NMEA dir: ${subDir}`);
         this.statusMessage.textContent = `Final size: ${this.formatFileSize(this.totalBytesWritten)}`;
 
-        // Post-processing (serial NMEA only)
         if (this.capturedData.length > 0 && this.currentSubDirHandle) {
-            console.log('Starting NMEA post-processing...');
             this.statusMessage.textContent = 'Post-processing...';
             try {
                 await this.postProcessNMEA();
@@ -357,8 +359,6 @@ class SerialRecorder {
             }
         }
 
-        // Reset all state
-        this.port = null;
         this.reader = null;
         this.isRecording = false;
         this.urlActive = false;
@@ -367,14 +367,14 @@ class SerialRecorder {
         this.trafficData = [];
         this.totalBytesWritten = 0;
 
-        // --- UI Updates ---
-        this.statusMessage.textContent = 'Disconnected';
+        this.statusMessage.textContent = 'Ready';
         this.resetUIToIdle();
     }
 
     resetFileState() {
         this.fileHandle = null;
         this.writableStream = null;
+        this.sessionDirHandle = null;
         this.currentSubDirHandle = null;
         this.trafficFileHandle = null;
         this.trafficWritableStream = null;
@@ -432,15 +432,11 @@ class SerialRecorder {
         const sorter = new NMEASorter();
         const result = sorter.sortNMEAData(lines, this.currentTimestamp);
 
-        console.log(`Valid: ${result.validCount}, Invalid: ${result.invalidCount}`);
-        console.log(`Talker IDs: ${Object.keys(result.sortedData).join(', ')}`);
-
         if (Object.keys(result.sortedData).length > 0) {
             await this.saveSortedFiles(result.sortedData);
             this.statusMessage.textContent = `Done! ${result.validCount} valid, ${result.invalidCount} invalid`;
         } else {
             this.statusMessage.textContent = 'No valid NMEA sentences found';
-            console.log('No valid NMEA data to save.');
         }
     }
 
@@ -465,10 +461,7 @@ class SerialRecorder {
                 const writable = await fh.createWritable();
                 await writable.write(sentences.join('\n') + '\n');
                 await writable.close();
-                console.log(`Saved ${sentences.length} sentences to ${subDirHandle.name}/${filename}`);
             }
-
-            console.log(`All post-processed files saved in: ${subDirHandle.name}`);
         } catch (error) {
             console.error('Error saving sorted files:', error);
             alert(`Error saving sorted files: ${error.message}`);
@@ -523,33 +516,29 @@ class SerialRecorder {
 
     handlePageHide() {
         if (this.isRecording) {
-            console.warn('pagehide: Attempting emergency close of resources.');
-
             this.weatherRecorder.stopEmergency();
-
             clearInterval(this.rateInterval);
             this.rateInterval = null;
             this.stopUrlPolling();
 
             if (this.reader) {
-                this.reader.cancel().catch(e => console.error('pagehide reader.cancel:', e.message));
+                this.reader.cancel().catch(() => {});
                 this.reader = null;
             }
             if (this.writableStream) {
-                this.writableStream.close().catch(e => console.error('pagehide serial stream close:', e.message));
+                this.writableStream.close().catch(() => {});
                 this.writableStream = null;
             }
             if (this.trafficWritableStream) {
-                this.trafficWritableStream.close().catch(e => console.error('pagehide traffic stream close:', e.message));
+                this.trafficWritableStream.close().catch(() => {});
                 this.trafficWritableStream = null;
             }
             if (this.port) {
-                this.port.close().catch(e => console.error('pagehide port.close:', e.message));
+                this.port.close().catch(() => {});
                 this.port = null;
             }
 
             this.isRecording = false;
-            console.log('pagehide: Emergency cleanup initiated.');
         }
     }
 }

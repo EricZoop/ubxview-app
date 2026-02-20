@@ -95,7 +95,7 @@ export function createOrUpdateLabels(pointsByTalker, gpsToCartesian) {
             div.className = 'track-label';
             div.setAttribute('data-track-label-id', talkerId);
             div.style.cssText = `
-                margin-top: -25px;
+                margin-top: -20px;
                 color: #ffffff;
                 font-size: 12px;
                 font-weight: 600;
