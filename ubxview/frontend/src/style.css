@@ -657,11 +657,31 @@ select:hover {
 #stats {
     top: 10px;
     right: 10px;
-    max-height: 65vh;
-    overflow-y: auto;
     width: 310px;
+    max-height: 65vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;          /* #stats itself does NOT scroll */
     scrollbar-gutter: stable;
 }
+
+#stats-groups {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding-top: 2px;          /* small breathing room below search bar */
+}
+
+#stats-groups::-webkit-scrollbar { width: 5px; }
+#stats-groups::-webkit-scrollbar-track { background: transparent; }
+#stats-groups::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+}
+#stats-groups::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+
 
 #stats table {
     table-layout: fixed;
@@ -674,7 +694,7 @@ select:hover {
 }
 
 #stats::-webkit-scrollbar {
-    width: 5px;
+    width: 0px;
 }
 
 #stats::-webkit-scrollbar-track {
@@ -698,7 +718,7 @@ select:hover {
 }
 
 .stats-group:first-child {
-    margin-top: 0.2rem;
+    margin-top: 0.0rem;
 }
 
 .stats-group:last-child,
@@ -1110,20 +1130,14 @@ select:hover {
    ═══════════════════════════════════════════════════════════════ */
 
 .stats-search-wrapper {
+    flex-shrink: 0;            /* never squish; always sits above scroll area */
     position: relative;
-    max-width: 100%;
+    padding-bottom: 8px;
+    margin-bottom: 5px;
+
     box-sizing: border-box;
-    margin-bottom: 8px;
-    top: 0;
-
 }
 
-.your-sidebar-container { 
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Forces the container to fit the screen */
-    overflow: hidden; /* Stops the whole sidebar from scrolling */
-}
 
 .stats-search-input {
     width: 100%;
@@ -1158,4 +1172,5 @@ select:hover {
     /* Updated for FontAwesome Path (Fill instead of Stroke) */
     fill: #eee;
     stroke: none;
+    transform: translateY(-12px);
 }

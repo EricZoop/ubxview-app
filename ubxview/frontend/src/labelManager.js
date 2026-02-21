@@ -3,9 +3,21 @@
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { lookupAircraftModel } from "./statsUI.js";
 
-const trackLabels = new Map(); // talkerId -> CSS2DObject
+const trackLabels = new Map();
 let sceneGroup = null;
-let labelsVisible = true; // mirrors the checkbox state
+let labelsVisible = true;
+
+// ─── Scroll the #stats container to a matching panel ─────────────────────────
+function scrollToStatsPanel(talkerId) {
+    const statsEl = document.getElementById('stats');
+    if (!statsEl) return;
+    // Panel id is the raw talkerId for nmea/adsb, or "radar_N" for radar
+    const panel = statsEl.querySelector(
+        `.stats-group[data-panel-id="${talkerId}"], .stats-group[data-panel-id="radar_${talkerId}"]`
+    );
+    if (!panel) return;
+    statsEl.scrollTo({ top: panel.offsetTop - statsEl.offsetTop - 10, behavior: 'smooth' });
+}
 
 // ─── Visibility ───────────────────────────────────────────────────────────────
 
@@ -17,10 +29,7 @@ function setLabelsVisible(visible) {
 function initializeLabelToggle() {
     const toggle = document.getElementById('show-label-toggle');
     if (!toggle) return;
-
-    // Sync initial state with whatever the checkbox is set to in HTML
     labelsVisible = toggle.checked;
-
     toggle.addEventListener('change', () => setLabelsVisible(toggle.checked));
 }
 
@@ -28,9 +37,7 @@ function initializeLabelToggle() {
 
 export function initializeLabelManager(group) {
     sceneGroup = group;
-
     initializeLabelToggle();
-
     window.addEventListener('aircraftInfoLoaded', (e) => {
         if (e.detail?.talkerId) updateSingleLabelContent(e.detail.talkerId);
     });
@@ -50,19 +57,16 @@ export function clearTrackLabels() {
 
 function updateSingleLabelContent(talkerId) {
     let label = trackLabels.get(talkerId);
-
     if (!label) {
         for (const [key, val] of trackLabels.entries()) {
             if (key.toLowerCase() === talkerId.toLowerCase()) { label = val; break; }
         }
     }
     if (!label) return;
-
     const model = lookupAircraftModel(talkerId);
     const labelText = (model && model !== 'Unknown' && model !== 'Unknown Model' && model !== 'Loading...')
         ? model
         : `Aircraft ${talkerId}`;
-
     if (label.element.textContent !== labelText) label.element.textContent = labelText;
 }
 
@@ -101,7 +105,9 @@ export function createOrUpdateLabels(pointsByTalker, gpsToCartesian) {
                 font-weight: 600;
                 font-family: inherit;
                 white-space: nowrap;
-                pointer-events: none;
+                pointer-events: auto;
+                cursor: pointer;
+                transition: opacity 0.15s ease;
                 text-shadow:
                     -1px -1px 2px rgba(0,0,0,0.9),
                      1px -1px 2px rgba(0,0,0,0.9),
@@ -110,8 +116,19 @@ export function createOrUpdateLabels(pointsByTalker, gpsToCartesian) {
                      0    0   6px rgba(0,0,0,0.6);
             `;
 
+            // ── Click: activate cinematic + scroll stats panel ────────────────
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.dispatchEvent(new CustomEvent('activateCinematicForTalker', {
+                    detail: { talkerId }
+                }));
+                scrollToStatsPanel(talkerId);
+            });
+
+            div.addEventListener('mouseenter', () => { div.style.opacity = '0.7'; });
+            div.addEventListener('mouseleave', () => { div.style.opacity = '1'; });
+
             label = new CSS2DObject(div);
-            // Apply current toggle state to newly created labels
             label.visible = labelsVisible;
             trackLabels.set(talkerId, label);
             sceneGroup.add(label);

@@ -6,8 +6,8 @@ const SEARCH_BAR_ID = 'stats-search-bar';
 const SEARCH_WRAPPER_ID = 'stats-search-wrapper';
 
 /**
- * Inject the search bar into the stats container if not already present.
- * Attaches input filtering and key-event isolation handlers.
+ * Inject the search bar as a fixed header inside the stats container.
+ * Panels live in #stats-groups below it.
  */
 export function injectSearchBar(statsContainer) {
     if (document.getElementById(SEARCH_WRAPPER_ID)) return;
@@ -15,6 +15,7 @@ export function injectSearchBar(statsContainer) {
     const wrapper = document.createElement('div');
     wrapper.id = SEARCH_WRAPPER_ID;
     wrapper.className = 'stats-search-wrapper';
+    wrapper.style.display = 'none';
 
     const input = document.createElement('input');
     input.id = SEARCH_BAR_ID;
@@ -63,10 +64,10 @@ export function updateSearchBarVisibility(count) {
 
 /**
  * Filter stats panels by matching the query against header text and talker ID.
- * Adds a 'last-visible' class to the final matched panel for border-radius styling.
+ * Adds a 'last-visible' class to the final matched panel for border styling.
  */
 export function filterStatsPanels(query) {
-    const panels = document.querySelectorAll('#stats .stats-group');
+    const panels = document.querySelectorAll('#stats-groups .stats-group');
     let lastVisible = null;
     panels.forEach(panel => {
         panel.classList.remove('last-visible');
@@ -95,7 +96,6 @@ const pendingFetches = new Set();
 
 /**
  * Resolve a photo URL for an aircraft hex code via hexdb.io.
- * Returns null if no image is available or the request fails.
  */
 async function resolveAircraftImage(hex) {
     const normalized = hex.toUpperCase();
@@ -110,8 +110,6 @@ async function resolveAircraftImage(hex) {
 
 /**
  * Fetch aircraft metadata from hexdb.io for a given ICAO hex address.
- * Results are stored in aircraftCache and applied to the DOM if already rendered.
- * No-ops if the hex is already cached or a fetch is already in-flight.
  */
 export async function fetchAircraftInfo(hex) {
     const normalized = hex.toUpperCase();
@@ -156,7 +154,6 @@ export async function fetchAircraftInfo(hex) {
 
 /**
  * Apply cached aircraft info to the currently rendered ADS-B panel DOM elements.
- * Also triggers image resolution on first call if the model is known.
  */
 export function applyAircraftInfoToDOM(hex) {
     const normalized = hex.toUpperCase();
@@ -192,7 +189,6 @@ export function applyAircraftInfoToDOM(hex) {
 
 /**
  * Return the cached aircraft model string for a given ICAO hex address.
- * Triggers a background fetch if no data is cached yet.
  */
 export function lookupAircraftModel(icaoAddress) {
     if (!icaoAddress) return 'Unknown';

@@ -22,34 +22,41 @@ let currentlyTrackedId = null;
 let statsContainerInitialized = false;
 
 // ─── Type Detection ───────────────────────────────────────────────────────────
-/**
- * Classify a single point's data type using its own `dataType` field first,
- * then fall back to heuristics. Never infers from sibling points.
- */
 function pointDataType(p) {
     if (!p) return 'nmea';
     if (p.dataType === 'radar') return 'radar';
     if (p.dataType === 'adsb') return 'adsb';
     if (p.dataType === 'nmea') return 'nmea';
-    // Heuristics
     if (typeof p.satellites === 'number' && p.icaoAddress === undefined) return 'nmea';
     if (p.icaoAddress !== undefined || p.heading !== undefined || p.horizontalVelocity !== undefined) return 'adsb';
     if (p.talkerId && /^[A-Z]{2}$/.test(p.talkerId)) return 'nmea';
-    return 'nmea'; // safe default
+    return 'nmea';
 }
 
-/**
- * Split a flat point array into { nmea: [...], adsb: [...], radar: [...] }.
- */
 function partitionByDataType(points) {
     const nmea = [], adsb = [], radar = [];
     for (const p of points) {
         const t = pointDataType(p);
-        if (t === 'adsb')        adsb.push(p);
-        else if (t === 'radar')  radar.push(p);
-        else                     nmea.push(p);
+        if (t === 'adsb')       adsb.push(p);
+        else if (t === 'radar') radar.push(p);
+        else                    nmea.push(p);
     }
     return { nmea, adsb, radar };
+}
+
+// ─── Groups Container ─────────────────────────────────────────────────────────
+/**
+ * Get or create the #stats-groups scrollable inner div.
+ * All .stats-group panels live here; the search bar lives above it in #stats.
+ */
+function getOrCreateGroupsContainer(statsContainer) {
+    let groups = document.getElementById('stats-groups');
+    if (!groups) {
+        groups = document.createElement('div');
+        groups.id = 'stats-groups';
+        statsContainer.appendChild(groups);
+    }
+    return groups;
 }
 
 // ─── Header Visuals ───────────────────────────────────────────────────────────
@@ -67,12 +74,8 @@ function formatTime(timeInSeconds) {
     return `${h}:${m}:${s}`;
 }
 
-/**
- * Remove panels whose panel-id is not in the provided set for a given data-type.
- * Panels of a *different* data-type are left untouched.
- */
-function removeStalePanels(statsContainer, currentIds, dataType) {
-    statsContainer.querySelectorAll(`.stats-group[data-data-type="${dataType}"]`).forEach(panel => {
+function removeStalePanels(groupsContainer, currentIds, dataType) {
+    groupsContainer.querySelectorAll(`.stats-group[data-data-type="${dataType}"]`).forEach(panel => {
         const id = panel.dataset.panelId;
         if (!id || !currentIds.includes(id)) panel.remove();
     });
@@ -98,20 +101,20 @@ export function updateStatsHeaderColors() {
 
 // ─── Main Update ──────────────────────────────────────────────────────────────
 export function updateStats(points, _dataTypeHint) {
-    // _dataTypeHint is intentionally ignored — we classify per-point instead.
     const statsContainer = document.getElementById('stats');
     if (!statsContainer) return;
 
-    // On first real data load, strip any static placeholder HTML from index.html,
-    // keeping only the search wrapper if it was already injected.
     if (!statsContainerInitialized) {
         Array.from(statsContainer.children).forEach(child => {
-            if (child.id !== 'stats-search-wrapper') child.remove();
+            if (child.id !== 'stats-search-wrapper' && child.id !== 'stats-groups') child.remove();
         });
         statsContainerInitialized = true;
     }
 
+    // Search bar injected into #stats (above the scroll area)
     injectSearchBar(statsContainer);
+    // All panels injected into #stats-groups (the scroll area)
+    const groupsContainer = getOrCreateGroupsContainer(statsContainer);
 
     if (!points || points.length === 0) return;
 
@@ -122,17 +125,14 @@ export function updateStats(points, _dataTypeHint) {
     const isElevation = isElevationModeActive();
     const isClassify  = isClassifyModeActive();
 
-    // Each renderer manages only its own panel type — no cross-contamination.
-    updateNmeaStats(statsContainer, nmeaPoints, baseColor, isElevation, isClassify);
-    updateAdsbStats(statsContainer, adsbPoints, baseColor, isElevation, isClassify);
-    updateRadarStats(statsContainer, radarPoints, baseColor, isElevation, isClassify);
+    updateNmeaStats(groupsContainer, nmeaPoints, baseColor, isElevation, isClassify);
+    updateAdsbStats(groupsContainer, adsbPoints, baseColor, isElevation, isClassify);
+    updateRadarStats(groupsContainer, radarPoints, baseColor, isElevation, isClassify);
 
-    // Total panel count drives search bar visibility
-    const totalPanels = statsContainer.querySelectorAll('.stats-group').length;
+    const totalPanels = groupsContainer.querySelectorAll('.stats-group').length;
     updateSearchBarVisibility(totalPanels);
 
     updateHeaderVisuals();
-
     filterStatsPanels(getCurrentSearchQuery());
 }
 
@@ -181,17 +181,14 @@ function updateNmeaStatsDOM(talkerId, stats) {
     s('end-stat').textContent = formatTime(stats.endTime);
 }
 
-function updateNmeaStats(container, points, baseColor, isElevation, isClassify) {
+function updateNmeaStats(groupsContainer, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
-        container.querySelectorAll('.stats-group[data-data-type="nmea"]').forEach(p => p.remove());
+        groupsContainer.querySelectorAll('.stats-group[data-data-type="nmea"]').forEach(p => p.remove());
         return;
     }
-
     const byTalker = groupPointsByTalker(points);
     const ids = Object.keys(byTalker).sort();
-
-    removeStalePanels(container, ids, 'nmea');
-
+    removeStalePanels(groupsContainer, ids, 'nmea');
     ids.forEach((talkerId) => {
         if (!document.getElementById(`${talkerId}-points-stat`)) {
             const colorHex = isElevation
@@ -199,7 +196,7 @@ function updateNmeaStats(container, points, baseColor, isElevation, isClassify) 
                 : isClassify
                     ? `#${getClassifyColorForTrack(talkerId).getHexString()}`
                     : `#${getTrackVariantColor(baseColor, talkerId).getHexString()}`;
-            container.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, colorHex));
+            groupsContainer.insertAdjacentHTML('beforeend', createNmeaStatsHTML(talkerId, colorHex));
         }
         const stats = calculateTalkerStats(byTalker[talkerId]);
         if (stats) updateNmeaStatsDOM(talkerId, stats);
@@ -262,17 +259,14 @@ function updateAdsbStatsDOM(icao, stats) {
     }
 }
 
-function updateAdsbStats(container, points, baseColor, isElevation, isClassify) {
+function updateAdsbStats(groupsContainer, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
-        container.querySelectorAll('.stats-group[data-data-type="adsb"]').forEach(p => p.remove());
+        groupsContainer.querySelectorAll('.stats-group[data-data-type="adsb"]').forEach(p => p.remove());
         return;
     }
-
     const byAircraft = groupAdsbByAircraft(points);
     const icaos = Object.keys(byAircraft).sort();
-
-    removeStalePanels(container, icaos, 'adsb');
-
+    removeStalePanels(groupsContainer, icaos, 'adsb');
     icaos.forEach((icao) => {
         if (!document.getElementById(`${icao}-points-stat`)) {
             const colorHex = isElevation
@@ -280,7 +274,7 @@ function updateAdsbStats(container, points, baseColor, isElevation, isClassify) 
                 : isClassify
                     ? `#${getClassifyColorForTrack(icao).getHexString()}`
                     : `#${getTrackVariantColor(baseColor, icao).getHexString()}`;
-            container.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, colorHex));
+            groupsContainer.insertAdjacentHTML('beforeend', createAdsbStatsHTML(icao, colorHex));
             fetchAircraftInfo(icao);
         }
         const stats = calculateAdsbAircraftStats(byAircraft[icao]);
@@ -323,14 +317,14 @@ function updateRadarStatsDOM(trackId, stats) {
     s('duration-stat').textContent = stats.duration.toFixed(1);
 }
 
-function updateRadarStats(container, points, baseColor, isElevation, isClassify) {
+function updateRadarStats(groupsContainer, points, baseColor, isElevation, isClassify) {
     if (points.length === 0) {
-        container.querySelectorAll('.stats-group[data-data-type="radar"]').forEach(p => p.remove());
+        groupsContainer.querySelectorAll('.stats-group[data-data-type="radar"]').forEach(p => p.remove());
         return;
     }
     const byTrack = groupRadarByTrack(points);
-    const ids     = Object.keys(byTrack).sort((a, b) => Number(a) - Number(b));
-    removeStalePanels(container, ids.map(id => `radar_${id}`), 'radar');
+    const ids = Object.keys(byTrack).sort((a, b) => Number(a) - Number(b));
+    removeStalePanels(groupsContainer, ids.map(id => `radar_${id}`), 'radar');
     ids.forEach(trackId => {
         const rid = `radar_${trackId}`;
         if (!document.getElementById(`${rid}-points-stat`)) {
@@ -339,7 +333,7 @@ function updateRadarStats(container, points, baseColor, isElevation, isClassify)
                 : isClassify
                     ? `#${getClassifyColorForTrack(rid).getHexString()}`
                     : `#${getTrackVariantColor(baseColor, rid).getHexString()}`;
-            container.insertAdjacentHTML('beforeend', createRadarStatsHTML(trackId, colorHex));
+            groupsContainer.insertAdjacentHTML('beforeend', createRadarStatsHTML(trackId, colorHex));
         }
         const stats = calculateRadarTrackStats(byTrack[trackId]);
         if (stats) updateRadarStatsDOM(trackId, stats);
@@ -356,6 +350,13 @@ export function initializeStatsEventListeners() {
     window.addEventListener('cinematicTargetChanged', (e) => {
         currentlyTrackedId = e.detail.talkerId;
         updateHeaderVisuals();
+        if (e.detail.talkerId) {
+            const groupsEl = document.getElementById('stats-groups');
+            const panel = groupsEl?.querySelector(`.stats-group[data-panel-id="${e.detail.talkerId}"]`);
+            if (panel && groupsEl) {
+                groupsEl.scrollTo({ top: panel.offsetTop - 60, behavior: 'smooth' });
+            }
+        }
     });
 
     statsContainer.addEventListener('click', (e) => {
