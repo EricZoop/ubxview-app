@@ -658,10 +658,12 @@ select:hover {
     top: 10px;
     right: 10px;
     width: 310px;
+    padding: 12px 12px 12px 16px;
     max-height: 65vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;          /* #stats itself does NOT scroll */
+    overflow-x: hidden;
+    overflow-y: auto;          /* #stats itself does NOT scroll */
     scrollbar-gutter: stable;
 }
 
@@ -670,6 +672,7 @@ select:hover {
     overflow-y: auto;
     scrollbar-gutter: stable;
     padding-top: 2px;          /* small breathing room below search bar */
+    padding-right: 5px
 }
 
 #stats-groups::-webkit-scrollbar { width: 5px; }

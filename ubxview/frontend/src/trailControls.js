@@ -15,7 +15,7 @@ let isClassifyMode = false;
 // Classify mode: fixed colors per data type
 const CLASSIFY_COLORS = {
     radar: new THREE.Color(0xff2222),   // red
-    adsb:  new THREE.Color(0x2266ff),   // blue
+    adsb:  new THREE.Color(0x00ACFF),   // blue
     nmea:  new THREE.Color(0xffdd00),   // yellow (drone)
 };
 

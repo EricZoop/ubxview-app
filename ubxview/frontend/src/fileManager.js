@@ -150,7 +150,7 @@ function renderFileList() {
         item.dataset.fileId = id;
 
         item.style.cssText = `
-            display: flex; align-items: center; gap: 0.5rem;
+            display: flex; align-items: center; gap: 0.5em;
             padding: 0.6em 0.8em;
             border: 1px solid ${isActive ? '#f0f0f0' : isOverlaid ? '#5588cc' : '#333'};
             border-radius: 2px;

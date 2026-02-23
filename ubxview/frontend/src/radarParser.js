@@ -14,29 +14,33 @@ export function isRadarCsv(text) {
 }
 
 /**
- * Parse "2025-11-20 17:01:54:021" → Unix timestamp in seconds.
- * The DateTime column uses colon as the millisecond separator.
+ * Parse the time portion of a radar DateTime string into seconds-of-day.
+ *
+ * Accepts both separator styles:
+ *   "2025-11-20 20:48:52.154"   (dot before ms  — actual CSV format)
+ *   "2025-11-20 20:48:52:154"   (colon before ms — legacy format)
+ *
+ * Returns seconds-of-day (0–86 400) so the value is on the same scale as
+ * NMEA and ADS-B timestamps and sorts correctly in the shared playback timeline.
  */
 function parseDateTimeToSeconds(dtStr) {
     if (!dtStr) return 0;
     try {
-        // Convert "YYYY-MM-DD HH:MM:SS:mmm" → ISO "YYYY-MM-DDTHH:MM:SS.mmmZ"
-        const iso = dtStr.trim()
-            .replace(' ', 'T')          // space → T
-            .replace(/:(\d{3})$/, '.$1') // last colon before ms → dot
-            + 'Z';
-        const ms = Date.parse(iso);
-        if (!isNaN(ms)) return ms / 1000;
-    } catch (_) {}
-
-    // Fallback: use time-of-day only (seconds since midnight)
-    try {
+        // Isolate the time portion: everything after the space
         const timePart = dtStr.trim().split(' ')[1] || '';
+
+        // Normalise: replace a trailing dot-or-colon-separated ms group
+        // "20:48:52.154" → ["20","48","52.154"]
+        // "20:48:52:154" → ["20","48","52","154"]
         const p = timePart.split(':');
-        return (parseInt(p[0]) || 0) * 3600
-             + (parseInt(p[1]) || 0) * 60
-             + (parseFloat(p[2]) || 0)
-             + (parseInt(p[3]) || 0) / 1000;
+
+        const h  = parseInt(p[0])   || 0;
+        const m  = parseInt(p[1])   || 0;
+        // p[2] may be "52.154" (dot ms) or "52" (colon ms in p[3])
+        const s  = parseFloat(p[2]) || 0;
+        const ms = p[3] ? (parseInt(p[3]) / 1000) : 0; // colon-separated ms
+
+        return h * 3600 + m * 60 + s + ms;
     } catch (_) {}
     return 0;
 }
@@ -45,7 +49,7 @@ function parseDateTimeToSeconds(dtStr) {
  * Parse radar CSV text into an array of point objects.
  * Each point carries { dataType:'radar', talkerId, id, lat, lon, alt, time, rcs, velAbs, extId, dateTime }.
  * talkerId follows the convention "radar_<ID>" so it is unique across NMEA/ADS-B namespaces.
- * Filters out tracks that have 10 or fewer points.
+ * Filters out tracks that have 20 or fewer points.
  */
 export function extractRadarPointsFromText(text) {
     if (!text || !text.trim()) return [];
@@ -72,7 +76,7 @@ export function extractRadarPointsFromText(text) {
     }
 
     const points = [];
-    const trackCounts = {}; // Keep track of point counts per ID
+    const trackCounts = {};
 
     for (let i = 1; i < lines.length; i++) {
         const c = lines[i].split(',');
@@ -81,10 +85,10 @@ export function extractRadarPointsFromText(text) {
             const dateTime = iDateTime >= 0 ? (c[iDateTime]?.trim() || '') : '';
             const lat      = parseFloat(c[iLat]);
             const lon      = parseFloat(c[iLon]);
-            const alt      = iAlt >= 0      ? parseFloat(c[iAlt])    : 0;
-            const rcs      = iRCS >= 0      ? parseFloat(c[iRCS])    : NaN;
-            const velAbs   = iVelAbs >= 0   ? parseFloat(c[iVelAbs]) : NaN;
-            const extId    = iExtID >= 0    ? (c[iExtID]?.trim() || '') : '';
+            const alt      = iAlt >= 0    ? parseFloat(c[iAlt])    : 0;
+            const rcs      = iRCS >= 0    ? parseFloat(c[iRCS])    : NaN;
+            const velAbs   = iVelAbs >= 0 ? parseFloat(c[iVelAbs]) : NaN;
+            const extId    = iExtID >= 0  ? (c[iExtID]?.trim() || '') : '';
 
             if (!id || isNaN(lat) || isNaN(lon)) continue;
             if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
@@ -96,21 +100,19 @@ export function extractRadarPointsFromText(text) {
                 lat,
                 lon,
                 alt      : isNaN(alt)    ? 0    : alt,
-                time     : parseDateTimeToSeconds(dateTime),
+                time     : parseDateTimeToSeconds(dateTime), // seconds-of-day
                 rcs      : isNaN(rcs)    ? null : rcs,
                 velAbs   : isNaN(velAbs) ? null : velAbs,
                 extId,
                 dateTime,
             });
 
-            // Increment count for this specific track ID
             trackCounts[id] = (trackCounts[id] || 0) + 1;
         } catch (_) {
             continue;
         }
     }
 
-    // Only return points belonging to a track that has more than 10 points
     return points.filter(p => trackCounts[p.id] > 20);
 }
 
