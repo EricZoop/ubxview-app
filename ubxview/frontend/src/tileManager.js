@@ -26,7 +26,7 @@ export function setZoomLevel(zoom) {
 // AWS Terrain Tiles (Terrarium format) — free, no API key, CORS enabled.
 // Encoding: elevation (m) = R*256 + G + B/256 − 32768
 const TERRAIN_TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-const TERRAIN_SEGMENTS  = 16;   // subdivisions per tile (32×32 = 1089 verts/tile)
+const TERRAIN_SEGMENTS  = 32;   // subdivisions per tile (32×32 = 1089 verts/tile)
 const ELEVATION_SCALE   = 20;    // must match gpsToCartesian: y = (alt - baseline) * 5
 
 let topographyEnabled = false;

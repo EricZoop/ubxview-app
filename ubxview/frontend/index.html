@@ -91,6 +91,14 @@
 
             <!--<h2>Scene Visuals</h2>-->
 
+
+
+            <div style="font-weight: 500;" class="noselect">Map Opacity</div>
+            <div class="slider-wrapper">
+                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
+                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
+            </div>
+
             <div style="font-weight: 500;" class="noselect">Canvas</div>
             <div class="view-toggle">
                 <button class="view-option active" data-view="satellite">Satellite</button>
@@ -108,12 +116,6 @@
                     });
                 });    
             </script>
-
-            <div style="font-weight: 500;" class="noselect">Map Opacity</div>
-            <div class="slider-wrapper">
-                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
-                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
-            </div>
 
 
             <div style="font-weight: 500;" class="noselect">Render Distance</div>
@@ -279,11 +281,27 @@
                 console.log('Trail controls with centralized refresh logic initialized');
             </script>
 
-            <label for="topo-toggle">
-                    Terrain <input type="checkbox" id="topo-toggle"/>
-            </label>
 
 
+        <div style="font-weight: 500; margin-top: 10px;" class="noselect">Terrain</div>
+        <div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 12px; align-items: end; padding-bottom: 5px;">
+            
+            <div class="trail-group" style="align-items: center;">
+                <label for="topo-toggle" style="margin-bottom: 4px;">Enable</label>
+                <input type="checkbox" id="topo-toggle" class="trail-toggle" style="margin: 0; margin-bottom: 5px;">
+            </div>
+
+            <div class="trail-group">
+                <label for="topo-segments">Polygons</label>
+                <input type="number" id="topo-segments" class="polling-input" value="32" min="1" max="256" style="border-right: 1px solid #333; border-radius: 2px; box-sizing: border-box;">
+            </div>
+
+            <div class="trail-group">
+                <label for="topo-scale" class="trail-group label">Scale</label>
+                <input type="number" id="topo-scale" class="polling-input" value="20" step="1" style="border-right: 1px solid #333; border-radius: 2px; box-sizing: border-box;">
+            </div>
+            
+        </div>
 
     </div>
 
