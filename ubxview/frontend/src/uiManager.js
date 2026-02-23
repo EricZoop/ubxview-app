@@ -1,5 +1,11 @@
 import { updateMapOpacity, switchTileService, fetchAndDisplayTiles } from './tileManager.js';
 import { DEFAULTS } from './config.js';
+import { setTopographyEnabled } from './tileManager.js';
+
+// e.g. a checkbox
+document.getElementById('topo-toggle').addEventListener('change', e => {
+    setTopographyEnabled(e.target.checked);
+});
 
 /**
  * Sets up all UI component listeners.

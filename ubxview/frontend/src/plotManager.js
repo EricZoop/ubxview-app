@@ -96,6 +96,10 @@ export function getFloorY() {
     return (b.minAlt - baseAlt) * 5;
 }
 
+export function getBaselineAltitude() {
+    return isCoordinateSystemInitialized ? globalBaselineAltitude : baselineAltitude;
+}
+
 export function initializeCoordinateSystem(allPoints) {
     if (!allPoints || allPoints.length === 0) return;
 

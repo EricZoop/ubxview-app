@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getBoundingBox, getGpsToCartesian, getFloorY } from './plotManager.js';
+import { getBoundingBox, getGpsToCartesian, getFloorY, getBaselineAltitude } from './plotManager.js';
 import { TILE_SERVICES, DEFAULTS } from './config.js';
 import { lonLatToTile, tileToLonLat, loadTextureWithTimeout } from './utils.js';
 import { getSceneObjects } from './sceneManager.js';
@@ -13,64 +13,112 @@ const GRID_OPACITY_THRESHOLD = 0.51;
 let lastTileExtent = null; // { minX, maxX, minZ, maxZ }
 
 // ─── Tile budget ────────────────────────────────────────────────
-// Hard cap on total tiles per fetch — prevents the page freezing when
-// a large overlay inflates the bounding box.
 const MAX_TILE_COUNT = 500;
 
 // ─── Zoom override ──────────────────────────────────────────────
-// null  → auto-compute from padded bounding box (default)
-// number → manual override (set via setZoomLevel)
 let manualZoomOverride = null;
 
 export function setZoomLevel(zoom) {
-    // Accept null to restore auto mode; ignore legacy type-based values
     manualZoomOverride = (zoom !== null && zoom !== undefined) ? zoom : null;
 }
 
+// ─── Topography ─────────────────────────────────────────────────
+// AWS Terrain Tiles (Terrarium format) — free, no API key, CORS enabled.
+// Encoding: elevation (m) = R*256 + G + B/256 − 32768
+const TERRAIN_TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+const TERRAIN_SEGMENTS  = 16;   // subdivisions per tile (32×32 = 1089 verts/tile)
+const ELEVATION_SCALE   = 20;    // must match gpsToCartesian: y = (alt - baseline) * 5
+
+let topographyEnabled = false;
+
+/**
+ * Enable or disable terrain displacement.
+ * Triggers a tile refresh so changes take effect immediately.
+ */
+export function setTopographyEnabled(enabled) {
+    topographyEnabled = !!enabled;
+    if (getBoundingBox()) fetchAndDisplayTiles();
+}
+
+export function getTopographyEnabled() { return topographyEnabled; }
+
 // ═══════════════════════════════════════════════════════════════
-// Geographic padding helpers
+// Elevation helpers
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Pads a lat/lon bounding box outward by a given number of kilometres.
- * This is what the render-distance slider controls: a consistent geographic
- * margin regardless of zoom level.
- *
- * @param {{ minLat, maxLat, minLon, maxLon }} bbox
- * @param {number} km  padding radius in kilometres
- * @returns {{ minLat, maxLat, minLon, maxLon }}
+ * Fetches a Terrarium elevation tile and returns its raw ImageData.
+ * Returns null on failure so the tile degrades gracefully to flat.
  */
-function padBoundingBoxKm(bbox, km) {
-    const latDeg = km / 111.32;
-    const centerLat = (bbox.minLat + bbox.maxLat) / 2;
-    const lonDeg = km / (111.32 * Math.cos(centerLat * Math.PI / 180));
-    return {
-        minLat: bbox.minLat - latDeg,
-        maxLat: bbox.maxLat + latDeg,
-        minLon: bbox.minLon - lonDeg,
-        maxLon: bbox.maxLon + lonDeg,
-    };
+async function fetchElevationImageData(x, y, zoom) {
+    const url = TERRAIN_TILE_URL
+        .replace('{z}', zoom).replace('{x}', x).replace('{y}', y);
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width  = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            } catch (e) {
+                console.warn(`Elevation canvas read failed for ${x},${y},${zoom}:`, e);
+                resolve(null);
+            }
+        };
+        img.onerror = () => {
+            console.warn(`Elevation tile load failed: ${url}`);
+            resolve(null);
+        };
+        // Timeout fallback
+        setTimeout(() => resolve(null), 6000);
+        img.src = url;
+    });
 }
 
 /**
- * Selects the highest zoom level at which the tile grid for the given
- * (already-padded) bbox stays within MAX_TILE_COUNT.
- *
- * @param {{ minLat, maxLat, minLon, maxLon }} paddedBbox
- * @returns {number} zoom in [1, 18]
+ * Bilinearly-sampled Terrarium elevation at fractional pixel coordinates.
+ * @param {ImageData} imgData
+ * @param {number} pr  fractional pixel row  (0 = north edge)
+ * @param {number} pc  fractional pixel col  (0 = west  edge)
+ * @returns {number} elevation in metres
  */
+function sampleElevation(imgData, pr, pc) {
+    const { data, width, height } = imgData;
+    const decode = (r, c) => {
+        const px = Math.max(0, Math.min(width  - 1, Math.round(c)));
+        const py = Math.max(0, Math.min(height - 1, Math.round(r)));
+        const i  = (py * width + px) * 4;
+        return data[i] * 256 + data[i + 1] + data[i + 2] / 256 - 32768;
+    };
+    return decode(pr, pc);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Geographic padding / zoom helpers (unchanged)
+// ═══════════════════════════════════════════════════════════════
+
+function padBoundingBoxKm(bbox, km) {
+    const latDeg    = km / 111.32;
+    const centerLat = (bbox.minLat + bbox.maxLat) / 2;
+    const lonDeg    = km / (111.32 * Math.cos(centerLat * Math.PI / 180));
+    return {
+        minLat: bbox.minLat - latDeg, maxLat: bbox.maxLat + latDeg,
+        minLon: bbox.minLon - lonDeg, maxLon: bbox.maxLon + lonDeg,
+    };
+}
+
 function computeOptimalZoom(paddedBbox) {
     const deltaLon = Math.max(paddedBbox.maxLon - paddedBbox.minLon, 1e-4);
     const deltaLat = Math.max(paddedBbox.maxLat - paddedBbox.minLat, 1e-4);
-
     for (let z = 18; z >= 1; z--) {
-        const n = Math.pow(2, z);
-        // +1 accounts for partial tiles at each edge
+        const n      = Math.pow(2, z);
         const tilesX = Math.ceil(n * deltaLon / 360) + 1;
         const tilesY = Math.ceil(n * deltaLat / 180) + 1;
-        if (tilesX * tilesY <= MAX_TILE_COUNT) {
-            return z;
-        }
+        if (tilesX * tilesY <= MAX_TILE_COUNT) return z;
     }
     return 1;
 }
@@ -79,18 +127,9 @@ function computeOptimalZoom(paddedBbox) {
 // Main fetch
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Fetches and displays map tiles.
- *
- * Render distance (km) → determines how far the map extends beyond the data.
- * Zoom level           → auto-selected so the padded area fits MAX_TILE_COUNT,
- *                        or overridden manually via setZoomLevel().
- */
 export async function fetchAndDisplayTiles() {
     const { tileGroup } = getSceneObjects();
 
-    // Render distance comes from the UI slider in kilometres.
-    // Fallback to DEFAULTS.initialRenderDistanceKm if the getter isn't wired yet.
     const renderDistanceKm = window.getCurrentRenderDistance
         ? window.getCurrentRenderDistance()
         : (DEFAULTS.initialRenderDistanceKm ?? 1);
@@ -114,17 +153,11 @@ export async function fetchAndDisplayTiles() {
         }
     }
 
-    // ── Pad the bbox geographically ──
-    const bbox = padBoundingBoxKm(rawBbox, renderDistanceKm);
+    const bbox      = padBoundingBoxKm(rawBbox, renderDistanceKm);
+    const zoomLevel = manualZoomOverride !== null ? manualZoomOverride : computeOptimalZoom(bbox);
 
-    // ── Resolve zoom ──
-    const zoomLevel = (manualZoomOverride !== null)
-        ? manualZoomOverride
-        : computeOptimalZoom(bbox);
-
-    // ── Tile grid ──
-    const minTile = lonLatToTile(bbox.minLon, bbox.maxLat, zoomLevel);
-    const maxTile = lonLatToTile(bbox.maxLon, bbox.minLat, zoomLevel);
+    const minTile    = lonLatToTile(bbox.minLon, bbox.maxLat, zoomLevel);
+    const maxTile    = lonLatToTile(bbox.maxLon, bbox.minLat, zoomLevel);
     const centerTile = {
         x: Math.floor((minTile.x + maxTile.x) / 2),
         y: Math.floor((minTile.y + maxTile.y) / 2),
@@ -145,28 +178,22 @@ export async function fetchAndDisplayTiles() {
     }
 
     if (totalTiles > MAX_TILE_COUNT) {
-        // Should be rare after computeOptimalZoom, but acts as a hard safety net
-        console.warn(
-            `Tile count ${totalTiles} still exceeds MAX_TILE_COUNT (${MAX_TILE_COUNT}) ` +
-            `after auto-zoom. Aborting tile fetch.`
-        );
+        console.warn(`Tile count ${totalTiles} exceeds MAX_TILE_COUNT (${MAX_TILE_COUNT}). Aborting.`);
         return;
     }
 
-    // ── World-space extent for floor grid ──
-    const tlGps = tileToLonLat(minTile.x,     minTile.y,     zoomLevel);
-    const brGps = tileToLonLat(maxTile.x + 1, maxTile.y + 1, zoomLevel);
+    // World-space extent for floor grid
+    const tlGps  = tileToLonLat(minTile.x,     minTile.y,     zoomLevel);
+    const brGps  = tileToLonLat(maxTile.x + 1, maxTile.y + 1, zoomLevel);
     const tlWorld = gpsToCartesian({ lat: tlGps.lat, lon: tlGps.lon });
     const brWorld = gpsToCartesian({ lat: brGps.lat, lon: brGps.lon });
 
     lastTileExtent = {
-        minX: Math.min(tlWorld.x, brWorld.x),
-        maxX: Math.max(tlWorld.x, brWorld.x),
-        minZ: Math.min(tlWorld.z, brWorld.z),
-        maxZ: Math.max(tlWorld.z, brWorld.z),
+        minX: Math.min(tlWorld.x, brWorld.x), maxX: Math.max(tlWorld.x, brWorld.x),
+        minZ: Math.min(tlWorld.z, brWorld.z), maxZ: Math.max(tlWorld.z, brWorld.z),
     };
 
-    // ── Sort tiles centre-outward for fastest perceived load ──
+    // Sort centre-outward for fastest perceived load
     const tileCoords = [];
     for (let x = minTile.x; x <= maxTile.x; x++)
         for (let y = minTile.y; y <= maxTile.y; y++)
@@ -177,17 +204,19 @@ export async function fetchAndDisplayTiles() {
         Math.hypot(b.x - centerTile.x, b.y - centerTile.y)
     );
 
-    const floorY = getFloorY();
+    const floorY   = getFloorY();
+    const baseAlt  = getBaselineAltitude(); // needed for elevation→Y conversion
     console.log(
         `Loading ${tileCoords.length} tiles | zoom ${zoomLevel} ` +
         `(${manualZoomOverride !== null ? 'manual' : 'auto'}) | ` +
-        `renderDist ${renderDistanceKm} km | floorY ${floorY.toFixed(1)}`
+        `renderDist ${renderDistanceKm} km | floorY ${floorY.toFixed(1)} | ` +
+        `topo ${topographyEnabled ? 'ON' : 'OFF'}`
     );
 
     const textureLoader = new THREE.TextureLoader();
     await Promise.all(
         tileCoords.map(({ x, y }) =>
-            loadTile(x, y, zoomLevel, textureLoader, gpsToCartesian, floorY).catch(() => null)
+            loadTile(x, y, zoomLevel, textureLoader, gpsToCartesian, floorY, baseAlt).catch(() => null)
         )
     );
 
@@ -199,41 +228,119 @@ export async function fetchAndDisplayTiles() {
 // Single tile loader
 // ═══════════════════════════════════════════════════════════════
 
-async function loadTile(x, y, zoom, textureLoader, gpsToCartesian, floorY) {
+async function loadTile(x, y, zoom, textureLoader, gpsToCartesian, floorY, baseAlt) {
     const { tileGroup } = getSceneObjects();
     const url = TILE_SERVICES[currentTileService].url
         .replace('{z}', zoom).replace('{y}', y).replace('{x}', x);
 
-    const tl = tileToLonLat(x,     y,     zoom);
-    const br = tileToLonLat(x + 1, y + 1, zoom);
+    const tl  = tileToLonLat(x,     y,     zoom);
+    const br  = tileToLonLat(x + 1, y + 1, zoom);
     const tlW = gpsToCartesian({ lat: tl.lat, lon: tl.lon });
     const brW = gpsToCartesian({ lat: br.lat, lon: br.lon });
 
     const w = Math.abs(brW.x - tlW.x);
     const h = Math.abs(brW.z - tlW.z);
 
-    const texture = await loadTextureWithTimeout(textureLoader, url, 5000);
+    // ── Fetch visual texture and (optionally) elevation in parallel ──
+    const [texture, elevData] = await Promise.all([
+        loadTextureWithTimeout(textureLoader, url, 5000),
+        topographyEnabled && baseAlt !== null ? fetchElevationImageData(x, y, zoom) : Promise.resolve(null),
+    ]);
+
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
 
-    const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, h),
-        new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: currentOpacity,
-        })
-    );
+    // ── Build geometry ──
+    // Use a subdivided plane when topography is on so we have vertices to displace.
+    // Fall back to 1×1 (flat) when topo is off to keep vertex count low.
+    const segs = (topographyEnabled && elevData) ? TERRAIN_SEGMENTS : 1;
+    const geo  = new THREE.PlaneGeometry(w, h, segs, segs);
+
+    if (topographyEnabled && elevData) {
+        displaceVertices(geo, elevData, floorY, baseAlt, segs);
+    }
+
+    const mat = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: currentOpacity,
+    });
+
+    const plane = new THREE.Mesh(geo, mat);
     plane.rotation.x = -Math.PI / 2;
-    plane.position.set((tlW.x + brW.x) / 2, floorY - 0.1, (tlW.z + brW.z) / 2);
+
+    if (topographyEnabled && elevData) {
+        // With displaced vertices the mesh already encodes world-Y per vertex.
+        // Position the mesh origin at floorY so the displacement offsets apply correctly.
+        plane.position.set((tlW.x + brW.x) / 2, floorY, (tlW.z + brW.z) / 2);
+    } else {
+        plane.position.set((tlW.x + brW.x) / 2, floorY - 0.1, (tlW.z + brW.z) / 2);
+    }
+
     tileGroup.add(plane);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Floor Grid
+// Vertex displacement
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Displaces the Z component of each vertex in a PlaneGeometry (which, after
+ * rotation.x = -PI/2, maps to world Y) according to sampled terrain elevation.
+ *
+ * PlaneGeometry vertex layout (segs×segs grid):
+ *   row 0 = top edge  (north, y = +h/2 in local space, z = tile minZ in world)
+ *   col 0 = left edge (west,  x = -w/2 in local space, x = tile minX in world)
+ *
+ * After rotation.x = -PI/2:
+ *   local Z  → world Y  (the displacement axis)
+ *   local Y  → world -Z
+ *
+ * So to achieve world Y = (elevation - baseAlt) * ELEVATION_SCALE
+ * with the mesh anchored at position.y = floorY:
+ *   local Z = (elevation - baseAlt) * ELEVATION_SCALE - floorY
+ *
+ * @param {THREE.BufferGeometry} geo
+ * @param {ImageData}            elevData   Terrarium-encoded elevation tile
+ * @param {number}               floorY     world-Y of tile mesh origin
+ * @param {number}               baseAlt    baseline altitude (metres) from GPS data
+ * @param {number}               segs       PlaneGeometry segment count (same for X and Y)
+ */
+function displaceVertices(geo, elevData, floorY, baseAlt, segs) {
+    const posAttr  = geo.attributes.position;
+    const rows     = segs + 1;  // vertex count per axis
+    const cols     = segs + 1;
+    const imgH     = elevData.height;
+    const imgW     = elevData.width;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const vIdx = r * cols + c;
+
+            // Map vertex grid position → elevation image pixel
+            // Row 0 of geometry = north (top) of tile = row 0 of elevation image
+            const pr = r / (rows - 1) * (imgH - 1);
+            const pc = c / (cols - 1) * (imgW - 1);
+
+            const elevMetres = sampleElevation(elevData, pr, pc);
+
+            // Compute local-Z displacement (→ world Y after rotation)
+            const worldY  = (elevMetres - baseAlt) * ELEVATION_SCALE;
+            const localZ  = worldY - floorY;
+
+            posAttr.setZ(vIdx, localZ);
+        }
+    }
+
+    posAttr.needsUpdate = true;
+    geo.computeVertexNormals(); // smooth lighting across terrain
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Floor Grid (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 function rebuildFloorGrid(floorY) {
@@ -307,7 +414,7 @@ function updateFloorGridVisibility() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Public API
+// Public API (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 export function updateMapOpacity(newOpacity) {

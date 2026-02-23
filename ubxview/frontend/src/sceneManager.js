@@ -32,10 +32,10 @@ export function initializeScene() {
 
     controls = setupCameraControls(camera, renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0x404040, 1.5));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(0, 100, 50);
-    scene.add(directionalLight);
+    // scene.add(new THREE.AmbientLight(0x404040, 1.5));
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    // directionalLight.position.set(0, 100, 50);
+    // scene.add(directionalLight);
 
     axesHelper = new THREE.AxesHelper(100);
     axesHelper.position.y = 0.1;

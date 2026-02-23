@@ -21,7 +21,7 @@
             <a href="."><img src="/assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v6.1.3</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v7.1.1</a></p>
         </div>
 
 
@@ -95,7 +95,6 @@
             <div class="view-toggle">
                 <button class="view-option active" data-view="satellite">Satellite</button>
                 <button class="view-option" data-view="streetview">Streetview</button>
-                <!--<button class="view-option" data-view="terrain">Terrain</button>-->
             </div>
 
             <script>
@@ -105,7 +104,6 @@
                         button.classList.add('active');
 
                         const selectedView = button.dataset.view;
-                        // 🔁 Replace this line with your logic to switch views
                         console.log('Selected view:', selectedView);
                     });
                 });    
@@ -280,6 +278,11 @@
 
                 console.log('Trail controls with centralized refresh logic initialized');
             </script>
+
+            <label for="topo-toggle">
+                    Terrain <input type="checkbox" id="topo-toggle"/>
+            </label>
+
 
 
     </div>
