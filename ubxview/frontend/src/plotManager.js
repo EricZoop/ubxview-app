@@ -93,7 +93,7 @@ export function getFloorY() {
     const b = isCoordinateSystemInitialized ? globalBounds : bounds;
     const baseAlt = isCoordinateSystemInitialized ? globalBaselineAltitude : baselineAltitude;
     if (!b || baseAlt === null || baseAlt === undefined) return 0;
-    return (b.minAlt - baseAlt) * 5;
+    return (b.minAlt - baseAlt) * 1;
 }
 
 export function getBaselineAltitude() {
@@ -191,7 +191,7 @@ function createCoordinateConverter() {
         const centerLatRad = (useCenter.lat * Math.PI) / 180;
         const scaleFactor = 10.0;
         const x = (lon - useCenter.lon) * Math.cos(centerLatRad) * 111320 * scaleFactor;
-        const y = (alt - useBaselineAlt) * 5;
+        const y = (alt - useBaselineAlt) * 10; // AWS Terrain Tiles
         const z = (lat - useCenter.lat) * 111320 * scaleFactor;
         return new THREE.Vector3(x, y, -z);
     };

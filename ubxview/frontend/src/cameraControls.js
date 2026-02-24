@@ -257,7 +257,8 @@ export function setupCameraControls(camera, scene) {
                 this.distance = cachedPerspectiveDistance;
                 this.angleX = cachedPerspectiveAngles.x;
                 this.angleY = cachedPerspectiveAngles.y;
-                this.panOffset.copy(cachedPerspectiveTarget);
+                // Keep XZ from birdseye navigation, restore only the Y from before entry
+                this.panOffset.y = cachedPerspectiveTarget.y;
                 this.updateCameraPosition();
             }
         },

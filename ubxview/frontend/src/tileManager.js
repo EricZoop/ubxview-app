@@ -27,7 +27,7 @@ export function setZoomLevel(zoom) {
 // Encoding: elevation (m) = R*256 + G + B/256 − 32768
 const TERRAIN_TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 let TERRAIN_SEGMENTS  = 32;   // subdivisions per tile (32×32 = 1089 verts/tile)
-let ELEVATION_SCALE   = 5;    // must match gpsToCartesian: y = (alt - baseline) * 5
+let ELEVATION_SCALE   = 10;    // must match gpsToCartesian: y = (alt - baseline) * 10
 
 let topographyEnabled = false;
 
