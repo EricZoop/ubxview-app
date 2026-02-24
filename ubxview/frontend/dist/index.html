@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-DVF78l4A.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-Cz2tz6Ig.css">
+  <script type="module" crossorigin src="./assets/index-TN9golBb.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cdb_eNyN.css">
 </head>
 
 <body>
@@ -18,7 +18,7 @@
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">UBXView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v6.1.3</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v7.1.1</a></p>
         </div>
 
 
@@ -88,11 +88,18 @@
 
             <!--<h2>Scene Visuals</h2>-->
 
+
+
+            <div style="font-weight: 500;" class="noselect">Map Opacity</div>
+            <div class="slider-wrapper">
+                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
+                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
+            </div>
+
             <div style="font-weight: 500;" class="noselect">Canvas</div>
             <div class="view-toggle">
                 <button class="view-option active" data-view="satellite">Satellite</button>
                 <button class="view-option" data-view="streetview">Streetview</button>
-                <!--<button class="view-option" data-view="terrain">Terrain</button>-->
             </div>
 
             <script>
@@ -102,17 +109,10 @@
                         button.classList.add('active');
 
                         const selectedView = button.dataset.view;
-                        // 🔁 Replace this line with your logic to switch views
                         console.log('Selected view:', selectedView);
                     });
                 });    
             </script>
-
-            <div style="font-weight: 500;" class="noselect">Map Opacity</div>
-            <div class="slider-wrapper">
-                <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="0.5" />
-                <div id="opacityTooltip" class="slider-tooltip">0.5</div>
-            </div>
 
 
             <div style="font-weight: 500;" class="noselect">Render Distance</div>
@@ -155,7 +155,7 @@
                             style="transform: translateY(2px);" checked title="Toggle Lines">
                     </div>
 
-                    <div class="trail-group" style="transform: translateY(-5px);">
+                    <div class="trail-group" style="transform: translate(7px, -5px);">
                         <label for="show-label-toggle" style="transform: translateX(8.5px);">
                             Tags
                         </label>
@@ -165,12 +165,34 @@
 
                 </div>
             </div>
+
+
+
+<div class="trail-grid" style="grid-template-columns: 1fr 0fr 2.75fr 2.75fr; padding-bottom: 5px;">
+    
+    <div class="trail-group" style="grid-column: 1; align-items: center; transform: translateY(-4px);">
+        <label for="topo-toggle" style="font-size: 11.56px;">DTED</label>
+        <input type="checkbox" id="topo-toggle" class="trail-toggle" style="transform: translateY(2px);">
+    </div>
+    
+    <div class="trail-group" style="grid-column: 3;">
+        <label for="topo-scale" style="font-size: 11.56px;">Scale</label>
+        <input type="number" id="topo-scale" class="terrain-input" value="5" step="1">
+    </div>
+
+    <div class="trail-group" style="grid-column: 4;">
+        <label for="topo-segments" style="font-size: 11.56px;">Polygons</label>
+        <input type="number" id="topo-segments" class="terrain-input" value="32" min="1" max="256">
+    </div>
+    
+</div>
+
+
+
         </div>
 
 
-            <label for="topo-toggle">
-                    Terrain <input type="checkbox" id="topo-toggle"/>
-            </label>
+
 
 
 

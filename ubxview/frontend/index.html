@@ -158,7 +158,7 @@
                             style="transform: translateY(2px);" checked title="Toggle Lines">
                     </div>
 
-                    <div class="trail-group" style="transform: translateY(-5px);">
+                    <div class="trail-group" style="transform: translate(7px, -5px);">
                         <label for="show-label-toggle" style="transform: translateX(8.5px);">
                             Tags
                         </label>
@@ -168,9 +168,36 @@
 
                 </div>
             </div>
+
+
+
+<div class="trail-grid" style="grid-template-columns: 1fr 0fr 2.75fr 2.75fr; padding-bottom: 5px;">
+    
+    <div class="trail-group" style="grid-column: 1; align-items: center; transform: translateY(-4px);">
+        <label for="topo-toggle" style="font-size: 11.56px;">DTED</label>
+        <input type="checkbox" id="topo-toggle" class="trail-toggle" style="transform: translateY(2px);">
+    </div>
+    
+    <div class="trail-group" style="grid-column: 3;">
+        <label for="topo-scale" style="font-size: 11.56px;">Scale</label>
+        <input type="number" id="topo-scale" class="terrain-input" value="5" step="1">
+    </div>
+
+    <div class="trail-group" style="grid-column: 4;">
+        <label for="topo-segments" style="font-size: 11.56px;">Polygons</label>
+        <input type="number" id="topo-segments" class="terrain-input" value="32" min="1" max="256">
+    </div>
+    
+</div>
+
+
+
         </div>
 
             <script type="module">
+
+
+
                 import {
                     refreshColorsFromUI,
                     enableElevationMode,
@@ -283,25 +310,7 @@
 
 
 
-        <div style="font-weight: 500; margin-top: 10px;" class="noselect">Terrain</div>
-        <div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 12px; align-items: end; padding-bottom: 5px;">
-            
-            <div class="trail-group" style="align-items: center;">
-                <label for="topo-toggle" style="margin-bottom: 4px;">Enable</label>
-                <input type="checkbox" id="topo-toggle" class="trail-toggle" style="margin: 0; margin-bottom: 5px;">
-            </div>
 
-            <div class="trail-group">
-                <label for="topo-segments">Polygons</label>
-                <input type="number" id="topo-segments" class="polling-input" value="32" min="1" max="256" style="border-right: 1px solid #333; border-radius: 2px; box-sizing: border-box;">
-            </div>
-
-            <div class="trail-group">
-                <label for="topo-scale" class="trail-group label">Scale</label>
-                <input type="number" id="topo-scale" class="polling-input" value="20" step="1" style="border-right: 1px solid #333; border-radius: 2px; box-sizing: border-box;">
-            </div>
-            
-        </div>
 
     </div>
 

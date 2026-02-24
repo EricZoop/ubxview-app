@@ -26,8 +26,8 @@ export function setZoomLevel(zoom) {
 // AWS Terrain Tiles (Terrarium format) — free, no API key, CORS enabled.
 // Encoding: elevation (m) = R*256 + G + B/256 − 32768
 const TERRAIN_TILE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-const TERRAIN_SEGMENTS  = 32;   // subdivisions per tile (32×32 = 1089 verts/tile)
-const ELEVATION_SCALE   = 20;    // must match gpsToCartesian: y = (alt - baseline) * 5
+let TERRAIN_SEGMENTS  = 32;   // subdivisions per tile (32×32 = 1089 verts/tile)
+let ELEVATION_SCALE   = 5;    // must match gpsToCartesian: y = (alt - baseline) * 5
 
 let topographyEnabled = false;
 
@@ -35,11 +35,23 @@ let topographyEnabled = false;
  * Enable or disable terrain displacement.
  * Triggers a tile refresh so changes take effect immediately.
  */
+export function setElevationScale(val) {
+    ELEVATION_SCALE = parseFloat(val);
+    if (topographyEnabled && getBoundingBox()) {
+        fetchAndDisplayTiles(); 
+    }
+}
+
+export function setTerrainSegments(val) {
+    TERRAIN_SEGMENTS = parseInt(val, 10);
+    if (topographyEnabled && getBoundingBox()) {
+        fetchAndDisplayTiles();
+    }
+}
 export function setTopographyEnabled(enabled) {
     topographyEnabled = !!enabled;
     if (getBoundingBox()) fetchAndDisplayTiles();
 }
-
 export function getTopographyEnabled() { return topographyEnabled; }
 
 // ═══════════════════════════════════════════════════════════════
