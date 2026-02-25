@@ -203,14 +203,14 @@ class SerialRecorder {
             this.port,
             baudRate,
             ({ dur, obs, meanAcc, valid }) => {
-                const ntripTag = ntripConfig ? ' [NTRIP ✓]' : '';
+                const ntripTag = ntripConfig ? '[NTRIP] ' : '';
                 this.statusMessage.textContent =
-                    `Mean 3D StdDev: ${meanAcc.toFixed(3)} m | Valid: ${valid}${ntripTag}`;
+                    `${ntripTag}3D StdDev: ${meanAcc.toFixed(3)}m | ${dur}s`;
             },
             s => {
                 console.log(`[RTKSurvey] Done — Accuracy: ${s.meanAcc.toFixed(4)}m`);
                 this.statusMessage.textContent =
-                    `Survey complete ✓ Acc: ${s.meanAcc.toFixed(4)}m`;
+                    `[RTKSurvey] Done - Acc: ${s.meanAcc.toFixed(4)}m`;
                 this._finishSurvey();
             },
             err => {

@@ -236,62 +236,54 @@ export function showNtripDialog() {
         const overlay = document.createElement('div');
         overlay.id = 'ntrip-overlay';
         overlay.innerHTML = `
-            <div id="ntrip-dialog">
-                <h2>Survey-In Configuration</h2>
+            <form id="ntrip-form" autocomplete="on">
+                <div id="ntrip-dialog">
+                    <h2>Survey-In Configuration</h2>
 
-                <div class="section-title">Parameters</div>
+                    <div class="section-title">Parameters</div>
 
-                <div class="row">
-                    <div>
-                        <label>Min Duration <span class="inline-label">seconds</span></label>
-                        <input id="ni-dur" type="number" min="1" step="1"
-                               value="${SVIN_MIN_DUR_S}" placeholder="${SVIN_MIN_DUR_S}">
+                    <div class="row">
+                        <div>
+                            <label>Min Duration <span class="inline-label">seconds</span></label>
+                            <input id="ni-dur" type="number" min="1" step="1"
+                                   value="${SVIN_MIN_DUR_S}" placeholder="${SVIN_MIN_DUR_S}">
+                        </div>
+                        <div>
+                            <label>Target Accuracy <span class="inline-label">metres</span></label>
+                            <input id="ni-acc" type="number" min="0.001" step="0.001"
+                                   value="${TARGET_ACCURACY_M}" placeholder="${TARGET_ACCURACY_M}">
+                        </div>
                     </div>
-                    <div>
-                        <label>Target Accuracy <span class="inline-label">metres</span></label>
-                        <input id="ni-acc" type="number" min="0.001" step="0.001"
-                               value="${TARGET_ACCURACY_M}" placeholder="${TARGET_ACCURACY_M}">
+
+                    <div class="section-title">NTRIP Corrections <span class="inline-label" style="text-transform:none;letter-spacing:normal">(optional)</span></div>
+
+                    <label>Caster</label>
+                    <input id="ni-host" type="text" placeholder="polaris.pointonenav.com"
+                           value="polaris.pointonenav.com" autocomplete="url">
+
+                    <label>Mountpoint &amp; Port</label>
+                    <div class="row">
+                        <input id="ni-mount" type="text"   placeholder="POLARIS" value="POLARIS">
+                        <input id="ni-port"  type="number" placeholder="2101"    value="2101">
+                    </div>
+
+                    <label>Username</label>
+                    <input id="ni-user" type="text"     name="username" autocomplete="username">
+
+                    <label>Password</label>
+                    <input id="ni-pass" type="password" name="password" autocomplete="current-password">
+
+                    <div class="actions">
+                        <button type="button"  id="ntrip-btn-cancel">Cancel</button>
+                        <button type="button"  id="ntrip-btn-skip">Skip NTRIP</button>
+                        <button type="submit"  id="ntrip-btn-connect">Connect</button>
                     </div>
                 </div>
-
-                <div class="section-title">NTRIP Corrections <span class="inline-label" style="text-transform:none;letter-spacing:normal">(optional)</span></div>
-
-                <label>Caster</label>
-                <input id="ni-host" type="text" placeholder="polaris.pointonenav.com"
-                       value="polaris.pointonenav.com">
-
-                <label>Mountpoint &amp; Port</label>
-                <div class="row">
-                    <input id="ni-mount" type="text"   placeholder="POLARIS" value="POLARIS">
-                    <input id="ni-port"  type="number" placeholder="2101" value="2101">
-                </div>
-
-                <label>Username</label>
-                <input id="ni-user" type="text" placeholder=""
-                       autocomplete="username">
-
-                <label>Password</label>
-                <input id="ni-pass" type="password" placeholder=""
-                       autocomplete="current-password">
-
-                <label>Approx Lat / Lon</label>
-                <div class="row">
-                    <input id="ni-lat" type="number" step="any" placeholder="0.000000">
-                    <input id="ni-lon" type="number" step="any" placeholder="0.000000">
-                </div>
-
-                <div class="actions">
-                    <button id="ntrip-btn-cancel">Cancel</button>
-                    <button id="ntrip-btn-skip">Skip NTRIP</button>
-                    <button id="ntrip-btn-connect">Connect</button>
-                </div>
-            </div>
+            </form>
         `;
         document.body.appendChild(overlay);
 
-        const cleanup = () => {
-            overlay.remove();
-        };
+        const cleanup = () => overlay.remove();
 
         /** Read and validate the survey-in fields. Returns { targetAccuracyM, minDurS } or null on bad input. */
         const readSurveyParams = () => {
@@ -317,13 +309,15 @@ export function showNtripDialog() {
         // Skip → survey-only, no NTRIP
         document.getElementById('ntrip-btn-skip').addEventListener('click', () => {
             const params = readSurveyParams();
-            if (!params) return; // validation failed — keep dialog open
+            if (!params) return;
             cleanup();
             resolve({ ntrip: null, ...params });
         });
 
-        // Connect → validate and resolve with NTRIP config (or fall back to survey-only)
-        document.getElementById('ntrip-btn-connect').addEventListener('click', () => {
+        // Connect → form submit event so the browser sees a real credential submission
+        document.getElementById('ntrip-form').addEventListener('submit', e => {
+            e.preventDefault(); // prevent page navigation, but browser still sees the submit
+
             const params = readSurveyParams();
             if (!params) return;
 
@@ -332,8 +326,8 @@ export function showNtripDialog() {
             const mount = document.getElementById('ni-mount').value.trim();
             const user  = document.getElementById('ni-user').value.trim();
             const pass  = document.getElementById('ni-pass').value;
-            const lat   = parseFloat(document.getElementById('ni-lat').value) || 0.0;
-            const lon   = parseFloat(document.getElementById('ni-lon').value) || 0.0;
+            const lat   = parseFloat(document.getElementById('ni-lat')?.value) || 0.0;
+            const lon   = parseFloat(document.getElementById('ni-lon')?.value) || 0.0;
 
             cleanup();
 
@@ -351,10 +345,10 @@ export function showNtripDialog() {
             resolve({ ntrip: { host, port, mountpoint: mount, user, pass, lat, lon }, ...params });
         });
 
-        // Keyboard shortcuts
+        // Keyboard shortcut – Escape cancels
         overlay.addEventListener('keydown', e => {
-            if (e.key === 'Enter')  document.getElementById('ntrip-btn-connect').click();
             if (e.key === 'Escape') document.getElementById('ntrip-btn-cancel').click();
+            // Enter is now handled natively by the form's submit event
         });
     });
 }
