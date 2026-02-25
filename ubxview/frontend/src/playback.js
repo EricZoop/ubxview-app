@@ -224,7 +224,8 @@ function updateTimeSlider() {
         if (timeDisplay) {
             const curTs = allActiveSortedPoints[currentPointIndex]?.time;
             const endTs = allActiveSortedPoints[maxIndex]?.time;
-            timeDisplay.textContent = `${formatTimestamp(curTs)} / ${formatTimestamp(endTs)}`;
+            timeDisplay.textContent = `${formatTimestamp(curTs)}`;
+            //timeDisplay.textContent = `${formatTimestamp(curTs)} / ${formatTimestamp(endTs)}`;
         }
     }
 }

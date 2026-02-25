@@ -858,17 +858,17 @@ select:hover {
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90vh;
+    width: 75vh;
     height: 20px;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 #playback .controls {
     display: flex;
-    gap: 10px;
+    gap: 1px;
     align-items: center;
 }
 
@@ -976,7 +976,7 @@ select:hover {
 #com-reader {
     bottom: 10px;
     left: 10px;
-    width: 350px;
+    width: 450px;
     height: auto;
 
     display: flex;

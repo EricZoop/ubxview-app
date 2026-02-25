@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-BKtdAYSl.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-Cdb_eNyN.css">
+  <script type="module" crossorigin src="./assets/index-CVOx3nQD.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B3C3HXDM.css">
 </head>
 
 <body>
@@ -18,7 +18,7 @@
             <a href="."><img src="./assets/dot.png" alt="Logo" class="logo" /></a>
             <h1 class="noselect">ARCView</h1>
             <p class="version"> <a href="https://github.com/EricZoop/ubxview-app" target="_blank"
-                    title="Developed by Ji Park & Eric Zipor">v7.1.1</a></p>
+                    title="Developed by Ji Park & Eric Zipor">v7.1.4</a></p>
         </div>
 
 
@@ -331,7 +331,7 @@
 
         </div>
 
-        <span id="timeDisplay" style="font-variant-numeric: tabular-nums;">--:--:-- / --:--:--</span>
+        <span id="timeDisplay" style="font-variant-numeric: tabular-nums;">--:--:--<!-- / --:--:-- --></span>
 
         <div class="speed-control-container">
             <div id="speedOptions" class="speed-options">
@@ -353,30 +353,37 @@
         </button>
     </div>
 
-    <div id="com-reader" class="noselect">
+<div id="com-reader" class="noselect">
 
-        <div class="section-label">Data Reader</div>
-        <div class="com-reader-row top-row">
-            <button id="select-port-button">Select Port</button>
-            <select id="baud-rate">
-                <option>9600</option>
-                <option>19200</option>
-                <option>38400</option>
-                <option>57600</option>
-                <option selected>115200</option>
-            </select>
-        </div>
+    <div class="section-label">Data Reader</div>
 
-        <div class="com-reader-row top-row">
-            <input type="text" id="url-input" placeholder="http://###.###.###.###/api/v1/traffic" value="">
-        </div>
-
-        <div class="com-reader-row bottom-row">
-            <button id="start-button">Record</button>
-            <button id="end-button" disabled>Stop</button>
-            <span id="status-message">Disconnected</span>
-        </div>
+    <div class="com-reader-row top-row">
+        <button id="select-port-button">Select Port</button>
+        <select id="baud-rate">
+            <option>9600</option>
+            <option>19200</option>
+            <option>38400</option>
+            <option>57600</option>
+            <option selected>115200</option>
+        </select>
+        <!-- RTK Survey-In button – disabled until a port is selected -->
+        <button id="survey-button" disabled title="RTK Survey-In" style="margin-left: auto; padding: 0.5em 0.5em;">
+            <img src="./assets/satellite.png" alt="Survey-In" width="16" height="16">
+        </button>
     </div>
+
+    <div class="com-reader-row top-row">
+        <input type="text" id="url-input"
+               placeholder="http://###.###.###.###/api/v1/traffic" value="">
+    </div>
+
+    <div class="com-reader-row bottom-row">
+        <button id="start-button">Record</button>
+        <button id="end-button" disabled>Stop</button>
+        <span id="status-message">Disconnected</span>
+    </div>
+
+</div>
 
 </body>
 
