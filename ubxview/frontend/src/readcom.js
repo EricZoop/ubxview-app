@@ -1,6 +1,6 @@
 import NMEASorter from './nmea_sorter.js';
 import { WeatherRecorder } from './weatherapp.js';
-import { RTKSurvey } from './rtkSurvey.js';
+import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';
 
 class SerialRecorder {
     constructor() {
@@ -162,7 +162,6 @@ class SerialRecorder {
     }
 
     // ─── RTK Survey-In ───────────────────────────────────────────────
-
     async _onSurveyClick() {
         if (this._isSurveying) {
             this._abortSurvey();
@@ -170,34 +169,58 @@ class SerialRecorder {
         }
         if (!this.port || this.isRecording) return;
 
+        // Show dialog — returns:
+        //   null                             → user clicked Cancel (abort, do nothing)
+        //   { ntrip: null,  targetAccuracyM, minDurS } → survey-only
+        //   { ntrip: {...}, targetAccuracyM, minDurS } → survey + NTRIP
+        const dialogResult = await showNtripDialog();
+
+        if (dialogResult === null) {
+            // User cancelled — treat as if the survey button was never pressed
+            console.log('[readcom] Survey cancelled by user.');
+            return;
+        }
+
+        const { ntrip: ntripConfig, targetAccuracyM, minDurS } = dialogResult;
+
+        if (ntripConfig) {
+            console.log('[readcom] NTRIP enabled:', ntripConfig.host, ntripConfig.mountpoint);
+        } else {
+            console.log('[readcom] NTRIP skipped — survey-only mode.');
+        }
+        console.log(`[readcom] Survey params: acc ≤ ${targetAccuracyM}m, dur ≥ ${minDurS}s`);
+
         this._isSurveying = true;
         this._survey = new RTKSurvey();
         this._setSurveyUI(true);
-        this.statusMessage.textContent = 'Survey-In running…';
+        this.statusMessage.textContent = ntripConfig
+            ? 'Survey-In + NTRIP running…'
+            : 'Survey-In running…';
 
         const baudRate = parseInt(this.baudRateSelect.value);
 
         await this._survey.run(
             this.port,
             baudRate,
-            // onStatus — console logging mirrors the Python \r line
             ({ dur, obs, meanAcc, valid }) => {
+                const ntripTag = ntripConfig ? ' [NTRIP ✓]' : '';
                 this.statusMessage.textContent =
-                    `Mean 3D StdDev: ${meanAcc.toFixed(3)} m | Valid: ${valid}`;
+                    `Mean 3D StdDev: ${meanAcc.toFixed(3)} m | Valid: ${valid}${ntripTag}`;
             },
-            // onComplete
             s => {
                 console.log(`[RTKSurvey] Done — Accuracy: ${s.meanAcc.toFixed(4)}m`);
                 this.statusMessage.textContent =
                     `Survey complete ✓ Acc: ${s.meanAcc.toFixed(4)}m`;
                 this._finishSurvey();
             },
-            // onError
             err => {
                 alert(`Survey-In failed: ${err.message}`);
                 this.statusMessage.textContent = 'Survey failed';
                 this._finishSurvey();
-            }
+            },
+            ntripConfig,    // 6th arg — null = no NTRIP
+            targetAccuracyM,
+            minDurS,
         );
     }
 
