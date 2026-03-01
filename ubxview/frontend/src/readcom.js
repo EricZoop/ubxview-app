@@ -294,7 +294,7 @@ class SerialRecorder {
             .replace('T', '_').replace(/\..+Z$/, '').replace(/[:]/g, '-');
         this.currentTimestamp = timestamp;
 
-        const sessionFolderName = `UBXView_${timestamp}`;
+        const sessionFolderName = `ARCView_${timestamp}`;
         try {
             this.sessionDirHandle = await this.outputDirHandle.getDirectoryHandle(sessionFolderName, { create: true });
             console.log(`Session directory created: ${sessionFolderName}`);
