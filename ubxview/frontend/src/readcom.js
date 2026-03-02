@@ -27,7 +27,7 @@ class SerialRecorder {
 
         // URL Reader State
         this.urlPollingInterval = null;
-        this.urlPollingRateMs   = 1000;
+        this.urlPollingRateMs   = 2000;
         this.trafficData        = [];
         this.trafficFileHandle  = null;
         this.trafficWritableStream = null;
@@ -102,8 +102,9 @@ class SerialRecorder {
             await res.json();
             return true;
         } catch (error) {
+            const msg = error?.message ?? (typeof error === 'string' ? error : JSON.stringify(error)) ?? 'Unknown error';
             console.error('URL validation failed:', error);
-            alert(`URL endpoint unreachable:\n${error.message}`);
+            alert(`URL endpoint unreachable:\n${msg}`);
             return false;
         }
     }
