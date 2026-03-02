@@ -123,9 +123,15 @@ class SerialRecorder {
             const res = await tauriFetch(url, { signal: AbortSignal.timeout(5000) });
             if (!res.ok) return;
             const json = await res.json();
-            // ... rest unchanged
+            const packet = { receivedAt: new Date().toISOString(), data: json };
+            this.trafficData.push(packet);
+            if (this.trafficWritableStream) {
+                const encoded = new TextEncoder().encode(JSON.stringify(packet) + '\n');
+                this.totalBytesWritten += encoded.length;
+                await this.trafficWritableStream.write(encoded);
+            }
         } catch (error) {
-            console.warn('URL poll error:', error?.message ?? JSON.stringify(error));
+            console.warn('URL poll error:', error.message);
         }
     }
 
