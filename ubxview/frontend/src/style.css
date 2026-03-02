@@ -1,5 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
+/* Remove autofill background color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e1e1e inset !important; /* match your input background */
+    -webkit-text-fill-color: #eee;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
