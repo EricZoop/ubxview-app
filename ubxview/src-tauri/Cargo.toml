@@ -25,3 +25,4 @@ serde_json = "1"
 notify = "6.1.1"
 tauri-plugin-cors-fetch = "5.0.0"
 tauri-plugin-http = "2"
+reqwest = { version = "0.12", features = ["json"] }

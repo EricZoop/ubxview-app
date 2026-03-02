@@ -11,6 +11,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use tauri::Emitter;
+use reqwest;
+
 // Create a state to hold the last read position (offset)
 struct AppState {
     offset: Arc<Mutex<u64>>,
@@ -62,14 +64,25 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
     });
 }
 
+#[tauri::command]
+async fn fetch_url(url: String) -> Result<String, String> {
+    reqwest::get(&url)
+        .await
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_cors_fetch::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_cors_fetch::init())
         .manage(AppState {
             offset: Arc::new(Mutex::new(0)),
         })
-        .invoke_handler(tauri::generate_handler![watch_file])
+        .invoke_handler(tauri::generate_handler![watch_file, fetch_url])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

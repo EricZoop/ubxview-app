@@ -2,12 +2,16 @@ import NMEASorter from './nmea_sorter.js';
 import { WeatherRecorder } from './weatherapp.js';
 import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';
 
-async function tauriFetch(url, options = {}) {
+async function tauriFetch(url) {
     if (window.__TAURI__) {
-        const { fetch: tFetch } = await import('@tauri-apps/plugin-http');
-        return tFetch(url, options);
+        const text = await window.__TAURI__.core.invoke('fetch_url', { url });
+        return {
+            ok: true,
+            json: async () => JSON.parse(text),
+            text: async () => text,
+        };
     }
-    return fetch(url, options);
+    return fetch(url, { signal: AbortSignal.timeout(5000) });
 }
 
 class SerialRecorder {
