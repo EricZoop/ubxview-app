@@ -1,4 +1,3 @@
-import { fetch } from '@tauri-apps/plugin-http';
 import NMEASorter from './nmea_sorter.js';
 import { WeatherRecorder } from './weatherapp.js';
 import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';

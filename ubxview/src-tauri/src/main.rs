@@ -64,8 +64,8 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_cors_fetch::init())
+        .plugin(tauri_plugin_http::init())
         .manage(AppState {
             offset: Arc::new(Mutex::new(0)),
         })

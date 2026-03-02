@@ -19,7 +19,9 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousDisableAssetCspModification": false,
+      "capabilities": ["default"]
     }
   },
   "bundle": {
