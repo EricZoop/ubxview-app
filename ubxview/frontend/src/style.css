@@ -1033,7 +1033,7 @@ select:hover {
 #url-input {
     width: 100%;
     box-sizing: border-box;
-    font-size: 0.8rem;
+    font-size: 0.85em;
     padding: 0.6em 0.8em;
     background-color: #1a1a1a;
     border: 1px solid #333;
