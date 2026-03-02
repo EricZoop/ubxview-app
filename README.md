@@ -3,7 +3,10 @@
   UBXView
 </h1>
 
+<p>
 <img src="data/screenshots/Screenshot 2026-02-17 180955.png">
+</p>
+
 
 *Model real-time kinematic (RTK) drones and ADS-B data live for radar auto-registration workflows, powered by u-blox and uAvionix.*
 
