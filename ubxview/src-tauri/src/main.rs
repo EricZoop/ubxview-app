@@ -19,7 +19,7 @@ struct AppState {
 #[tauri::command]
 fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<AppState>) {
     let offset = state.offset.clone();
-    
+
     // Reset the offset for the new file
     *offset.lock().unwrap() = 0;
 
@@ -34,7 +34,7 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
         watcher
             .watch(path.as_ref(), RecursiveMode::NonRecursive)
             .unwrap();
-        
+
         println!("Started watching file: {}", path);
 
         // The watch loop
@@ -45,7 +45,7 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
                     if let Ok(mut file) = File::open(&path) {
                         let mut current_offset = offset.lock().unwrap();
                         file.seek(SeekFrom::Start(*current_offset)).unwrap();
-                        
+
                         let mut buffer = String::new();
                         if file.read_to_string(&mut buffer).is_ok() && !buffer.is_empty() {
                             // Update offset to the new position
@@ -64,6 +64,7 @@ fn watch_file(path: String, app_handle: tauri::AppHandle, state: tauri::State<Ap
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_cors_fetch::init())
         .manage(AppState {
             offset: Arc::new(Mutex::new(0)),
