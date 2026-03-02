@@ -7,6 +7,8 @@
     "core:default",
     "opener:default",
     "http:default",
-    "http:allow-fetch"
+    "http:allow-fetch",
+    "cors-fetch:default",
+    "cors-fetch:allow-fetch"
   ]
 }
