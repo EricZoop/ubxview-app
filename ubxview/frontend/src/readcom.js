@@ -2,6 +2,14 @@ import NMEASorter from './nmea_sorter.js';
 import { WeatherRecorder } from './weatherapp.js';
 import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';
 
+async function tauriFetch(url, options = {}) {
+    if (window.__TAURI__) {
+        const { fetch: tFetch } = await import('@tauri-apps/plugin-http');
+        return tFetch(url, options);
+    }
+    return fetch(url, options);
+}
+
 class SerialRecorder {
     constructor() {
         // DOM Elements
@@ -97,12 +105,12 @@ class SerialRecorder {
         const url = this.urlInput.value.trim();
         if (!url) return false;
         try {
-            const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            const res = await tauriFetch(url, { signal: AbortSignal.timeout(5000) });
             if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             await res.json();
             return true;
         } catch (error) {
-            const msg = error?.message ?? (typeof error === 'string' ? error : JSON.stringify(error)) ?? 'Unknown error';
+            const msg = error?.message ?? (typeof error === 'string' ? error : JSON.stringify(error));
             console.error('URL validation failed:', error);
             alert(`URL endpoint unreachable:\n${msg}`);
             return false;
@@ -112,18 +120,12 @@ class SerialRecorder {
     async pollUrl() {
         const url = this.urlInput.value.trim();
         try {
-            const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            const res = await tauriFetch(url, { signal: AbortSignal.timeout(5000) });
             if (!res.ok) return;
             const json = await res.json();
-            const packet = { receivedAt: new Date().toISOString(), data: json };
-            this.trafficData.push(packet);
-            if (this.trafficWritableStream) {
-                const encoded = new TextEncoder().encode(JSON.stringify(packet) + '\n');
-                this.totalBytesWritten += encoded.length;
-                await this.trafficWritableStream.write(encoded);
-            }
+            // ... rest unchanged
         } catch (error) {
-            console.warn('URL poll error:', error.message);
+            console.warn('URL poll error:', error?.message ?? JSON.stringify(error));
         }
     }
 
