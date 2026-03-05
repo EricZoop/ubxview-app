@@ -354,7 +354,7 @@ export function initializeStatsEventListeners() {
             const groupsEl = document.getElementById('stats-groups');
             const panel = groupsEl?.querySelector(`.stats-group[data-panel-id="${e.detail.talkerId}"]`);
             if (panel && groupsEl) {
-                groupsEl.scrollTo({ top: panel.offsetTop - 60, behavior: 'smooth' });
+                groupsEl.scrollTo({ top: panel.offsetTop - 60, behavior: 'instant' });
             }
         }
     });
