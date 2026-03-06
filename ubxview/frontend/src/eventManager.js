@@ -4,6 +4,7 @@ import { setupFileManagerListeners } from './fileManager.js';
 import { removeCompassLabels } from './compassRose.js';
 import { fetchAndDisplayTiles } from './tileManager.js';
 import { initializeUI } from './uiManager.js';
+import { setupObjectManagerListeners, refreshObjectPositions } from './objectManager.js';
 
 let startupHelpersRemoved = false;
 
@@ -24,9 +25,11 @@ export function initializeEventListeners() {
 
             controls.reset(plotMetadata.dataSpan, plotMetadata.firstPointVec);
             fetchAndDisplayTiles();
+            refreshObjectPositions();
         }
     });
 
+    setupObjectManagerListeners();
     setupTrailControlListeners();
     setupFileManagerListeners();
     initializeUI();
