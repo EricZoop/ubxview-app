@@ -315,7 +315,7 @@ async function handleCombinedLoad() {
                 description: 'All Supported Files',
                 accept: {
                     'model/*':      ['.stl', '.obj'],
-                    'text/plain':   ['.ubx', '.txt', '.csv', '.log', '.ndjson'],
+                    'text/plain':   ['.ubx', '.txt', '.csv', '.log', '.ndjson', '.crswap'],
                 },
             }],
             multiple: true,
