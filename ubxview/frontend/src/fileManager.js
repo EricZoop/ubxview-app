@@ -161,7 +161,7 @@ function renderFileList() {
         `;
 
         if (!isActive) {
-            const overlayColor = isOverlaid ? '#4e9bff' : '#88888888';
+            const overlayColor = isOverlaid ? '#1c7eff' : '#88888888';
             htmlContent += `
                 <span class="overlay-btn" data-overlaid="${isOverlaid}"
                       style="flex-shrink:0; line-height:0; color:${overlayColor}; transition:color 0.15s ease;"
@@ -195,10 +195,10 @@ function renderFileList() {
             const overlayBtn = item.querySelector('.overlay-btn');
             if (overlayBtn) {
                 overlayBtn.addEventListener('mouseenter', () => {
-                    if (!overlayedFileIds.has(id)) overlayBtn.style.color = '#4e9bff';
+                    if (!overlayedFileIds.has(id)) overlayBtn.style.color = '#1c7eff';
                 });
                 overlayBtn.addEventListener('mouseleave', () => {
-                    overlayBtn.style.color = overlayedFileIds.has(id) ? '#4e9bff' : '#88888888';
+                    overlayBtn.style.color = overlayedFileIds.has(id) ? '#1c7eff' : '#88888888';
                 });
                 overlayBtn.addEventListener('click', async e => {
                     e.stopPropagation();

@@ -41,6 +41,23 @@ npm run tauri build
 Debugging:
 Unlock cross-domain Ajax requests in web applications [Download Chrome Extension](https://chromewebstore.google.com/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
 
+## Post-processing / Analysis / Experiments 
+Create enviorment
+```cmd
+python -m venv venv
+```
+
+Activate
+```cmd
+venv\Scripts\activate
+```
+
+Install dependencies
+```cmd
+pip install -r requirements.txt
+```
+
+
 ## Directory Glance
 ```rs
 ubxview-app/

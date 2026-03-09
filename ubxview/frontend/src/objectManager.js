@@ -115,6 +115,9 @@ function makeNumberInput(entry, key, { step, min, max }, onChange) {
             onChange ? onChange(v) : applyTransform(entry);
         }
     });
+    input.addEventListener('keydown', e => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.stopPropagation();
+    });
     return input;
 }
 
@@ -139,12 +142,9 @@ function makeField(labelText, inputEl) {
 
 function makeRow(cols, ...fields) {
     const row = document.createElement('div');
-    row.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(${cols}, 1fr);
-        gap: 0.4em 0.6em;
-        margin-bottom: 0.5em;
-    `;
+    row.className = 'form-row';
+    row.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
     fields.forEach(f => row.appendChild(f));
     return row;
 }

@@ -1266,7 +1266,19 @@ input[type="number"].terrain-input::-webkit-outer-spin-button:hover {
     background-color: #05050500;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   OBJECT STL
+   ═══════════════════════════════════════════════════════════════ */
 
+.form-row {
+    display: grid;
+    gap: 0.4em 0.6em;
+    margin-bottom: 0.5em;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════
