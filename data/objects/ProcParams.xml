@@ -1,0 +1,919 @@
+<?xml version="1.0"?>
+<Parameters Radar="MHR" Version="5" Revision="22" AppCode="2206298803" CreatedFrom="ProcParams.xlsm at 8/14/2024 2:41:22 PM">
+    <Common>
+        <TIF_nPropellerSlots>1</TIF_nPropellerSlots>
+        <TIF_PropRevisitTime>5</TIF_PropRevisitTime>
+        <TIF_nTrackSlots>2</TIF_nTrackSlots>
+        <TrackRevisitTime>0.25</TrackRevisitTime>
+        <MaxTrksToProcess>300</MaxTrksToProcess>
+        <RunSynchronizedToGps>0</RunSynchronizedToGps>
+        <N_RX>5</N_RX>
+        <TypSysGain1stRx>59.76</TypSysGain1stRx>
+        <SystemGain>54.1</SystemGain>
+        <Typ1stRxCalibGain>4.34000000000001</Typ1stRxCalibGain>
+        <Fc>3.5</Fc>
+        <PhaseNoise>-125</PhaseNoise>
+        <PolarLoss>0</PolarLoss>
+        <ApplyCPICorrection>0</ApplyCPICorrection>
+        <ADCNoise>-65</ADCNoise>
+        <TaperingSignalGainLoss1stRx>3.51</TaperingSignalGainLoss1stRx>
+        <TaperingNoiseGainLoss1stRx>3.1337</TaperingNoiseGainLoss1stRx>
+        <TaperingSignalGainLossRefRx>0</TaperingSignalGainLossRefRx>
+        <TaperingNoiseGainLossRefRx>0</TaperingNoiseGainLossRefRx>
+        <Npatches>41</Npatches>
+        <PatchPower>10</PatchPower>
+        <PatchGain>5</PatchGain>
+        <FFTWindowFunction>BH</FFTWindowFunction>
+        <SyncWindow>0.1</SyncWindow>
+        <NRGOptimMode>15</NRGOptimMode>
+    </Common>
+
+    <Sequence>
+        <Name>Search1</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <SeqRepetition>4</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.05</DesiredBatchTime>  <!-- 50 (ms) -->
+            <BatchTime>0.0498736</BatchTime>  <!-- 49.8736 (ms) -->
+            <PRIExtInChipUnits>1</PRIExtInChipUnits>
+            <PRI1>0.000013</PRI1>  <!-- 13 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000005</PulseWidth>  <!-- 0.5 (us) -->
+            <BandWidth>4000000</BandWidth>  <!-- 4 (MHz) -->
+            <RangeRes>74.9481145</RangeRes>
+            <RGWidth>37.47405725</RGWidth>
+            <ActMinRange>112.42217175</ActMinRange>
+            <ActMaxRange>1686.33257625</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>74.9481145</MinRange>  <!-- units [m] -->
+            <MaxRange>1723.8066335</MaxRange>  <!-- units [m] -->
+            <NRangeGates>45</NRangeGates>
+            <ChipSize>20</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>2</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>224</NPoints>
+            <DFTSize>256</DFTSize>
+            <ClutterMargin>0.525586546622951</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.751380635245902</FFT2Doppler>
+            <NoiseMask>-19,-6,6,19</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>349.22651740815</STCInitRange>
+            <RCSRef>0.005</RCSRef>
+            <RxProcGain>33.4627801399814</RxProcGain>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.698131700797732</SteerAz>  <!-- -40 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.488692190558412</SteerAz>  <!-- -28 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.279252680319093</SteerAz>  <!-- -16 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-6.98131700797732E-02</SteerAz>  <!-- -4 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.139626340159546</SteerAz>  <!-- 8 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.349065850398866</SteerAz>  <!-- 20 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.558505360638185</SteerAz>  <!-- 32 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.767944870877505</SteerAz>  <!-- 44 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.767944870877505</SteerAz>  <!-- -44 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.558505360638185</SteerAz>  <!-- -32 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.349065850398866</SteerAz>  <!-- -20 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.139626340159546</SteerAz>  <!-- -8 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>6.98131700797732E-02</SteerAz>  <!-- 4 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.279252680319093</SteerAz>  <!-- 16 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.488692190558412</SteerAz>  <!-- 28 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.698131700797732</SteerAz>  <!-- 40 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.698131700797732</SteerAz>  <!-- -40 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.488692190558412</SteerAz>  <!-- -28 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.279252680319093</SteerAz>  <!-- -16 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-6.98131700797732E-02</SteerAz>  <!-- -4 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.139626340159546</SteerAz>  <!-- 8 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.349065850398866</SteerAz>  <!-- 20 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.558505360638185</SteerAz>  <!-- 32 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.767944870877505</SteerAz>  <!-- 44 Degrees -->
+                <SteerEl>0.523598775598299</SteerEl>  <!-- 30 Degrees -->
+            </BeamSteering>
+        </ProcChan>
+        <ProcChan>
+            <ProcChanName>Ch2</ProcChanName>
+            <SeqRepetition>4</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.05</DesiredBatchTime>  <!-- 50 (ms) -->
+            <BatchTime>0.0498736</BatchTime>  <!-- 49.8736 (ms) -->
+            <PRIExtInChipUnits>1</PRIExtInChipUnits>
+            <PRI1>0.000034</PRI1>  <!-- 34 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000104</PulseWidth>  <!-- 10.4 (us) -->
+            <BandWidth>2500000</BandWidth>  <!-- 2.5 (MHz) -->
+            <RangeRes>119.9169832</RangeRes>
+            <RGWidth>59.9584916</RGWidth>
+            <ActMinRange>1618.8792732</ActMinRange>
+            <ActMaxRange>3297.717038</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>1558.9207816</MinRange>  <!-- units [m] -->
+            <MaxRange>3357.6755296</MaxRange>  <!-- units [m] -->
+            <NRangeGates>31</NRangeGates>
+            <ChipSize>64</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>13</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>224</NPoints>
+            <DFTSize>256</DFTSize>
+            <ClutterMargin>0.525586546622951</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.751380635245902</FFT2Doppler>
+            <NoiseMask>-19,-6,6,19</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>745.508848490055</STCInitRange>
+            <RCSRef>0.005</RCSRef>
+            <RxProcGain>46.6434134896091</RxProcGain>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.698131700797732</SteerAz>  <!-- -40 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.488692190558412</SteerAz>  <!-- -28 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.279252680319093</SteerAz>  <!-- -16 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-6.98131700797732E-02</SteerAz>  <!-- -4 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.139626340159546</SteerAz>  <!-- 8 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.349065850398866</SteerAz>  <!-- 20 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.558505360638185</SteerAz>  <!-- 32 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.767944870877505</SteerAz>  <!-- 44 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.767944870877505</SteerAz>  <!-- -44 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.558505360638185</SteerAz>  <!-- -32 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.349065850398866</SteerAz>  <!-- -20 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.139626340159546</SteerAz>  <!-- -8 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>6.98131700797732E-02</SteerAz>  <!-- 4 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.279252680319093</SteerAz>  <!-- 16 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.488692190558412</SteerAz>  <!-- 28 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.698131700797732</SteerAz>  <!-- 40 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>1</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>3</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>2</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>4</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>3</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>5</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>4</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>6</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>5</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>1</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>3</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>2</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>4</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>3</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Search2</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <SeqRepetition>4</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.076</DesiredBatchTime>  <!-- 76 (ms) -->
+            <BatchTime>0.0744192</BatchTime>  <!-- 74.4192 (ms) -->
+            <PRIExtInChipUnits>1</PRIExtInChipUnits>
+            <PRI1>0.000072</PRI1>  <!-- 72 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000169</PulseWidth>  <!-- 16.9 (us) -->
+            <BandWidth>1538461.53846154</BandWidth>  <!-- 1.53846153846154 (MHz) -->
+            <RangeRes>194.8650977</RangeRes>
+            <RGWidth>97.43254885</RGWidth>
+            <ActMinRange>3230.67881895</ActMinRange>
+            <ActMaxRange>8004.8737126</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>600</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>3133.2462701</MinRange>  <!-- units [m] -->
+            <MaxRange>8102.30626145</MaxRange>  <!-- units [m] -->
+            <NRangeGates>52</NRangeGates>
+            <ChipSize>104</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>13</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>256</NPoints>
+            <DFTSize>256</DFTSize>
+            <ClutterMargin>0.437641152353113</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.575489846706226</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1229.98285586186</STCInitRange>
+            <RCSRef>0.02</RCSRef>
+            <RxProcGain>49.3318666125349</RxProcGain>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.698131700797732</SteerAz>  <!-- -40 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.488692190558412</SteerAz>  <!-- -28 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.279252680319093</SteerAz>  <!-- -16 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-6.98131700797732E-02</SteerAz>  <!-- -4 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.139626340159546</SteerAz>  <!-- 8 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.349065850398866</SteerAz>  <!-- 20 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.558505360638185</SteerAz>  <!-- 32 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.767944870877505</SteerAz>  <!-- 44 Degrees -->
+                <SteerEl>0.10471975511966</SteerEl>  <!-- 6 Degrees -->
+            </BeamSteering>
+        </ProcChan>
+        <ProcChan>
+            <ProcChanName>Ch2</ProcChanName>
+            <SeqRepetition>4</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.076</DesiredBatchTime>  <!-- 76 (ms) -->
+            <BatchTime>0.0744192</BatchTime>  <!-- 74.4192 (ms) -->
+            <PRIExtInChipUnits>1</PRIExtInChipUnits>
+            <PRI1>0.000072</PRI1>  <!-- 72 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000169</PulseWidth>  <!-- 16.9 (us) -->
+            <BandWidth>1538461.53846154</BandWidth>  <!-- 1.53846153846154 (MHz) -->
+            <RangeRes>194.8650977</RangeRes>
+            <RGWidth>97.43254885</RGWidth>
+            <ActMinRange>3230.67881895</ActMinRange>
+            <ActMaxRange>8004.8737126</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>600</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>3133.2462701</MinRange>  <!-- units [m] -->
+            <MaxRange>8102.30626145</MaxRange>  <!-- units [m] -->
+            <NRangeGates>52</NRangeGates>
+            <ChipSize>104</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>13</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>256</NPoints>
+            <DFTSize>256</DFTSize>
+            <ClutterMargin>0.437641152353113</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.575489846706226</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1229.98285586186</STCInitRange>
+            <RCSRef>0.02</RCSRef>
+            <RxProcGain>49.3318666125349</RxProcGain>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.767944870877505</SteerAz>  <!-- -44 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.558505360638185</SteerAz>  <!-- -32 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.349065850398866</SteerAz>  <!-- -20 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>-0.139626340159546</SteerAz>  <!-- -8 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>6.98131700797732E-02</SteerAz>  <!-- 4 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.279252680319093</SteerAz>  <!-- 16 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.488692190558412</SteerAz>  <!-- 28 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+            <BeamSteering>
+                <Antenna>1</Antenna>
+                <SteerAz>0.698131700797732</SteerAz>  <!-- 40 Degrees -->
+                <SteerEl>0.314159265358979</SteerEl>  <!-- 18 Degrees -->
+            </BeamSteering>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>1</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>2</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>0</Tracking>
+            <StgPRISeqInChipUnits>1</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Track1</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.06</DesiredBatchTime>  <!-- 60 (ms) -->
+            <BatchTime>0.0589152</BatchTime>  <!-- 58.9152 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.000018</PRI1>  <!-- 18 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000004</PulseWidth>  <!-- 0.4 (us) -->
+            <BandWidth>5000000</BandWidth>  <!-- 5 (MHz) -->
+            <RangeRes>59.9584916</RangeRes>
+            <RGWidth>29.9792458</RGWidth>
+            <ActMinRange>89.9377374</ActMinRange>
+            <ActMaxRange>2458.2981556</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>59.9584916</MinRange>  <!-- units [m] -->
+            <MaxRange>2488.2774014</MaxRange>  <!-- units [m] -->
+            <NRangeGates>82</NRangeGates>
+            <ChipSize>16</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>2</NSeries>
+            <PostDec>2</PostDec>
+            <NPoints>816</NPoints>
+            <DFTSize>1024</DFTSize>
+            <ClutterMargin>0.439534211059384</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.579275964118767</FFT2Doppler>
+            <NoiseMask>-21,-6,6,21</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>542.622609761512</STCInitRange>
+            <RCSRef>0.005</RCSRef>
+            <RxProcGain>41.1184013707377</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Track2</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.076</DesiredBatchTime>  <!-- 76 (ms) -->
+            <BatchTime>0.0743728</BatchTime>  <!-- 74.3728 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.000054</PRI1>  <!-- 54 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.000013</PulseWidth>  <!-- 13 (us) -->
+            <BandWidth>2000000</BandWidth>  <!-- 2 (MHz) -->
+            <RangeRes>149.896229</RangeRes>
+            <RGWidth>74.9481145</RGWidth>
+            <ActMinRange>2423.5990915</ActMinRange>
+            <ActMaxRange>5871.2123585</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>400</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>2348.650977</MinRange>  <!-- units [m] -->
+            <MaxRange>5946.160473</MaxRange>  <!-- units [m] -->
+            <NRangeGates>49</NRangeGates>
+            <ChipSize>80</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>13</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>688</NPoints>
+            <DFTSize>1024</DFTSize>
+            <ClutterMargin>0.343345464010985</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.38689847002197</FFT2Doppler>
+            <NoiseMask>-24,-7,7,24</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1240.72891010796</STCInitRange>
+            <RCSRef>0.01</RCSRef>
+            <RxProcGain>52.4859178187031</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Track3</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.042</DesiredBatchTime>  <!-- 42 (ms) -->
+            <BatchTime>0.0409856</BatchTime>  <!-- 40.9856 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.00008</PRI1>  <!-- 80 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000195</PulseWidth>  <!-- 19.5 (us) -->
+            <BandWidth>1333333.33333333</BandWidth>  <!-- 1.33333333333333 (MHz) -->
+            <RangeRes>224.8443435</RangeRes>
+            <RGWidth>112.42217175</RGWidth>
+            <ActMinRange>5835.39863725</ActMinRange>
+            <ActMaxRange>8758.37510275</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>2800</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>5722.9764655</MinRange>  <!-- units [m] -->
+            <MaxRange>8870.7972745</MaxRange>  <!-- units [m] -->
+            <NRangeGates>29</NRangeGates>
+            <ChipSize>120</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>13</NSeries>
+            <PostDec>1</PostDec>
+            <NPoints>256</NPoints>
+            <DFTSize>256</DFTSize>
+            <ClutterMargin>0.672366242858526</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>1</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>90</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>1.04494002771705</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>STC</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1602.4024744602</STCInitRange>
+            <RCSRef>0.05</RCSRef>
+            <RxProcGain>49.9533456800233</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>2</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Prop1</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <ApplyRGOptimization>1</ApplyRGOptimization>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.171</DesiredBatchTime>  <!-- 171 (ms) -->
+            <BatchTime>0.1703936</BatchTime>  <!-- 170.3936 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.0000051</PRI1>  <!-- 5.1 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000004</PulseWidth>  <!-- 0.4 (us) -->
+            <BandWidth>5000000</BandWidth>  <!-- 5 (MHz) -->
+            <RangeRes>59.9584916</RangeRes>
+            <RGWidth>29.9792458</RGWidth>
+            <ActMinRange>89.9377374</ActMinRange>
+            <ActMaxRange>539.6264244</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>59.9584916</MinRange>  <!-- units [m] -->
+            <MaxRange>569.6056702</MaxRange>  <!-- units [m] -->
+            <NRangeGates>18</NRangeGates>
+            <ChipSize>16</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>2</NSeries>
+            <PostDec>16</PostDec>
+            <NPoints>2048</NPoints>
+            <DFTSize>2048</DFTSize>
+            <ClutterMargin>0.275568478427209</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>0</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>200</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.251344498854417</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>CEF</OperOptions>
+            <ThresholdSNR>14</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1148.62783639113</STCInitRange>
+            <RCSRef>0.005</RCSRef>
+            <RxProcGain>54.1456991761564</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Prop2</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <ApplyRGOptimization>1</ApplyRGOptimization>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.205</DesiredBatchTime>  <!-- 205 (ms) -->
+            <BatchTime>0.2048</BatchTime>  <!-- 204.8 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.0000124</PRI1>  <!-- 12.4 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000028</PulseWidth>  <!-- 2.8 (us) -->
+            <BandWidth>5000000</BandWidth>  <!-- 5 (MHz) -->
+            <RangeRes>59.9584916</RangeRes>
+            <RGWidth>29.9792458</RGWidth>
+            <ActMinRange>449.688687</ActMinRange>
+            <ActMaxRange>1259.1283236</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>419.7094412</MinRange>  <!-- units [m] -->
+            <MaxRange>1289.1075694</MaxRange>  <!-- units [m] -->
+            <NRangeGates>30</NRangeGates>
+            <ChipSize>32</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>7</NSeries>
+            <PostDec>8</PostDec>
+            <NPoints>2048</NPoints>
+            <DFTSize>2048</DFTSize>
+            <ClutterMargin>0.254455540523437</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>0</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>200</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.209118623046875</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>CEF</OperOptions>
+            <ThresholdSNR>10</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>1868.07375548425</STCInitRange>
+            <RCSRef>0.01</RCSRef>
+            <RxProcGain>59.5863796196592</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+
+    <Sequence>
+        <Name>Prop3</Name>
+        <ProcChan>
+            <ProcChanName>Ch1</ProcChanName>
+            <ApplyRGOptimization>1</ApplyRGOptimization>
+            <SeqRepetition>1</SeqRepetition>
+            <DetectionLimit>256</DetectionLimit>
+            <DesiredBatchTime>0.206</DesiredBatchTime>  <!-- 206 (ms) -->
+            <BatchTime>0.2052096</BatchTime>  <!-- 205.2096 (ms) -->
+            <PRIExtInChipUnits>0</PRIExtInChipUnits>
+            <PRI1>0.0000333</PRI1>  <!-- 33.3 (us) -->
+            <PRI2>0</PRI2>  <!-- 0 (us) -->
+            <NStaggers>1</NStaggers>
+            <PulseWidth>0.0000088</PulseWidth>  <!-- 8.8 (us) -->
+            <BandWidth>2500000</BandWidth>  <!-- 2.5 (MHz) -->
+            <RangeRes>119.9169832</RangeRes>
+            <RGWidth>59.9584916</RGWidth>
+            <ActMinRange>1379.0453068</ActMinRange>
+            <ActMaxRange>3477.5925128</ActMaxRange>
+            <MaxTgtRange>0</MaxTgtRange>
+            <MinRangeOffset>0</MinRangeOffset>
+            <MaxRangeOffset>0</MaxRangeOffset>
+            <MinRange>1319.0868152</MinRange>  <!-- units [m] -->
+            <MaxRange>3537.5510044</MaxRange>  <!-- units [m] -->
+            <NRangeGates>38</NRangeGates>
+            <ChipSize>64</ChipSize>
+            <RGOverlap>1</RGOverlap>
+            <NSeries>11</NSeries>
+            <PostDec>3</PostDec>
+            <NPoints>2048</NPoints>
+            <DFTSize>2048</DFTSize>
+            <ClutterMargin>0.254246839302832</ClutterMargin>  <!-- units [m/sec] -->
+            <MinVelocity>0</MinVelocity>  <!-- units [m/sec] -->
+            <MaxVelocity>200</MaxVelocity>  <!-- units [m/sec] -->
+            <FFT2Doppler>0.208701220605664</FFT2Doppler>
+            <NoiseMask>-16,-5,5,16</NoiseMask>
+            <OperOptions>CEF</OperOptions>
+            <ThresholdSNR>10</ThresholdSNR>  <!-- units [dB] -->
+            <STCInitRange>5169.31510500235</STCInitRange>
+            <RCSRef>0.5</RCSRef>
+            <RxProcGain>60.2999387050159</RxProcGain>
+        </ProcChan>
+        <Beam>
+            <ProcChanId>1</ProcChanId>
+            <BeamType>1</BeamType>
+            <Stagger>1</Stagger>
+            <RcvPatchGrp>1</RcvPatchGrp>
+            <Tracking>1</Tracking>
+            <StgPRISeqInChipUnits>0</StgPRISeqInChipUnits>
+        </Beam>
+    </Sequence>
+</Parameters>
