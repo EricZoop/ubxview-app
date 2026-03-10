@@ -1,3 +1,8 @@
+// rtkSurvey.js
+// No tauriFetch import needed — NTRIPClient uses fetch() directly.
+// The Tauri cors-fetch plugin patches window.fetch to bypass CORS natively
+// and supports streaming binary, which tauriFetch cannot do.
+
 // ── UBX Helpers ───────────────────────────────────────────────────────────────
 
 function ubxChecksum(body) {
@@ -10,12 +15,12 @@ function ubxChecksum(body) {
 }
 
 function buildUbx(cls, msgId, payload) {
-    const len = payload.length;
+    const len  = payload.length;
     const body = new Uint8Array(4 + len);
     body[0] = cls;
     body[1] = msgId;
-    body[2] =  len        & 0xFF;
-    body[3] = (len >> 8)  & 0xFF;
+    body[2] =  len       & 0xFF;
+    body[3] = (len >> 8) & 0xFF;
     body.set(payload, 4);
 
     const [ckA, ckB] = ubxChecksum(body);
@@ -58,13 +63,13 @@ const CFG_TMODE_MODE           = 0x20030001;
 const CFG_TMODE_SVIN_MIN_DUR   = 0x40030010;
 const CFG_TMODE_SVIN_ACC_LIMIT = 0x40030011;
 
-// Default survey-in parameters (overridable via dialog)
-export const TARGET_ACCURACY_M = 1.0;
+// With NTRIP corrections, 30 s and 0.5 m are comfortably achievable.
+// Raise minDurS if you need a more conservative baseline.
+export const TARGET_ACCURACY_M = 0.02;
 export const SVIN_MIN_DUR_S    = 60;
 
 const DISABLE_CMD = cfgValset(3, [[CFG_TMODE_MODE, 'B', 0]]);
 
-/** Build SURVEY_IN_CMD with runtime accuracy/duration values. */
 function buildSurveyInCmd(targetAccuracyM, minDurS) {
     return cfgValset(3, [
         [CFG_TMODE_MODE,           'B',  1],
@@ -85,7 +90,13 @@ function parseNavSvin(payload) {
     };
 }
 
-// ── NMEA Helpers (for NTRIP GGA) ─────────────────────────────────────────────
+// ── NAV-SAT Parser ────────────────────────────────────────────────────────────
+function parseNavSatCount(payload) {
+    if (payload.length < 8) return null;
+    return payload[5]; // numSvs at byte offset 5
+}
+
+// ── NMEA Helpers ──────────────────────────────────────────────────────────────
 
 function nmeaChecksum(sentence) {
     let ck = 0;
@@ -94,21 +105,21 @@ function nmeaChecksum(sentence) {
 }
 
 function buildGGA(lat = 0.0, lon = 0.0) {
-    const now     = new Date();
-    const hh      = String(now.getUTCHours()).padStart(2, '0');
-    const mm      = String(now.getUTCMinutes()).padStart(2, '0');
-    const ss      = String(now.getUTCSeconds()).padStart(2, '00');
-    const t       = `${hh}${mm}${ss}.00`;
+    const now    = new Date();
+    const hh     = String(now.getUTCHours()).padStart(2, '0');
+    const mm     = String(now.getUTCMinutes()).padStart(2, '0');
+    const ss     = String(now.getUTCSeconds()).padStart(2, '00');
+    const t      = `${hh}${mm}${ss}.00`;
 
-    const absLat  = Math.abs(lat);
-    const latDeg  = Math.floor(absLat);
-    const latMin  = ((absLat - latDeg) * 60).toFixed(4).padStart(7, '0');
-    const latHem  = lat >= 0 ? 'N' : 'S';
+    const absLat = Math.abs(lat);
+    const latDeg = Math.floor(absLat);
+    const latMin = ((absLat - latDeg) * 60).toFixed(4).padStart(7, '0');
+    const latHem = lat >= 0 ? 'N' : 'S';
 
-    const absLon  = Math.abs(lon);
-    const lonDeg  = Math.floor(absLon);
-    const lonMin  = ((absLon - lonDeg) * 60).toFixed(4).padStart(7, '0');
-    const lonHem  = lon >= 0 ? 'E' : 'W';
+    const absLon = Math.abs(lon);
+    const lonDeg = Math.floor(absLon);
+    const lonMin = ((absLon - lonDeg) * 60).toFixed(4).padStart(7, '0');
+    const lonHem = lon >= 0 ? 'E' : 'W';
 
     const body = `GPGGA,${t},${String(latDeg).padStart(2,'0')}${latMin},${latHem},` +
                  `${String(lonDeg).padStart(3,'0')}${lonMin},${lonHem},` +
@@ -116,44 +127,66 @@ function buildGGA(lat = 0.0, lon = 0.0) {
     return `$${body}*${nmeaChecksum(body)}\r\n`;
 }
 
+// ── NMEA GGA parser (for reading position back from receiver if needed) ───────
+function parseGGA(sentence) {
+    if (!sentence.match(/^\$(GP|GN|GL)GGA,/)) return null;
+    const parts = sentence.split(',');
+    if (parts.length < 6) return null;
+
+    const latRaw = parseFloat(parts[2]);
+    const latHem = parts[3];
+    const lonRaw = parseFloat(parts[4]);
+    const lonHem = parts[5];
+    const fix    = parseInt(parts[6]);
+
+    if (!fix || isNaN(latRaw) || isNaN(lonRaw)) return null;
+
+    const latDeg = Math.floor(latRaw / 100);
+    const lat    = (latDeg + (latRaw - latDeg * 100) / 60) * (latHem === 'S' ? -1 : 1);
+    const lonDeg = Math.floor(lonRaw / 100);
+    const lon    = (lonDeg + (lonRaw - lonDeg * 100) / 60) * (lonHem === 'W' ? -1 : 1);
+
+    return { lat, lon };
+}
+
 // ── NTRIPClient ───────────────────────────────────────────────────────────────
 class NTRIPClient {
     constructor(cfg) {
-        this.host         = cfg.host;
-        this.port         = cfg.port        || 2101;
-        this.mountpoint   = cfg.mountpoint;
-        this.user         = cfg.user        || '';
-        this.pass         = cfg.pass        || '';
-        this.lat          = cfg.lat         ?? 0.0;
-        this.lon          = cfg.lon         ?? 0.0;
-        this.ggaInterval  = (cfg.ggaInterval ?? 30) * 1000;
+        this.host        = cfg.host;
+        this.port        = cfg.port       || 2101;
+        this.mountpoint  = cfg.mountpoint;
+        this.user        = cfg.user       || '';
+        this.pass        = cfg.pass       || '';
+        this.lat         = cfg.lat        ?? 0.0;
+        this.lon         = cfg.lon        ?? 0.0;
+        this.ggaInterval = (cfg.ggaInterval ?? 30) * 1000;
 
-        this._stopped     = false;
-        this._controller  = null;
+        this._stopped    = false;
+        this._controller = null;
+        this._totalBytes = 0;
     }
 
-    async start(writeBytes, onLog = () => {}) {
-        this._stopped = false;
+    /**
+     * @param {function} writeFn  async (Uint8Array) => void — shared port writer
+     * @param {function} onLog
+     */
+    async start(writeFn, onLog = () => {}) {
+        this._stopped    = false;
+        this._totalBytes = 0;
 
         while (!this._stopped) {
-            const connectTime = Date.now();
             try {
-                await this._streamOnce(writeBytes, onLog);
+                await this._streamOnce(writeFn, onLog);
             } catch (err) {
                 if (this._stopped) break;
                 onLog(`[NTRIP] Error: ${err.message} — reconnecting in 5 s…`);
                 await this._delay(5000);
                 continue;
             }
-
-            if (this._stopped) break;
-
-            const elapsed = Date.now() - connectTime;
-            const wait    = Math.max(0, this.ggaInterval - elapsed);
-            if (wait > 0) await this._delay(wait);
+            if (!this._stopped) onLog('[NTRIP] GGA refresh — reconnecting…');
         }
 
-        onLog('[NTRIP] Client stopped.');
+        onLog(`[NTRIP] Stopped. Total RTCM forwarded: ${this._totalBytes} B`);
     }
 
     stop() {
@@ -164,75 +197,84 @@ class NTRIPClient {
         }
     }
 
-    async _streamOnce(writeBytes, onLog) {
-        this._controller = new AbortController();
-        const signal     = this._controller.signal;
-
+    async _streamOnce(writeFn, onLog) {
+        this._controller  = new AbortController();
+        const signal      = this._controller.signal;
         const credentials = btoa(`${this.user}:${this.pass}`);
         const gga         = buildGGA(this.lat, this.lon);
+        const url         = `http://${this.host}:${this.port}/${this.mountpoint}`;
 
-        const url = `http://${this.host}:${this.port}/${this.mountpoint}`;
         onLog(`[NTRIP] Connecting → ${url}`);
+        onLog(`[NTRIP] GGA position: lat=${this.lat.toFixed(6)}, lon=${this.lon.toFixed(6)}`);
 
         const res = await fetch(url, {
             method:  'GET',
             headers: {
-                'Authorization':  `Basic ${credentials}`,
-                'Ntrip-Version':  'Ntrip/2.0',
-                'User-Agent':     'NTRIP JSClient/1.0',
-                'Ntrip-GGA':      gga.trim(),
-                'Connection':     'keep-alive',
+                'Authorization': `Basic ${credentials}`,
+                'Ntrip-Version': 'Ntrip/2.0',
+                'User-Agent':    'NTRIP JSClient/1.0',
+                'Ntrip-GGA':     gga.trim(),
+                'Connection':    'keep-alive',
             },
             signal,
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-        onLog(`[NTRIP] Connected (${res.status}). Streaming RTCM…`);
+        onLog(`[NTRIP] ✅ Connected (${res.status}). GGA sent: ${gga.trim()}`);
 
-        const reader = res.body.getReader();
-        let totalBytes = 0;
+        const reader     = res.body.getReader();
+        let   chunkCount = 0;
+
+        // Reconnect after ggaInterval to send a fresh GGA timestamp
+        const ggaTimer = setTimeout(() => reader.cancel().catch(() => {}), this.ggaInterval);
 
         try {
             while (!this._stopped) {
-                const { value, done } = await Promise.race([
-                    reader.read(),
-                    this._delayReject(this.ggaInterval, 'GGA refresh'),
-                ]);
-                if (done) break;
+                const { value, done } = await reader.read();
+                if (done) { onLog('[NTRIP] Stream ended by caster.'); break; }
                 if (value?.length) {
-                    totalBytes += value.length;
-                    await writeBytes(value);
-                    onLog(`[NTRIP] RTCM → serial: ${value.length} B  (total ${totalBytes} B)`);
+                    this._totalBytes += value.length;
+                    chunkCount++;
+                    try {
+                        await writeFn(value);
+                        // Verbose for first 5 chunks, then every 10th
+                        if (chunkCount <= 5 || chunkCount % 10 === 0) {
+                            onLog(`[NTRIP] ✅ RTCM chunk #${chunkCount}: ${value.length} B → serial (total ${this._totalBytes} B)`);
+                        }
+                    } catch (writeErr) {
+                        onLog(`[NTRIP] ⚠️ Serial write failed: ${writeErr.message}`);
+                    }
                 }
             }
         } finally {
+            clearTimeout(ggaTimer);
             reader.cancel().catch(() => {});
+        }
+
+        if (this._totalBytes === 0) {
+            onLog('[NTRIP] ⚠️ WARNING: Connected but received 0 bytes. ' +
+                  'Check credentials, mountpoint, and that GGA position is valid (not 0,0).');
         }
     }
 
     _delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-    _delayReject(ms, reason) {
-        return new Promise((_, rej) => setTimeout(() => rej(new Error(reason)), ms));
-    }
 }
 
 // ── NTRIP Configuration Dialog ────────────────────────────────────────────────
-
 /**
- * Show a modal dialog to collect NTRIP credentials and survey-in parameters.
- *
- * Resolves with one of three values:
- *   • `null`                      — user clicked Cancel → abort the survey entirely
- *   • `{ ntrip: null,  targetAccuracyM, minDurS }` — Skip NTRIP, survey-only
- *   • `{ ntrip: {...}, targetAccuracyM, minDurS }` — NTRIP enabled
- *
- * @returns {Promise<{ntrip:object|null, targetAccuracyM:number, minDurS:number}|null>}
+ * @param {{ latitude: number, longitude: number } | null} knownCoords
+ *   Pass WeatherRecorder.coords (or any {latitude, longitude}) to pre-seed the
+ *   GGA position.  If null the dialog falls back to 0,0 with a visible warning.
  */
-export function showNtripDialog() {
+export function showNtripDialog(knownCoords = null) {
     return new Promise(resolve => {
 
-        // ── Markup ────────────────────────────────────────────────────────────
+        const seedLat = knownCoords?.latitude  ?? '';
+        const seedLon = knownCoords?.longitude ?? '';
+        const coordNote = knownCoords
+            ? `<span class="coord-note"></span>`
+            : `<span class="coord-note warn">{null}</span>`;
+
         const overlay = document.createElement('div');
         overlay.id = 'ntrip-overlay';
         overlay.innerHTML = `
@@ -250,33 +292,53 @@ export function showNtripDialog() {
                         </div>
                         <div>
                             <label>Target Accuracy <span class="inline-label">metres</span></label>
-                            <input id="ni-acc" type="number" min="0.001" step="0.001"
+                            <input id="ni-acc" type="number" min="0.01" step="0.01"
                                    value="${TARGET_ACCURACY_M}" placeholder="${TARGET_ACCURACY_M}">
                         </div>
                     </div>
 
-                    <div class="section-title">NTRIP Corrections <span class="inline-label" style="text-transform:none;letter-spacing:normal">(optional)</span></div>
+                    <div class="section-title">NTRIP Corrections</div>
 
                     <label>Caster</label>
                     <input id="ni-host" type="text" placeholder="polaris.pointonenav.com"
                            value="polaris.pointonenav.com" autocomplete="url">
 
-                    <label>Mountpoint &amp; Port</label>
+                    
                     <div class="row">
+                        <div>
+                        <label>Mountpoint</label>
                         <input id="ni-mount" type="text"   placeholder="POLARIS" value="POLARIS">
+                        </div>
+                        
+                        <div>
+                        <label>Port</label>
                         <input id="ni-port"  type="number" placeholder="2101"    value="2101">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div>
+                            <label>Latitude</label>
+                            <input id="ni-lat" type="number" step="0.000001"
+                                   value="${seedLat}" placeholder="">
+                        </div>
+                        <div>
+                            <label>Longitude</label>
+                            <input id="ni-lon" type="number" step="0.000001"
+                                   value="${seedLon}" placeholder="">
+                        </div>
                     </div>
 
                     <label>Username</label>
-                    <input id="ni-user" type="text"     name="username" autocomplete="username">
+                    <input id="ni-user" type="text" name="username" autocomplete="given-name">
 
                     <label>Password</label>
-                    <input id="ni-pass" type="password" name="password" autocomplete="current-password">
+                    <input id="ni-pass" type="password" name="password" autocomplete="family-name">
 
                     <div class="actions">
-                        <button type="button"  id="ntrip-btn-cancel">Cancel</button>
-                        <button type="button"  id="ntrip-btn-skip">Skip NTRIP</button>
-                        <button type="submit"  id="ntrip-btn-connect">Connect</button>
+                        <button type="button" id="ntrip-btn-cancel">Cancel</button>
+                        <button type="button" id="ntrip-btn-skip">Skip NTRIP</button>
+                        <button type="submit" id="ntrip-btn-connect">Connect</button>
                     </div>
                 </div>
             </form>
@@ -285,7 +347,6 @@ export function showNtripDialog() {
 
         const cleanup = () => overlay.remove();
 
-        /** Read and validate the survey-in fields. Returns { targetAccuracyM, minDurS } or null on bad input. */
         const readSurveyParams = () => {
             const acc = parseFloat(document.getElementById('ni-acc').value);
             const dur = parseInt(document.getElementById('ni-dur').value);
@@ -300,13 +361,11 @@ export function showNtripDialog() {
             return { targetAccuracyM: acc, minDurS: dur };
         };
 
-        // Cancel → resolve null (abort survey entirely)
         document.getElementById('ntrip-btn-cancel').addEventListener('click', () => {
             cleanup();
             resolve(null);
         });
 
-        // Skip → survey-only, no NTRIP
         document.getElementById('ntrip-btn-skip').addEventListener('click', () => {
             const params = readSurveyParams();
             if (!params) return;
@@ -314,10 +373,8 @@ export function showNtripDialog() {
             resolve({ ntrip: null, ...params });
         });
 
-        // Connect → form submit event so the browser sees a real credential submission
         document.getElementById('ntrip-form').addEventListener('submit', e => {
-            e.preventDefault(); // prevent page navigation, but browser still sees the submit
-
+            e.preventDefault();
             const params = readSurveyParams();
             if (!params) return;
 
@@ -326,8 +383,8 @@ export function showNtripDialog() {
             const mount = document.getElementById('ni-mount').value.trim();
             const user  = document.getElementById('ni-user').value.trim();
             const pass  = document.getElementById('ni-pass').value;
-            const lat   = parseFloat(document.getElementById('ni-lat')?.value) || 0.0;
-            const lon   = parseFloat(document.getElementById('ni-lon')?.value) || 0.0;
+            const lat   = parseFloat(document.getElementById('ni-lat').value)  || seedLat || 0.0;
+            const lon   = parseFloat(document.getElementById('ni-lon').value) || seedLon || 0.0;
 
             cleanup();
 
@@ -342,13 +399,15 @@ export function showNtripDialog() {
                 return;
             }
 
+            if (lat === 0 && lon === 0) {
+                console.warn('[NTRIP] ⚠️ GGA position is 0,0 — RTCM corrections may not be delivered by caster.');
+            }
+
             resolve({ ntrip: { host, port, mountpoint: mount, user, pass, lat, lon }, ...params });
         });
 
-        // Keyboard shortcut – Escape cancels
         overlay.addEventListener('keydown', e => {
             if (e.key === 'Escape') document.getElementById('ntrip-btn-cancel').click();
-            // Enter is now handled natively by the form's submit event
         });
     });
 }
@@ -356,29 +415,18 @@ export function showNtripDialog() {
 // ── RTKSurvey ─────────────────────────────────────────────────────────────────
 export class RTKSurvey {
     constructor() {
-        this._aborted = false;
-        this._rxBuf   = [];
-        this._reader  = null;
+        this._aborted         = false;
+        this._rxBuf           = [];
+        this._reader          = null;
         this._readLoopPromise = null;
-        this._ntrip   = null;
+        this._ntrip           = null;
+        this._writer          = null; // single shared WritableStreamDefaultWriter
     }
 
-    /**
-     * Run the full survey-in sequence, optionally with NTRIP corrections.
-     *
-     * @param {SerialPort}  port           — already-selected (but closed) Web Serial port
-     * @param {number}      baudRate
-     * @param {Function}    onStatus       — called each poll tick with { dur, meanAcc, obs, valid }
-     * @param {Function}    onComplete     — called once survey-in reports valid
-     * @param {Function}    onError        — called on any unrecoverable error
-     * @param {object|null} ntripConfig    — result of showNtripDialog().ntrip; null = no NTRIP
-     * @param {number}      targetAccuracyM
-     * @param {number}      minDurS
-     */
     async run(port, baudRate, onStatus, onComplete, onError,
-              ntripConfig = null,
+              ntripConfig     = null,
               targetAccuracyM = TARGET_ACCURACY_M,
-              minDurS = SVIN_MIN_DUR_S) {
+              minDurS         = SVIN_MIN_DUR_S) {
 
         this._aborted = false;
         this._rxBuf   = [];
@@ -387,57 +435,78 @@ export class RTKSurvey {
 
         try {
             await port.open({ baudRate });
+
+            // Acquire ONE writer for the entire session — never call getWriter() again
+            this._writer = port.writable.getWriter();
             this._startReadLoop(port);
             await this._delay(500);
 
-            // ── NTRIP: start streaming corrections before survey-in ───────────
             if (ntripConfig) {
+                // If lat/lon weren't seeded by the dialog, try to read a NMEA fix
+                // from the receiver as a last resort
+                if (!ntripConfig.lat && !ntripConfig.lon) {
+                    console.log('[RTKSurvey] No position in ntripConfig — sniffing NMEA for 5 s…');
+                    const pos = await this._waitForNmeaFix(5000);
+                    if (pos) {
+                        ntripConfig.lat = pos.lat;
+                        ntripConfig.lon = pos.lon;
+                        console.log(`[RTKSurvey] NMEA fix: ${pos.lat.toFixed(6)}, ${pos.lon.toFixed(6)}`);
+                    } else {
+                        console.warn('[RTKSurvey] ⚠️ No NMEA fix — NTRIP GGA will be 0,0. Corrections unlikely.');
+                    }
+                }
+
                 console.log('[RTKSurvey] Starting NTRIP client…');
                 this._ntrip = new NTRIPClient(ntripConfig);
 
-                const writeBytes = async (bytes) => {
-                    if (!this._aborted) await this._writeFrame(port, bytes);
-                };
+                // Share the single writer — no extra getWriter() calls anywhere
+                const writeFn = (data) => this._writer.write(data);
 
-                this._ntrip.start(writeBytes, msg => console.log(msg))
+                this._ntrip.start(writeFn, msg => console.log(msg))
                     .catch(err => console.warn('[NTRIP] Background error:', err));
 
-                await this._delay(1500);
+                // Give NTRIP time to connect and receive the first RTCM chunk
+                // before we start sending UBX commands on the same port
+                await this._delay(2000);
             }
 
-            // ── Step 1: Disable TMODE ─────────────────────────────────────────
             console.log('[RTKSurvey] Step 1: Disabling TMODE…');
-            const disableOk = await this._sendAndWaitAck(port, DISABLE_CMD, 'CFG-VALSET Disable');
+            const disableOk = await this._sendAndWaitAck(DISABLE_CMD, 'CFG-VALSET Disable');
             if (!disableOk) throw new Error('NAK or timeout on TMODE disable');
             await this._delay(500);
 
             if (this._aborted) { await this._cleanup(port); return; }
 
-            // ── Step 2: Start Survey-In ───────────────────────────────────────
             console.log(`[RTKSurvey] Step 2: Starting Survey-In (acc ≤ ${targetAccuracyM}m, dur ≥ ${minDurS}s)…`);
-            const surveyOk = await this._sendAndWaitAck(port, surveyInCmd, 'CFG-VALSET Survey-In');
+            const surveyOk = await this._sendAndWaitAck(surveyInCmd, 'CFG-VALSET Survey-In');
             if (!surveyOk) throw new Error('NAK or timeout on Survey-In command');
 
-            // ── Step 3: Poll NAV-SVIN ─────────────────────────────────────────
             console.log('[RTKSurvey] Step 3: Polling NAV-SVIN…');
             await this._delay(2500);
 
+            let numSvs = 0;
+
             while (!this._aborted) {
-                const payload = await this._pollUbx(port, 0x01, 0x3B, 2000);
+                const satPayload = await this._pollUbx(0x01, 0x35, 500);
+                if (satPayload !== null) {
+                    const count = parseNavSatCount(satPayload);
+                    if (count !== null) numSvs = count;
+                }
+
+                const payload = await this._pollUbx(0x01, 0x3B, 2000);
                 if (payload) {
                     const s = parseNavSvin(payload);
                     if (s) {
                         console.log(
-                            `[RTKSurvey] Dur: ${s.dur}s | Obs: ${s.obs} | ` +
-                            `Acc: ${s.meanAcc.toFixed(4)}m ` +
-                            `(Target: ${targetAccuracyM}m) | Valid: ${s.valid}`
+                            `[RTKSurvey] Dur: ${s.dur}s | Obs: ${s.obs} | SVs: ${numSvs} | ` +
+                            `Acc: ${s.meanAcc.toFixed(4)}m (Target: ${targetAccuracyM}m) | Valid: ${s.valid}`
                         );
-                        if (onStatus) onStatus(s);
+                        if (onStatus) onStatus({ ...s, numSvs });
                         if (s.valid) {
-                            console.log(`[RTKSurvey] Survey-in complete! Final Accuracy: ${s.meanAcc.toFixed(4)}m`);
+                            console.log(`[RTKSurvey] ✅ Survey-in complete! Final Accuracy: ${s.meanAcc.toFixed(4)}m`);
                             this._stopNtrip();
                             await this._cleanup(port);
-                            if (onComplete) onComplete(s);
+                            if (onComplete) onComplete({ ...s, numSvs });
                             return;
                         }
                     }
@@ -472,6 +541,26 @@ export class RTKSurvey {
         }
     }
 
+    // Drain rxBuf looking for a valid $G?GGA sentence with a real fix
+    async _waitForNmeaFix(timeoutMs) {
+        const deadline = Date.now() + timeoutMs;
+        let textBuf = '';
+        while (Date.now() < deadline) {
+            if (this._rxBuf.length > 0) {
+                const bytes = this._rxBuf.splice(0);
+                textBuf += new TextDecoder().decode(new Uint8Array(bytes));
+                const lines = textBuf.split('\n');
+                textBuf = lines.pop(); // keep partial last line
+                for (const line of lines) {
+                    const pos = parseGGA(line.trim());
+                    if (pos) return pos;
+                }
+            }
+            await this._delay(100);
+        }
+        return null;
+    }
+
     _startReadLoop(port) {
         this._rxBuf = [];
         const reader = port.readable.getReader();
@@ -483,7 +572,7 @@ export class RTKSurvey {
                     if (done) break;
                     if (value) for (const b of value) this._rxBuf.push(b);
                 }
-            } catch (_) { /* cancelled or port closed */ }
+            } catch (_) {}
             finally { reader.releaseLock(); }
         })();
     }
@@ -501,21 +590,23 @@ export class RTKSurvey {
 
     async _cleanup(port) {
         await this._stopReadLoop();
+        if (this._writer) {
+            try { this._writer.releaseLock(); } catch (_) {}
+            this._writer = null;
+        }
         try { await port.close(); } catch (_) {}
     }
 
-    async _writeFrame(port, frame) {
-        const writer = port.writable.getWriter();
-        try { await writer.write(frame); }
-        finally { writer.releaseLock(); }
+    async _writeFrame(frame) {
+        await this._writer.write(frame);
     }
 
-    async _sendAndWaitAck(port, frame, label) {
+    async _sendAndWaitAck(frame, label) {
         const ACK_ACK = [0xB5, 0x62, 0x05, 0x01];
         const ACK_NAK = [0xB5, 0x62, 0x05, 0x00];
 
         const startIdx = this._rxBuf.length;
-        await this._writeFrame(port, frame);
+        await this._writeFrame(frame);
         console.log(`[RTKSurvey] Sent ${label}, waiting for ACK…`);
 
         const t0 = Date.now();
@@ -535,21 +626,20 @@ export class RTKSurvey {
         return false;
     }
 
-    async _pollUbx(port, cls, msgId, timeoutMs) {
-        const header = [0xB5, 0x62, cls, msgId];
+    async _pollUbx(cls, msgId, timeoutMs) {
+        const header   = [0xB5, 0x62, cls, msgId];
         const startIdx = this._rxBuf.length;
-        await this._writeFrame(port, buildUbx(cls, msgId, new Uint8Array(0)));
+        await this._writeFrame(buildUbx(cls, msgId, new Uint8Array(0)));
 
         const t0 = Date.now();
         while (Date.now() - t0 < timeoutMs) {
             const slice = this._rxBuf.slice(startIdx);
-            const idx = this._findSeq(slice, header);
+            const idx   = this._findSeq(slice, header);
             if (idx !== -1 && slice.length >= idx + 6) {
                 const length = slice[idx + 4] | (slice[idx + 5] << 8);
-                const end = idx + 6 + length + 2;
-                if (slice.length >= end) {
+                const end    = idx + 6 + length + 2;
+                if (slice.length >= end)
                     return new Uint8Array(slice.slice(idx + 6, idx + 6 + length));
-                }
             }
             await this._delay(50);
         }

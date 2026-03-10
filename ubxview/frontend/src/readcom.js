@@ -1,18 +1,7 @@
 import NMEASorter from './nmea_sorter.js';
 import { WeatherRecorder } from './weatherapp.js';
 import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';
-
-async function tauriFetch(url) {
-    if (window.__TAURI__) {
-        const text = await window.__TAURI__.core.invoke('fetch_url', { url });
-        return {
-            ok: true,
-            json: async () => JSON.parse(text),
-            text: async () => text,
-        };
-    }
-    return fetch(url, { signal: AbortSignal.timeout(5000) });
-}
+import { tauriFetch } from './utils.js';
 
 class SerialRecorder {
     constructor() {
@@ -38,36 +27,36 @@ class SerialRecorder {
         this.reader = null;
 
         // URL Reader State
-        this.urlPollingInterval = null;
-        this.urlPollingRateMs   = 2000;
-        this.trafficData        = [];
-        this.trafficFileHandle  = null;
+        this.urlPollingInterval    = null;
+        this.urlPollingRateMs      = 2000;
+        this.trafficData           = [];
+        this.trafficFileHandle     = null;
         this.trafficWritableStream = null;
-        this.urlActive = false;
+        this.urlActive             = false;
 
         // Shared Recording State
-        this.isRecording        = false;
-        this.outputDirHandle    = null;
-        this.sessionDirHandle   = null;
+        this.isRecording         = false;
+        this.outputDirHandle     = null;
+        this.sessionDirHandle    = null;
         this.currentSubDirHandle = null;
-        this.currentTimestamp   = null;
+        this.currentTimestamp    = null;
 
         // Serial File State
         this.fileHandle     = null;
         this.writableStream = null;
 
         // Rate and file size tracking
-        this.bytesReceived    = 0;
-        this.lastTime         = 0;
-        this.rateInterval     = null;
+        this.bytesReceived     = 0;
+        this.lastTime          = 0;
+        this.rateInterval      = null;
         this.totalBytesWritten = 0;
 
         // Post-processing state
         this.capturedData = [];
 
         // RTK Survey state
-        this._survey       = null;
-        this._isSurveying  = false;
+        this._survey      = null;
+        this._isSurveying = false;
 
         if (!('serial' in navigator)) {
             this.handleUnsupportedBrowser();
@@ -88,12 +77,12 @@ class SerialRecorder {
     }
 
     initEventListeners() {
-        this.startButton.addEventListener('click',  () => this.startRecording());
-        this.endButton.addEventListener('click',    () => this.endRecording());
+        this.startButton.addEventListener('click',      () => this.startRecording());
+        this.endButton.addEventListener('click',        () => this.endRecording());
         this.selectPortButton.addEventListener('click', () => this.selectPort());
-        this.surveyButton.addEventListener('click', () => this._onSurveyClick());
-        window.addEventListener('beforeunload', e  => this.handleBeforeUnload(e));
-        window.addEventListener('pagehide',     () => this.handlePageHide());
+        this.surveyButton.addEventListener('click',     () => this._onSurveyClick());
+        window.addEventListener('beforeunload', e       => this.handleBeforeUnload(e));
+        window.addEventListener('pagehide',     ()      => this.handlePageHide());
     }
 
     handleUnsupportedBrowser() {
@@ -109,7 +98,7 @@ class SerialRecorder {
         const url = this.urlInput.value.trim();
         if (!url) return false;
         try {
-            const res = await tauriFetch(url, { signal: AbortSignal.timeout(5000) });
+            const res = await tauriFetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             await res.json();
             return true;
@@ -124,7 +113,7 @@ class SerialRecorder {
     async pollUrl() {
         const url = this.urlInput.value.trim();
         try {
-            const res = await tauriFetch(url, { signal: AbortSignal.timeout(5000) });
+            const res = await tauriFetch(url);
             if (!res.ok) return;
             const json = await res.json();
             const packet = { receivedAt: new Date().toISOString(), data: json };
@@ -164,7 +153,7 @@ class SerialRecorder {
                 ? `COM ${info.usbVendorId || ''}:${info.usbProductId}`
                 : 'Unknown COM Port';
             this.selectPortButton.textContent = portName;
-            this.surveyButton.disabled = false; // ← Enable survey once a port is selected
+            this.surveyButton.disabled = false;
             console.log('Port selected.');
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -175,6 +164,7 @@ class SerialRecorder {
     }
 
     // ─── RTK Survey-In ───────────────────────────────────────────────
+
     async _onSurveyClick() {
         if (this._isSurveying) {
             this._abortSurvey();
@@ -182,14 +172,9 @@ class SerialRecorder {
         }
         if (!this.port || this.isRecording) return;
 
-        // Show dialog — returns:
-        //   null                             → user clicked Cancel (abort, do nothing)
-        //   { ntrip: null,  targetAccuracyM, minDurS } → survey-only
-        //   { ntrip: {...}, targetAccuracyM, minDurS } → survey + NTRIP
-        const dialogResult = await showNtripDialog();
-
+        // Pass cached WeatherRecorder coords so the dialog pre-seeds lat/lon
+        const dialogResult = await showNtripDialog(this.weatherRecorder.coords);
         if (dialogResult === null) {
-            // User cancelled — treat as if the survey button was never pressed
             console.log('[readcom] Survey cancelled by user.');
             return;
         }
@@ -215,10 +200,10 @@ class SerialRecorder {
         await this._survey.run(
             this.port,
             baudRate,
-            ({ dur, obs, meanAcc, valid }) => {
+            ({ dur, obs, meanAcc, valid, numSvs }) => {
                 const ntripTag = ntripConfig ? '[NTRIP] ' : '';
                 this.statusMessage.textContent =
-                    `${ntripTag}3D StdDev: ${meanAcc.toFixed(3)}m | ${dur}s`;
+                    `${ntripTag}SVs ${numSvs} | 3Dσ: ${meanAcc.toFixed(3)}m | ${dur}s`;
             },
             s => {
                 console.log(`[RTKSurvey] Done — Accuracy: ${s.meanAcc.toFixed(4)}m`);
@@ -231,7 +216,7 @@ class SerialRecorder {
                 this.statusMessage.textContent = 'Survey failed';
                 this._finishSurvey();
             },
-            ntripConfig,    // 6th arg — null = no NTRIP
+            ntripConfig,
             targetAccuracyM,
             minDurS,
         );
@@ -249,10 +234,9 @@ class SerialRecorder {
         this._setSurveyUI(false);
     }
 
-    // While surveying: lock everything else; re-enable when done
     _setSurveyUI(active) {
         this.surveyButton.classList.toggle('survey-active', active);
-        this.surveyButton.title = active ? 'Abort Survey-In' : 'RTK BASE Survey-In';
+        this.surveyButton.title    = active ? 'Abort Survey-In' : 'RTK BASE Survey-In';
         this.startButton.disabled      = active;
         this.baudRateSelect.disabled   = active;
         this.selectPortButton.disabled = active;
@@ -364,7 +348,7 @@ class SerialRecorder {
                 this.port = null;
                 this.selectPortButton.textContent = 'Select Port';
                 this.surveyButton.disabled = true;
-                if (this.writableStream)      await this.writableStream.close();
+                if (this.writableStream)        await this.writableStream.close();
                 if (this.trafficWritableStream) await this.trafficWritableStream.close();
                 this.resetFileState();
                 this.resetUIToIdle();
@@ -403,7 +387,7 @@ class SerialRecorder {
         if (this.reader) {
             try { await this.reader.cancel(); } catch (e) { console.error('Error cancelling reader:', e); }
         }
-        if (this.writableStream)      await this.writableStream.close();
+        if (this.writableStream)        await this.writableStream.close();
         if (this.trafficWritableStream) await this.trafficWritableStream.close();
 
         if (this.port) {
@@ -451,7 +435,7 @@ class SerialRecorder {
         this.baudRateSelect.disabled = false;
         if ('serial' in navigator) {
             this.selectPortButton.disabled = false;
-            this.surveyButton.disabled     = !this.port; // Re-enable only if port still selected
+            this.surveyButton.disabled     = !this.port;
         }
         this.urlInput.disabled     = false;
         this.urlInput.style.cursor = '';

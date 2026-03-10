@@ -1,4 +1,23 @@
 /**
+ * tauriFetch — for short JSON/text polling requests ONLY (e.g. ping station URL).
+ *
+ * DO NOT use for streaming binary data (NTRIP/RTCM).
+ * The Tauri cors-fetch plugin patches window.fetch to bypass CORS natively
+ * and supports streaming, so NTRIPClient uses fetch() directly.
+ */
+export async function tauriFetch(url, _options) {
+    if (window.__TAURI__) {
+        const text = await window.__TAURI__.core.invoke('fetch_url', { url });
+        return {
+            ok: true,
+            json: async () => JSON.parse(text),
+            text: async () => text,
+        };
+    }
+    return fetch(url, { signal: AbortSignal.timeout(5000) });
+}
+
+/**
  * Converts longitude and latitude to tile coordinates.
  */
 export function lonLatToTile(lon, lat, zoom) {
@@ -22,10 +41,6 @@ export function tileToLonLat(x, y, zoom) {
 
 /**
  * Loads a texture with a specified timeout to prevent hanging requests.
- * @param {THREE.TextureLoader} textureLoader - The Three.js texture loader instance.
- * @param {string} url - The URL of the texture to load.
- * @param {number} [timeout=5000] - The timeout in milliseconds.
- * @returns {Promise<THREE.Texture>} A promise that resolves with the texture or rejects on error/timeout.
  */
 export function loadTextureWithTimeout(textureLoader, url, timeout = 5000) {
     return new Promise((resolve, reject) => {
@@ -35,15 +50,9 @@ export function loadTextureWithTimeout(textureLoader, url, timeout = 5000) {
 
         textureLoader.load(
             url,
-            (texture) => {
-                clearTimeout(timer);
-                resolve(texture);
-            },
-            undefined, // onProgress callback not needed
-            (error) => {
-                clearTimeout(timer);
-                reject(error);
-            }
+            (texture) => { clearTimeout(timer); resolve(texture); },
+            undefined,
+            (error)   => { clearTimeout(timer); reject(error); }
         );
     });
 }
