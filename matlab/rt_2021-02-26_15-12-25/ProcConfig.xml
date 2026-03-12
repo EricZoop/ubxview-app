@@ -1,0 +1,86 @@
+<?xml version="1.0" ?>
+<!-- All angles are in degrees, altitudes are Ellipsoid height (WGS84), times are in seconds -->
+<Config Version = "5" AppCode="0904192577">
+    <Preprocessing>
+        <ConfigParams>
+            <!-- -->
+            <Param Name = "apply_old_CFAR"                          Value = "0"/>
+            <Param Name = "adaptive_CFAR_type"                      Value = "0"/> <!-- 0 - Adaptive, 1 - local, 2 - global, 3 - noise floor -->
+        </ConfigParams>
+    </Preprocessing>
+    <Detection>
+        <ConfigParams>
+            <Param Name = "soft_beams_enabled"                          Value = "1"/>
+            <Param Name = "soft_leveled_optimization"                   Value = "1"/>
+            <Param Name = "short_range_APS"                             Value = "0"/>
+        </ConfigParams>
+    </Detection>
+    <Tracker TrackerIndex = "0">
+        <ConfigParams>
+            <Param Name = "SET_CFG_TRK_PRMS"                        Value = "1"/>
+            <Param Name = "TRK_ID"                                  Value = "1"/>
+            <Param Name = "hovering_mode"                           Value = "0"/>
+            <Param Name = "report_int.min_assoc"                    Value = "2"/>
+            <Param Name = "report_int.min_age"                      Value = "0"/>
+            <Param Name = "report_int.max_range"                    Value = "0"/>
+            <Param Name = "report_int.ignore_new_tracks"            Value = "0"/>
+            <Param Name = "report_int.ignore_static_tracks"         Value = "0"/>
+            <Param Name = "report_int.ignore_circ_tracks"           Value = "1"/>
+            <Param Name = "report_int.ignore_range_amb_tracks"      Value = "0"/>
+            <Param Name = "report_int.ignore_vel_amb_tracks"        Value = "0"/>
+            <Param Name = "record.valid_tracks"                     Value = "0"/>
+            <Param Name = "record.valid_targets"                    Value = "0"/>
+            <Param Name = "record.all_int"                          Value = "0"/>
+            <Param Name = "record.all_ext"                          Value = "1"/>
+            <Param Name = "uDoppler.special_tracks_only"            Value = "0"/>
+            <Param Name = "uDoppler.valid_targets_only"             Value = "1"/>
+            <Param Name = "uDoppler.failure_range_reduction_factor" Value = "0.1"/>
+            <Param Name = "uDoppler.min_tgt_snr4uDopp_invld_dB"     Value = "40"/>
+            <Param Name = "uDoppler.max_tgt_range4uDopp_invld_in_max_det_range_units" Value = "0.75"/>
+            <Param Name = "uDoppler.min_uDoppler_step_Hz"           Value = "50"/>
+            <Param Name = "uDoppler.max_uDoppler_step_Hz"           Value = "300"/>
+            <Param Name = "filter_model.acc_m"                      Value = "10"/>
+            <Param Name = "filter_model.acc_h"                      Value = "10"/>
+            <Param Name = "filter_model.acc_v"                      Value = "10"/>
+            <Param Name = "det_std_limits.min_range_std"            Value = "2.01"/>
+            <Param Name = "det_std_limits.min_vel_std"              Value = "0.01"/>
+            <Param Name = "det_std_limits.min_az_std"               Value = "10.1e-3"/>
+            <Param Name = "det_std_limits.min_el_std"               Value = "10.1e-3"/>
+            <Param Name = "det_std_limits.min_vel_std_in_res_units" Value = "1"/>
+            <Param Name = "create.only_on_uDoppler"                 Value = "0"/>
+            <Param Name = "create.only_on_propeller"                Value = "0"/>
+            <Param Name = "create.forbid_crt_in_static_beam"        Value = "0"/>
+            <Param Name = "create.forbid_crt_in_dyn_beam"           Value = "1"/>
+            <Param Name = "create.allow_crt_in_clutter_region"      Value = "1"/>
+            <Param Name = "kill.assoc_gap4special_trk"              Value = "8"/>
+            <Param Name = "kill.assoc_gap4valid_trk"                Value = "8"/>
+            <Param Name = "kill.kill_vel_uncertain_trk"             Value = "0"/>
+            <Param Name = "kill.kill_slow_trk_thr"                  Value = "0.3"/>
+            <Param Name = "kill.kill_slow_and_uncertain_trk_thr"    Value = "0.3"/>
+            <Param Name = "tracking.use_adaptive_revisit_time"      Value = "0"/>
+            <Param Name = "tracking.achieve_accuracy_msrad"         Value = "20"/>
+            <Param Name = "tracking.allow_tracking_in_search"       Value = "0"/>
+            <Param Name = "tracking.max_tracking_range"             Value = "0"/>
+            <Param Name = "association.rcs_gating_dB"               Value = "20"/>
+            <Param Name = "association.doa_gating_deg"              Value = "8"/>
+            <Param Name = "association.acc_gating"                  Value = "20"/>
+            <Param Name = "friend.dead_time"                        Value = "10"/>
+            <Param Name = "friend.max_friend2trk_dist"              Value = "3"/>
+            <Param Name = "friend.max_associated_friend2trk_dist"   Value = "4.5"/>
+            <Param Name = "stability.stability_init_thr"            Value = "0"/>
+            <Param Name = "stability.stability_thr"                 Value = "0"/>
+            <Param Name = "stability.n_upds4acc_stbl"               Value = "5"/>
+            <Param Name = "convergence.check_pos_err"               Value = "0"/>
+            <Param Name = "convergence.check_vel_err"               Value = "0"/>
+            <Param Name = "classify_aircraft.expiration_period"     Value = "0"/>
+            <Param Name = "classify_aircraft.min_prop_dets"         Value = "2"/>
+            <Param Name = "classify_aircraft.min_occasional_prop_dets" Value = "0"/>
+	        <Param Name = "static_target_indicator.dist_vs_rg"      Value = "0.250"/>
+            <Param Name = "static_target_indicator.mean_vs_rg"      Value = "0.125"/>
+            <Param Name = "static_target_indicator.std_vs_rg"       Value = "0.0625"/>
+            <Param Name = "playback.nominal_scan_time"              Value = "0"/>
+            <Param Name = "playback.minimum_scan_time"              Value = "0"/>
+            <Param Name = "playback.maximum_scan_time"              Value = "0"/>
+        </ConfigParams>
+    </Tracker>
+</Config>
