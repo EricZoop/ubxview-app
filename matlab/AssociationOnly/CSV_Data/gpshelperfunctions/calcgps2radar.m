@@ -280,7 +280,7 @@ else
             gpstrack.inFov = ones(size(gpstrack.Alt));
         end
 
-        if radarParameters.externalTracks
+        if isfield(radarParameters, 'externalTracks') && radarParameters.externalTracks
             gpstrack.inFov = ones(size(gpstrack.Alt));
         end
 

@@ -184,6 +184,9 @@ if(getTrackMessages)
 end
 firstTi = 1;
 numTimeChanges = numel(timeChanges);
+
+totalTruthInserted = 0;
+
 for iTimeChange = 1:numTimeChanges
     
     if(toc(tnow)>tup)
@@ -262,6 +265,8 @@ for iTimeChange = 1:numTimeChanges
             
         end
         indexTruth = find(drone.dateNum>=lastDateNum& drone.dateNum <tracks.dateNum(firstTi));
+
+        totalTruthInserted = totalTruthInserted + numel(indexTruth);
         % insert adsb data points
         a = 1;
         clear datapoint;
@@ -354,6 +359,8 @@ for iTimeChange = 1:numTimeChanges
     
 firstTi = lastTi+1;    
 end
+fprintf('Total truth points inserted: %d (out of %d)\n', totalTruthInserted, numel(drone.dateNum));
+
 if(getTrackMessages)
 
     trackSt = soa2aos(tracks);

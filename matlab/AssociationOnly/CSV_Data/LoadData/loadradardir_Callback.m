@@ -4,7 +4,21 @@ function trackStruct = loadradardir_Callback(pathname)
 
     evalin( 'base',...
         'clearvars tracks radar status detections radarParameters detectionParameters tab_*')
-    savefile = getsavefile(pathname, useDetections);
+    
+    % --- Start of Robust File Search ---
+    matfolderPath = fullfile(pathname, 'matfolder');
+    matFiles = dir(fullfile(matfolderPath, '*BlogData.mat'));
+    
+    if ~isempty(matFiles)
+        % Grab the first matching .mat file found in the directory
+        savefile = fullfile(matfolderPath, matFiles(1).name);
+        disp(['Loading automatically found file: ', savefile]);
+    else
+        % Fallback to original behavior if no file is found
+        disp('No matching *BlogData.mat found. Falling back to default getsavefile.');
+        savefile = getsavefile(pathname, useDetections);
+    end
+    % --- End of Robust File Search ---
 
     [tracks,radar,status,detections,radarParameters,detectionParameters] = load_blogmatfile2(savefile);
     
@@ -51,49 +65,5 @@ function trackStruct = loadradardir_Callback(pathname)
     trackStruct.detections = detections;
     trackStruct.detectionParameters = detectionParameters;
     trackStruct.status = status;
-    
-    % ext = {'*.csv','*.gpx','*.log','*.pos'};
-    % list = [];
-    % n = 1;
-    % while isempty(list) && n <= numel(ext)
-    %     list = dir(strcat(pathname, ['\',ext{n}]));
-    %     n = n + 1;
-    % end
-    % list = list(~contains({list.name}, 'Exp_Comm')&~contains({list.name}, 'assoc'));
-    % 
-    % if numel(list) == 1
-    %     keyboard
-    %     % handles.parameters.gpsreader = findGPSLoader(list.name);
-    %     gpsreader = findGPSLoader(list.name);
-    % 
-    %     % if isempty(handles.parameters.gpsreader)
-    %     if isempty(gpsreader)
-    %         fprintf('gps file ignored, no reader for %s\n', list.name);
-    %     else
-    %         handles = gpsload(handles, false, pathname, list.name);
-    % 
-    %         % Add the gpsTrk idx to each GpsTrack so that when the gpstrack array
-    %         % is created there is an indication of which GpsTrack each entry is from
-    %         if length(handles.GpsTrack) > handles.parameters.gpsTrackCount
-    %             handles.GpsTrack = handles.GpsTrack(1:handles.parameters.gpsTrackCount);
-    %         end
-    % 
-    %         % Add the gpsTrk idx to each GpsTrack so that when the gpstrack array
-    %         % is created there is an indication of which GpsTrack each entry is from
-    %         for iGps = 1:length(handles.GpsTrack)
-    %             handles.GpsTrack{iGps}.ID = iGps*ones(size(handles.GpsTrack{iGps}.Alt));
-    %         end
-    % 
-    %         % Make a GPS struct in the same format as tracks for convenience
-    %         gpstrackAoS = [handles.GpsTrack{:}];
-    %         if ~isempty(gpstrackAoS)
-    %             fns = fieldnames(gpstrackAoS);
-    %             for iFn = 1:length(fns)
-    %                 gpstrack.(fns{iFn}) = [gpstrackAoS.(fns{iFn})];
-    %             end
-    %             handles.gpstrack = gpstrack;
-    %         end
-    %     end
-    % end
     
 end
