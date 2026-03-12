@@ -109,11 +109,11 @@ export function createOrUpdateLabels(pointsByTalker, gpsToCartesian) {
                 cursor: pointer;
                 transition: opacity 0.15s ease;
                 text-shadow:
-                    -1px -1px 2px rgba(0,0,0,0.9),
-                     1px -1px 2px rgba(0,0,0,0.9),
-                    -1px  1px 2px rgba(0,0,0,0.9),
-                     1px  1px 2px rgba(0,0,0,0.9),
-                     0    0   6px rgba(0,0,0,0.6);
+                    -1px -1px 1px rgba(0,0,0,0.9),
+                     1px -1px 1px rgba(0,0,0,0.9),
+                    -1px  1px 1px rgba(0,0,0,0.9),
+                     1px  1px 1px rgba(0,0,0,0.9),
+                     0    0   1px rgba(0,0,0,0.6);
             `;
 
             // ── Click: activate cinematic + scroll stats panel ────────────────
