@@ -13,7 +13,7 @@ const GRID_OPACITY_THRESHOLD = 0.51;
 let lastTileExtent = null; // { minX, maxX, minZ, maxZ }
 
 // ─── Tile budget ────────────────────────────────────────────────
-const MAX_TILE_COUNT = 800;
+const MAX_TILE_COUNT = 650;
 
 // ─── Zoom override ──────────────────────────────────────────────
 let manualZoomOverride = null;

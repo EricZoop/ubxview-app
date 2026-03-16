@@ -1,3 +1,6 @@
+import { isTauri, createHandleFromPath } from './tauriFiles.js';
+
+
 // objectManager.js
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
@@ -16,6 +19,18 @@ let nextObjectId = 1;
 const OBJECT_EXTS = new Set(['stl', 'obj']);
 
 // ─── Loader ───────────────────────────────────────────────────────────────────
+async function collectFileHandles(entry) {
+    if (entry.kind === 'file') return [entry];
+    if (entry.kind === 'directory') {
+        const handles = [];
+        for await (const child of entry.values()) {
+            handles.push(...await collectFileHandles(child));
+        }
+        return handles;
+    }
+    return [];
+}
+
 async function parseMesh(fileHandle) {
     const file   = await fileHandle.getFile();
     const ext    = file.name.split('.').pop().toLowerCase();
@@ -151,7 +166,7 @@ function makeRow(cols, ...fields) {
 
 // ─── Render List ──────────────────────────────────────────────────────────────
 // Renders object entries into the shared fileListContainer,
-// identified by [data-obj-id] so file entries are never touched.
+// identified by [data-obj-id] so file entries are never touched. make it so the style="display: none" initially
 function renderObjectList() {
     const container = document.getElementById('fileListContainer');
     if (!container) return;
@@ -159,20 +174,25 @@ function renderObjectList() {
     // Remove only our entries
     container.querySelectorAll('[data-obj-id]').forEach(el => el.remove());
 
-    if (objectRegistry.size === 0) return;
+    if (objectRegistry.size === 0) {
+        container.style.display = "none";
+        return;
+    }
+
+    // Show container when it has items
+    container.style.display = "flex";
 
     Array.from(objectRegistry.entries()).forEach(([id, entry]) => {
         // ── wrapper ──
         const wrap = document.createElement('div');
         wrap.dataset.objId = id;
         wrap.className = 'file-list-item';
-        const hasAbove = container.children.length > 0;
         wrap.style.cssText = `
             border: 1px solid #333; border-radius: 2px;
             background: #1a1a1a;
-            ${hasAbove ? 'margin-top: 5px;' : ''}
             overflow: hidden; font-family: inherit;
-        `;
+        `; 
+
 
         // ── header ──
         const header = document.createElement('div');
@@ -291,8 +311,8 @@ async function loadObjectFromHandle(handle) {
         pitch:    0,
         yaw:      0,
         scale:    1.0,
-        opacity:  100,
-        color:    '#f6d983',
+        opacity:  50,
+        color:    '#ff4d74',
         visible:  true,
         expanded: true,
     };
@@ -357,7 +377,126 @@ export function refreshObjectPositions() {
 }
 
 // ─── Listeners ────────────────────────────────────────────────────────────────
+
+
 export function setupObjectManagerListeners() {
     const btn = document.getElementById('openFileBtn');
     if (btn) btn.addEventListener('click', handleCombinedLoad);
+
+    if (isTauri()) {
+        setupTauriDragDrop();
+    } else {
+        setupWebDragDrop();
+    }
+}
+
+
+// ─── Tauri drag-and-drop ──────────────────────────────────────────────────────
+async function setupTauriDragDrop() {
+    const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const { collectFilePathsRecursive, isDirectory, createHandleFromPath: createHandle }
+        = await import('./tauriFiles.js');
+    const appWindow = getCurrentWebviewWindow();
+
+    appWindow.onDragDropEvent(async event => {
+        const { type } = event.payload;
+
+        if (type === 'enter' || type === 'over') {
+            document.body.classList.add('drag-active');
+            return;
+        }
+        if (type === 'leave' || type === 'cancelled') {
+            document.body.classList.remove('drag-active');
+            return;
+        }
+        if (type === 'drop') {
+            document.body.classList.remove('drag-active');
+
+            const paths = event.payload.paths ?? [];
+            if (paths.length === 0) return;
+
+            // Flatten any dropped directories into individual file paths
+            const flatPaths = [];
+            for (const p of paths) {
+                if (await isDirectory(p)) {
+                    flatPaths.push(...await collectFilePathsRecursive(p));
+                } else {
+                    flatPaths.push(p);
+                }
+            }
+
+            const gpsHandles = [];
+            for (const filePath of flatPaths) {
+                try {
+                    const handle = await createHandle(filePath);
+                    const ext    = filePath.split('.').pop().toLowerCase();
+
+                    if (OBJECT_EXTS.has(ext)) {
+                        await loadObjectFromHandle(handle);
+                    } else {
+                        gpsHandles.push(handle);
+                    }
+                } catch (err) {
+                    console.error(`Failed to load dropped file: ${filePath}`, err);
+                }
+            }
+
+            if (gpsHandles.length > 0) {
+                window.dispatchEvent(new CustomEvent('gpsFilesSelected', { detail: gpsHandles }));
+            }
+        }
+    });
+}
+
+// ─── Web drag-and-drop (browser / dev server only) ───────────────────────────
+function setupWebDragDrop() {
+    let dragCounter = 0;
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+        window.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); });
+    });
+
+    window.addEventListener('dragenter', e => {
+        if (e.dataTransfer?.types.includes('Files')) {
+            dragCounter++;
+            document.body.classList.add('drag-active');
+        }
+    });
+
+    window.addEventListener('dragleave', () => {
+        if (--dragCounter === 0) document.body.classList.remove('drag-active');
+    });
+
+    window.addEventListener('drop', async e => {
+        dragCounter = 0;
+        document.body.classList.remove('drag-active');
+
+        const items = e.dataTransfer?.items;
+        if (!items) return;
+
+        // Collect all handles first (flattening any directories)
+        const allHandles = [];
+        for (const item of items) {
+            if (item.kind !== 'file') continue;
+            const handle = await item.getAsFileSystemHandle().catch(() => null);
+            if (!handle) continue;
+            allHandles.push(...await collectFileHandles(handle));
+        }
+
+        const gpsHandles = [];
+        for (const handle of allHandles) {
+            const file = await handle.getFile();
+            const ext  = file.name.split('.').pop().toLowerCase();
+
+            if (OBJECT_EXTS.has(ext)) {
+                await loadObjectFromHandle(handle);
+            } else {
+                gpsHandles.push(handle);
+            }
+        }
+
+        if (gpsHandles.length > 0) {
+            window.dispatchEvent(new CustomEvent('gpsFilesSelected', { detail: gpsHandles }));
+        }
+    });
 }

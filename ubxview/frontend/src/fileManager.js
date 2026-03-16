@@ -107,21 +107,17 @@ export function getActiveFileType() {
 }
 
 // ─── Render File List ─────────────────────────────────────────────────────────
-// Only touches [data-file-id] rows so object entries ([data-obj-id]) are preserved.
 function renderFileList() {
     const container = document.getElementById('fileListContainer');
     if (!container) return;
 
-    // Remove only file-owned rows
     container.querySelectorAll('[data-file-id]').forEach(el => el.remove());
 
-    // Ensure container is visible if anything remains (file or object rows)
     const hasFiles   = fileRegistry.size > 0;
     const hasObjects = container.querySelectorAll('[data-obj-id]').length > 0;
     container.style.display = (hasFiles || hasObjects) ? 'flex' : 'none';
     if (hasFiles || hasObjects) container.style.flexDirection = 'column';
 
-    // Determine insertion point: prepend file rows before any object rows
     const firstObjRow = container.querySelector('[data-obj-id]') || null;
 
     const entries = Array.from(fileRegistry.entries());
@@ -142,7 +138,6 @@ function renderFileList() {
             font-size: 0.85em;
             color: ${isActive ? '#e0e0e0' : '#eee'};
             background: #1a1a1a;
-            margin-bottom: ${isLast && !hasObjects ? '0' : '5px'};
             user-select: none;
             width: 100%;
             box-sizing: border-box;
@@ -209,9 +204,38 @@ function renderFileList() {
             }
         }
 
-        // Insert before object rows so GPS files always appear at top of list
         container.insertBefore(item, firstObjRow);
     });
+}
+
+// ─── Register File (no rendering) ─────────────────────────────────────────────
+// Adds a file to the registry and starts its watcher, but does NOT
+// activate it, plot anything, or touch the coordinate system.
+async function registerFile(handle) {
+    const file = await handle.getFile();
+    const text = await file.text();
+
+    let dataType;
+    if (isRadarCsv(text)) {
+        dataType = 'radar';
+    } else {
+        dataType = detectDataFormat(text);
+        if (dataType === 'unknown') dataType = 'nmea';
+    }
+
+    const fileId = nextFileId++;
+    fileRegistry.set(fileId, {
+        id:               fileId,
+        handle,
+        name:             file.name,
+        type:             dataType,
+        readOffset:       file.size,
+        watcherInterval:  null,
+        isWatcherRunning: false,
+    });
+
+    startFileWatcher(fileId);
+    return fileId;
 }
 
 // ─── Switch Active File ───────────────────────────────────────────────────────
@@ -281,69 +305,27 @@ function startFileWatcher(fileId) {
     entry.watcherInterval = setInterval(() => watchFile(fileId), POLLING_RATE_MS);
 }
 
-// ─── Load from handle (used by combined picker in objectManager) ──────────────
-async function loadFileFromHandle(handle, onPlotComplete) {
-    const file = await handle.getFile();
-    const text = await file.text();
-
-    let dataType;
-    if (isRadarCsv(text)) {
-        dataType = 'radar';
-    } else {
-        dataType = detectDataFormat(text);
-        if (dataType === 'unknown') dataType = 'nmea';
-    }
-
-    const fileId = nextFileId++;
-    fileRegistry.set(fileId, {
-        id:               fileId,
-        handle,
-        name:             file.name,
-        type:             dataType,
-        readOffset:       file.size,
-        watcherInterval:  null,
-        isWatcherRunning: false,
-    });
-
-    overlayedFileIds.clear();
-    setOverlayPoints([]);
-    activeFileId = fileId;
-    setZoomLevel(null);
-
-    const allFileLines = dataType === 'radar' ? [text] : text.split('\n').filter(l => l.trim());
-    setPlaybackLines(allFileLines);
-
-    const pts = parsePointsByType(text, dataType);
-    if (pts.length === 0) {
-        alert('No valid GPS / ADS-B / Radar points found.');
-        plotGpsData([]);
-        updateStats([], dataType);
-        renderFileList();
-        return false;
-    }
-
-    initializeCoordinateSystem(pts);
-    const plotMetadata = plotGpsData(pts, false);
-    updateStats(pts, dataType);
-    renderFileList();
-
-    if (onPlotComplete && plotMetadata) onPlotComplete(plotMetadata);
-
-    startFileWatcher(fileId);
-    return true;
-}
-
 // ─── Listeners ────────────────────────────────────────────────────────────────
 export function setupFileManagerListeners() {
     const fireLoaded = plotMetadata => {
         window.dispatchEvent(new CustomEvent('fileLoaded', { detail: plotMetadata }));
     };
 
-    // GPS file handles forwarded from the combined picker in objectManager
+    // GPS file handles forwarded from the combined picker / drag-drop.
+    // Register every file but only activate+render the LAST one,
+    // avoiding N separate coordinate-system resets and tile fetches.
     window.addEventListener('gpsFilesSelected', async e => {
         const handles = e.detail; // FileSystemFileHandle[]
+        if (handles.length === 0) return;
+
+        let lastFileId = null;
         for (const handle of handles) {
-            await loadFileFromHandle(handle, fireLoaded);
+            lastFileId = await registerFile(handle);
+        }
+
+        // Activate only the final file — single coord-system init + tile load
+        if (lastFileId !== null) {
+            await switchToFile(lastFileId);
         }
     });
 

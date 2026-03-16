@@ -15,6 +15,14 @@
       "allow": [{ "url": "http://**" }, { "url": "https://**" }]
     },
     "cors-fetch:default",
-    "http:default"
+    "http:default",
+    "fs:default",
+    "fs:allow-read-file",
+    "fs:scope-home-recursive",
+    "fs:scope-desktop-recursive",
+    "fs:scope-download-recursive",
+    "fs:scope-document-recursive",
+    "fs:allow-stat",
+    "fs:allow-read-dir"
   ]
 }

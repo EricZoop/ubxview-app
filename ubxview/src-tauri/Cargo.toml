@@ -26,3 +26,4 @@ notify = "6.1.1"
 tauri-plugin-cors-fetch = "5.0.0"
 reqwest = { version = "0.12", features = ["json"] }
 tauri-plugin-http = { version = "2.0.0", features = ["unsafe-headers"] }
+tauri-plugin-fs = "2.4.5"
