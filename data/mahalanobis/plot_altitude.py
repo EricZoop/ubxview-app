@@ -1,6 +1,6 @@
 """
-Plot Matched Radar ↔ ADS-B Tracks
-=================================
+Plot Matched Radar <-> ADS-B Tracks
+====================================
 Reads the correlations CSV to find accepted matches, loads the corresponding
 raw radar and ADS-B chunks, and generates a side-by-side figure showing:
   1. Altitude over Time
@@ -13,15 +13,16 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import numpy
 from datetime import datetime
 
-# ─── Configuration ────────────────────────────────────────────────────────────
+# --- Configuration -----------------------------------------------------------
 
 BASE_PATH = r"Z:\__Datasets\USA"
-EXPERIMENT = "2021_02_26_Key_West_FL_US_MHR"
+EXPERIMENT = "2021_08_03_Butlers_Germantown_MD_US_MHR"
 FEET_TO_METERS = 0.3048
 
-# ─── Helpers (Imported from main.py logic) ────────────────────────────────────
+# --- Helpers (imported from main.py logic) -----------------------------------
 
 def parse_radar_datetime(dt_str: str) -> datetime:
     parts = dt_str.rsplit(":", 1)
@@ -41,7 +42,7 @@ def parse_adsb_timestamp(ts_str: str) -> datetime:
 def load_radar_chunk(radar_dir: str, chunk_name: str) -> pd.DataFrame:
     files = glob.glob(os.path.join(radar_dir, f"*{chunk_name}*.csv"))
     if not files: return pd.DataFrame()
-    
+
     raw = pd.read_csv(files[0])
     raw.columns = raw.columns.str.strip()
     df = pd.DataFrame({
@@ -56,11 +57,11 @@ def load_radar_chunk(radar_dir: str, chunk_name: str) -> pd.DataFrame:
 def load_adsb_chunk(adsb_dir: str, chunk_name: str) -> pd.DataFrame:
     files = glob.glob(os.path.join(adsb_dir, f"*{chunk_name}*.csv"))
     if not files: return pd.DataFrame()
-    
+
     raw = pd.read_csv(files[0])
     raw.columns = raw.columns.str.strip()
     callsign_col = "callsign" if "callsign" in raw.columns else "hex"
-    
+
     df = pd.DataFrame({
         "callsign": raw[callsign_col],
         "time": raw["timestamp"].apply(parse_adsb_timestamp),
@@ -70,7 +71,7 @@ def load_adsb_chunk(adsb_dir: str, chunk_name: str) -> pd.DataFrame:
     })
     return df.dropna(subset=["lat", "lon", "alt_m", "time"])
 
-# ─── Plotting logic ───────────────────────────────────────────────────────────
+# --- Plotting logic ----------------------------------------------------------
 
 def main():
     # 1. Load Correlations
@@ -80,7 +81,7 @@ def main():
         return
 
     df_corr = pd.read_csv(csv_path)
-    
+
     # 2. Filter ONLY for MATCH
     matches = df_corr[df_corr["status"] == "MATCH"]
     print(f"Found {len(matches)} accepted matches to plot.")
@@ -102,11 +103,11 @@ def main():
         chunk = row["chunk"]
         r_id = row["radar_id"]
         a_id = row["adsb_callsign"]
-        
-        # Safely get adsb_type (default to Unknown if missing or NaN)
-        a_type = row.get("adsb_type", "Unknown")
+
+        # Aircraft type (4-letter ICAO code), default to UNKN
+        a_type = row.get("adsb_type", "UNKN")
         if pd.isna(a_type):
-            a_type = "Unknown"
+            a_type = "UNKN"
 
         # Load chunk data
         r_df = load_radar_chunk(radar_dir, chunk)
@@ -125,16 +126,15 @@ def main():
 
         # Create Figure with 2 Subplots Side-by-Side
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-        
-        # Format requested title
-        fig.suptitle(f"MATCH  ID {r_id} = {a_type}\n(Chunk: {chunk})", fontweight="bold", fontsize=14)
 
-        # ─── Plot 1: Altitude over Time ───
-        ax1.plot(r_track["time"], r_track["alt_m"], 
-                label=f"Radar", color="#2980b9", linewidth=2, marker='.', markersize=6)
-        
-        ax1.plot(a_track["time"], a_track["alt_m"], 
-                label=f"ADS-B", color="#e67e22", linewidth=2, linestyle='--', marker='x', markersize=6)
+        fig.suptitle(f"MATCH  ID {r_id} -> {a_type}\n(Chunk: {chunk})", fontweight="bold", fontsize=14)
+
+        # -- Plot 1: Altitude over Time --
+        ax1.plot(r_track["time"], r_track["alt_m"],
+                label="Radar", color="#2980b9", linewidth=2, marker='.', markersize=6)
+
+        ax1.plot(a_track["time"], a_track["alt_m"],
+                label="ADS-B", color="#e67e22", linewidth=2, linestyle='--', marker='x', markersize=6)
 
         ax1.set_title("Altitude over Time")
         ax1.set_xlabel("Time (UTC)")
@@ -144,22 +144,31 @@ def main():
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         ax1.tick_params(axis='x', rotation=45)
 
-        # ─── Plot 2: Lat vs Lon ───
-        ax2.plot(r_track["lon"], r_track["lat"], 
-                label=f"Radar", color="#2980b9", linewidth=2, marker='.', markersize=6)
-        
-        ax2.plot(a_track["lon"], a_track["lat"], 
-                label=f"ADS-B", color="#e67e22", linewidth=2, linestyle='--', marker='x', markersize=6)
+        # -- Plot 2: Lat vs Lon --
+        ax2.plot(r_track["lon"], r_track["lat"],
+                label="Radar", color="#2980b9", linewidth=2, marker='.', markersize=6)
+
+        ax2.plot(a_track["lon"], a_track["lat"],
+                label="ADS-B", color="#e67e22", linewidth=2, linestyle='--', marker='x', markersize=6)
 
         # Disable scientific notation on axes for raw coordinates
         ax2.ticklabel_format(useOffset=False, style='plain')
-        
+
         ax2.set_title("Latitude vs Longitude")
         ax2.set_xlabel("Longitude")
         ax2.set_ylabel("Latitude")
         ax2.grid(True, alpha=0.3)
         ax2.legend()
         
+        # --- NEW CODE: Scale aspect ratio to mimic Mercator projection ---
+        # Calculate mean latitude from both tracks to scale the aspect ratio correctly
+        mean_lat = pd.concat([r_track["lat"], a_track["lat"]]).mean()
+        if not pd.isna(mean_lat):
+            # The length of 1 degree of longitude is roughly cos(latitude) * length of 1 deg of latitude
+            aspect_ratio = 1 / numpy.cos(numpy.radians(mean_lat))
+            ax2.set_aspect(aspect_ratio)
+        # -----------------------------------------------------------------
+
         plt.tight_layout()
 
         # Save the figure
@@ -167,7 +176,7 @@ def main():
         save_path = os.path.join(out_dir, filename)
         fig.savefig(save_path, dpi=150)
         plt.close(fig)
-        
+
         print(f"Saved plot: {filename}")
 
 if __name__ == "__main__":

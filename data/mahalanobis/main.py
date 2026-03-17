@@ -1,9 +1,11 @@
 """
-Radar ↔ ADS-B Track Correlator using Mahalanobis Distance
-==========================================================
+Radar <-> ADS-B Track Correlator using Mahalanobis Distance
+===========================================================
 Matches radar detections to ADS-B truth tracks per time-aligned chunk file.
 ADS-B truth files have temporal padding around radar track windows.
 """
+
+## HOW DO WE MARK STOLEN TRACKS?
 
 import os
 import re
@@ -20,42 +22,42 @@ from scipy.optimize import linear_sum_assignment
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
 
-# ─── Configuration ────────────────────────────────────────────────────────────
+# --- Configuration -----------------------------------------------------------
 
 EXPERIMENTS = [
-    "2021_02_26_Key_West_FL_US_MHR",
+    "2021_08_03_Butlers_Germantown_MD_US_MHR",
 ]
 
 BASE_PATH        = r"Z:\__Datasets\USA"
-FEET_TO_METERS   = 0.3048
+KNOTS_TO_MS      = 0.514444  # 1 knot = 0.514444 meters per second
 EARTH_RADIUS_M   = 6_371_000
 
 # Plot trigger
 PLOT_RESULTS = True
 
 # Mahalanobis covariance diagonals
-# Units: [meters_lat, meters_lon, meters_alt, seconds]
+# Units: [meters_lat, meters_lon, speed_ms, seconds]
 COV_DIAG = np.array([
-    150.0**2,   # lateral position variance  (m²)
-    150.0**2,   # longitudinal position var  (m²)
-    150.0**2,    # altitude variance           (m²)
-    10.0**2,     # time variance               (s²)
+    100.0**2,    # lateral position variance   (m^2) - tight
+    100.0**2,    # longitudinal position var   (m^2) - tight
+    20.0**2,     # speed variance              (m^2/s^2) - e.g. 20 m/s variance
+    10.0**2,     # time variance               (s^2) - tight
 ])
 
 # Gate: maximum Mahalanobis distance to accept an association
-GATE_THRESHOLD = 15.0
+GATE_THRESHOLD = 30.0
 
 # Max time gap (seconds) for pairing a radar point to an ADS-B point
 MAX_TIME_GAP_S = 30.0
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+# --- Helpers -----------------------------------------------------------------
 
 VI = np.diag(1.0 / COV_DIAG)
 
 
 def latlon_to_meters_vec(lat: np.ndarray, lon: np.ndarray,
                          ref_lat: float, ref_lon: float) -> tuple[np.ndarray, np.ndarray]:
-    """Vectorised (lat, lon) → local metre offsets from a reference point."""
+    """Vectorised (lat, lon) -> local metre offsets from a reference point."""
     dlat = np.radians(lat - ref_lat)
     dlon = np.radians(lon - ref_lon)
     y = dlat * EARTH_RADIUS_M
@@ -73,7 +75,7 @@ def parse_radar_datetime(dt_str: str) -> datetime:
 
 def parse_adsb_timestamp(ts_str: str) -> datetime:
     """Parse ISO ADS-B timestamp: '2021-02-26T15:27:00Z'."""
-    ts_str = ts_str.replace("Z", "")
+    ts_str = str(ts_str).replace("Z", "")
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
         try:
             return datetime.strptime(ts_str, fmt)
@@ -82,7 +84,7 @@ def parse_adsb_timestamp(ts_str: str) -> datetime:
     raise ValueError(f"Cannot parse ADS-B timestamp: {ts_str}")
 
 
-# ─── File matching ────────────────────────────────────────────────────────────
+# --- File matching -----------------------------------------------------------
 
 def _chunk_key(filename: str) -> str | None:
     m = re.search(r"(rt_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_tracks_chunk_\d+)", filename)
@@ -104,7 +106,7 @@ def match_files(radar_dir: str, adsb_dir: str) -> list[tuple[str, str]]:
     return pairs
 
 
-# ─── Loaders ──────────────────────────────────────────────────────────────────
+# --- Loaders -----------------------------------------------------------------
 
 def load_radar(path: str) -> pd.DataFrame:
     raw = pd.read_csv(path)
@@ -116,9 +118,9 @@ def load_radar(path: str) -> pd.DataFrame:
         "time":  raw["DateTime"].apply(parse_radar_datetime),
         "lat":   pd.to_numeric(raw["Lat"], errors="coerce").astype(float),
         "lon":   pd.to_numeric(raw["Lon"], errors="coerce").astype(float),
-        "alt_m": pd.to_numeric(raw["Alt"], errors="coerce").astype(float),
+        "speed": pd.to_numeric(raw["VelAbs"], errors="coerce").astype(float),
     })
-    df.dropna(subset=["lat", "lon", "alt_m", "time"], inplace=True)
+    df.dropna(subset=["lat", "lon", "speed", "time"], inplace=True)
     return df
 
 
@@ -134,20 +136,20 @@ def load_adsb(path: str) -> pd.DataFrame:
         "time":     raw["timestamp"].apply(parse_adsb_timestamp),
         "lat":      pd.to_numeric(raw["lat"], errors="coerce").astype(float),
         "lon":      pd.to_numeric(raw["lon"], errors="coerce").astype(float),
-        "alt_m":    pd.to_numeric(raw["alt"], errors="coerce").astype(float) * FEET_TO_METERS,
+        "speed":    pd.to_numeric(raw["gspeed"], errors="coerce").astype(float) * KNOTS_TO_MS,
     })
-    df.dropna(subset=["lat", "lon", "alt_m", "time"], inplace=True)
+    df.dropna(subset=["lat", "lon", "speed", "time"], inplace=True)
     return df
 
 
-# ─── Core correlation (vectorised) ───────────────────────────────────────────
+# --- Core correlation (vectorised) -------------------------------------------
 
 def _mean_mahalanobis_vectorised(
-    r_lat: np.ndarray, r_lon: np.ndarray, r_alt: np.ndarray, r_t: np.ndarray,
-    a_lat: np.ndarray, a_lon: np.ndarray, a_alt: np.ndarray, a_t: np.ndarray,
+    r_lat: np.ndarray, r_lon: np.ndarray, r_speed: np.ndarray, r_t: np.ndarray,
+    a_lat: np.ndarray, a_lon: np.ndarray, a_speed: np.ndarray, a_t: np.ndarray,
     ref_lat: float, ref_lon: float,
 ) -> tuple[float, int, float, float]:
-    
+
     dt = np.abs(r_t[:, None] - a_t[None, :])
     nearest_idx = np.argmin(dt, axis=1)
     nearest_dt  = dt[np.arange(len(r_t)), nearest_idx]
@@ -157,15 +159,15 @@ def _mean_mahalanobis_vectorised(
         return 1e9, 0, 1e9, 1e9
 
     sel_r_lat = r_lat[mask];  sel_r_lon = r_lon[mask]
-    sel_r_alt = r_alt[mask];  sel_r_t   = r_t[mask]
+    sel_r_speed = r_speed[mask];  sel_r_t   = r_t[mask]
     ai = nearest_idx[mask]
     sel_a_lat = a_lat[ai];    sel_a_lon = a_lon[ai]
-    sel_a_alt = a_alt[ai];    sel_a_t   = a_t[ai]
+    sel_a_speed = a_speed[ai];    sel_a_t   = a_t[ai]
 
     rx, ry = latlon_to_meters_vec(sel_r_lat, sel_r_lon, ref_lat, ref_lon)
     ax, ay = latlon_to_meters_vec(sel_a_lat, sel_a_lon, ref_lat, ref_lon)
 
-    diff = np.column_stack([rx - ax, ry - ay, sel_r_alt - sel_a_alt, sel_r_t - sel_a_t])
+    diff = np.column_stack([rx - ax, ry - ay, sel_r_speed - sel_a_speed, sel_r_t - sel_a_t])
     d = np.sqrt(np.sum(diff**2 / COV_DIAG, axis=1))
 
     return float(np.mean(d)), int(np.sum(mask)), float(np.min(d)), float(np.max(d))
@@ -206,30 +208,30 @@ def correlate_chunk(radar_df: pd.DataFrame, adsb_df: pd.DataFrame) -> pd.DataFra
     for rid in radar_ids:
         sub = radar_df[radar_df["ID"] == rid]
         if not sub.empty:
-            radar_groups[rid] = (sub["lat"].values, sub["lon"].values, sub["alt_m"].values, sub["t_sec"].values)
+            radar_groups[rid] = (sub["lat"].values, sub["lon"].values, sub["speed"].values, sub["t_sec"].values)
     radar_ids = np.array(list(radar_groups.keys()))
 
     adsb_groups = {}
     for asign in adsb_signs:
         sub = adsb_df[adsb_df[callsign_col] == asign]
         if not sub.empty:
-            adsb_groups[asign] = (sub["lat"].values, sub["lon"].values, sub["alt_m"].values, sub["t_sec"].values)
+            adsb_groups[asign] = (sub["lat"].values, sub["lon"].values, sub["speed"].values, sub["t_sec"].values)
     adsb_signs = np.array(list(adsb_groups.keys()))
 
     cost = np.full((len(radar_ids), len(adsb_signs)), fill_value=1e9)
     pair_info = {}
 
     for ri, rid in enumerate(radar_ids):
-        r_lat, r_lon, r_alt, r_t = radar_groups[rid]
+        r_lat, r_lon, r_speed, r_t = radar_groups[rid]
         for ai, asign in enumerate(adsb_signs):
-            a_lat, a_lon, a_alt, a_t = adsb_groups[asign]
+            a_lat, a_lon, a_speed, a_t = adsb_groups[asign]
 
             if r_t[-1] < a_t[0] - MAX_TIME_GAP_S or r_t[0] > a_t[-1] + MAX_TIME_GAP_S:
                 continue
 
             mean_d, n, min_d, max_d = _mean_mahalanobis_vectorised(
-                r_lat, r_lon, r_alt, r_t, a_lat, a_lon, a_alt, a_t, ref_lat, ref_lon)
-            
+                r_lat, r_lon, r_speed, r_t, a_lat, a_lon, a_speed, a_t, ref_lat, ref_lon)
+
             if n > 0:
                 cost[ri, ai] = mean_d
                 pair_info[(ri, ai)] = dict(n_pairs=n, min_mahal=min_d, max_mahal=max_d)
@@ -241,10 +243,10 @@ def correlate_chunk(radar_df: pd.DataFrame, adsb_df: pd.DataFrame) -> pd.DataFra
         d = cost[r, c]
         if d >= 1e8:
             continue
-            
+
         status = "MATCH" if d < GATE_THRESHOLD else "REJECTED"
         info = pair_info.get((r, c), {})
-        
+
         r_meta = radar_meta.get(radar_ids[r], {})
         a_meta = adsb_meta.get(adsb_signs[c], {})
 
@@ -255,13 +257,18 @@ def correlate_chunk(radar_df: pd.DataFrame, adsb_df: pd.DataFrame) -> pd.DataFra
         else:
             avg_rcs = round(float(avg_rcs), 2)
 
+        # Aircraft type (4-letter ICAO code) from ADS-B
+        adsb_type = a_meta.get("type")
+        if pd.isna(adsb_type) if adsb_type is not None else True:
+            adsb_type = "UNKN"
+
         results.append(dict(
             radar_id=radar_ids[r],
             ExtID=r_meta.get("ExtID"),
             adsb_callsign=adsb_signs[c],
             adsb_hex=a_meta.get("hex"),
             adsb_fr24_id=a_meta.get("fr24_id"),
-            adsb_type=a_meta.get("type"),
+            adsb_type=adsb_type,
             average_rcs=avg_rcs,
             mean_mahalanobis=round(d, 4),
             n_pairs=info.get("n_pairs", 0),
@@ -269,16 +276,14 @@ def correlate_chunk(radar_df: pd.DataFrame, adsb_df: pd.DataFrame) -> pd.DataFra
             max_mahalanobis=round(info.get("max_mahal", 0), 4),
             status=status,
         ))
-        
-        # CHANGED: Update the logging statement format here:
-        adsb_type = a_meta.get("type", "Unknown")
-        log.info("  %s  ID %s = %s  (d=%.3f, n=%d)",
+
+        log.info("  %s  ID %s -> %s  (d=%.3f, n=%d)",
                  status, radar_ids[r], adsb_type, d, info.get("n_pairs", 0))
 
     return pd.DataFrame(results)
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
+# --- Main --------------------------------------------------------------------
 
 def run_experiment(experiment_name: str) -> pd.DataFrame:
     radar_dir = os.path.join(BASE_PATH, experiment_name, "csv", "raw_tracker_v0.0.7")
@@ -292,7 +297,7 @@ def run_experiment(experiment_name: str) -> pd.DataFrame:
         chunk_key = _chunk_key(os.path.basename(radar_path))
         radar_df = load_radar(radar_path)
         adsb_df  = load_adsb(adsb_path)
-        
+
         result = correlate_chunk(radar_df, adsb_df)
         if not result.empty:
             result["chunk"] = chunk_key
