@@ -333,7 +333,7 @@ class SerialRecorder {
             }
         }
 
-        await this.weatherRecorder.start(this.sessionDirHandle, this.currentTimestamp);
+        //await this.weatherRecorder.start(this.sessionDirHandle, this.currentTimestamp);
 
         this.totalBytesWritten = 0;
         this.bytesReceived     = 0;
@@ -382,7 +382,7 @@ class SerialRecorder {
         this.rateInterval = null;
 
         this.stopUrlPolling();
-        await this.weatherRecorder.stop();
+        //await this.weatherRecorder.stop();
 
         if (this.reader) {
             try { await this.reader.cancel(); } catch (e) { console.error('Error cancelling reader:', e); }
@@ -552,7 +552,7 @@ class SerialRecorder {
     handlePageHide() {
         if (this._isSurveying) this._survey?.abort();
         if (this.isRecording) {
-            this.weatherRecorder.stopEmergency();
+            //this.weatherRecorder.stopEmergency();
             clearInterval(this.rateInterval);
             this.rateInterval = null;
             this.stopUrlPolling();
