@@ -221,7 +221,12 @@ class NTRIPClient {
         this.pass        = cfg.pass       || '';
         this.lat         = cfg.lat        ?? 0.0;
         this.lon         = cfg.lon        ?? 0.0;
-        this.ggaInterval = (cfg.ggaInterval ?? 30) * 1000;
+        // For survey-in (stationary antenna), the GGA position doesn't change.
+        // The caster only needs it once to select the nearest virtual reference
+        // station. Reconnecting every 30 s was killing the RTK convergence —
+        // each reconnect tears down the RTCM stream and resets the receiver's
+        // carrier-phase ambiguity resolution.  300 s (5 min) is plenty.
+        this.ggaInterval = (cfg.ggaInterval ?? 300) * 1000;
 
         this._stopped    = false;
         this._controller = null;
@@ -286,14 +291,26 @@ class NTRIPClient {
 
         const reader     = res.body.getReader();
         let   chunkCount = 0;
+        let   ggaExpired = false;
 
-        // Reconnect after ggaInterval to send a fresh GGA timestamp
-        const ggaTimer = setTimeout(() => reader.cancel().catch(() => {}), this.ggaInterval);
+        // Reconnect after ggaInterval to send a fresh GGA position/timestamp.
+        // For stationary survey-in this should be long (≥ 300 s) so the
+        // receiver's RTK engine has uninterrupted RTCM corrections.
+        onLog(`[NTRIP] GGA refresh interval: ${this.ggaInterval / 1000}s`);
+        const ggaTimer = setTimeout(() => {
+            ggaExpired = true;
+            reader.cancel().catch(() => {});
+        }, this.ggaInterval);
 
         try {
             while (!this._stopped) {
                 const { value, done } = await reader.read();
-                if (done) { onLog('[NTRIP] Stream ended by caster.'); break; }
+                if (done) {
+                    onLog(ggaExpired
+                        ? `[NTRIP] GGA refresh timer fired after ${this.ggaInterval / 1000}s — reconnecting with fresh GGA.`
+                        : '[NTRIP] Stream ended by caster.');
+                    break;
+                }
                 if (value?.length) {
                     this._totalBytes += value.length;
                     chunkCount++;
@@ -536,19 +553,36 @@ export class RTKSurvey {
                 this._ntrip.start(writeFn, msg => console.log(msg))
                     .catch(err => console.warn('[NTRIP] Background error:', err));
 
-                // Give NTRIP time to deliver first RTCM corrections
-                await this._delay(3000);
-
-                // Verify the receiver is actually using corrections
-                const pvtPayload = await this._pollUbx(0x01, 0x07, 2000); // NAV-PVT
-                if (pvtPayload) {
-                    const fix = parseNavPvtFixInfo(pvtPayload);
-                    if (fix) {
-                        console.log(`[RTKSurvey] Current fix: ${fix.fixLabel}, carrier: ${fix.carrLabel}`);
-                        if (fix.carrSoln === 0) {
-                            console.warn('[RTKSurvey] No carrier solution yet — RTCM may not be reaching the receiver.');
+                // Wait for the receiver to achieve at least RTK Float before
+                // starting survey-in.  Without this, the first observations
+                // are standalone-quality (metres) and drag down the mean for
+                // the entire survey duration.  Timeout after 90 s if it never
+                // converges — proceed anyway so we don't hang forever.
+                console.log('[RTKSurvey] Waiting for RTK Float/Fixed before starting survey-in…');
+                const rtkDeadline = Date.now() + 90_000;
+                let rtkAchieved = false;
+                while (Date.now() < rtkDeadline && !this._aborted) {
+                    await this._delay(2000);
+                    const pvtPayload = await this._pollUbx(0x01, 0x07, 2000);
+                    if (pvtPayload) {
+                        const fix = parseNavPvtFixInfo(pvtPayload);
+                        if (fix) {
+                            console.log(`[RTKSurvey] Fix: ${fix.fixLabel}, carrier: ${fix.carrLabel}`);
+                            if (fix.carrSoln >= 1) {   // 1 = Float, 2 = Fixed
+                                console.log(`[RTKSurvey] RTK ${fix.carrLabel} achieved — proceeding to survey-in.`);
+                                rtkAchieved = true;
+                                break;
+                            }
                         }
                     }
+                }
+                if (!rtkAchieved && !this._aborted) {
+                    console.warn(
+                        '[RTKSurvey] ⚠ Timed out waiting for RTK convergence. ' +
+                        'Starting survey-in anyway, but accuracy will converge slowly. ' +
+                        'Check: (1) RTCM3 input enabled on USB, (2) NTRIP credentials/mountpoint, ' +
+                        '(3) antenna has clear sky view.'
+                    );
                 }
             }
 
@@ -568,6 +602,8 @@ export class RTKSurvey {
 
             let numSvs       = 0;
             let lastCarrLog  = 0;  // throttle carrier-solution logging
+            let carrLabel    = '?';
+            let noFixWarnSent = false;
 
             while (!this._aborted) {
                 // Poll satellite count
@@ -577,28 +613,43 @@ export class RTKSurvey {
                     if (count !== null) numSvs = count;
                 }
 
+                // Always poll carrier solution when NTRIP is active
+                if (ntripConfig) {
+                    const pvt = await this._pollUbx(0x01, 0x07, 500);
+                    if (pvt) {
+                        const f = parseNavPvtFixInfo(pvt);
+                        if (f) {
+                            carrLabel = f.carrLabel;
+                            const now = Date.now();
+                            if (now - lastCarrLog > 10_000) {
+                                console.log(`[RTKSurvey] Fix: ${f.fixLabel}, carrier: ${f.carrLabel}`);
+                                lastCarrLog = now;
+                            }
+                        }
+                    }
+                }
+
                 // Poll NAV-SVIN (also arrives automatically now via msgout config)
                 const payload = await this._pollUbx(0x01, 0x3B, 2000);
                 if (payload) {
                     const s = parseNavSvin(payload);
                     if (s) {
-                        // Periodically check carrier solution to confirm RTCM is working
-                        const now = Date.now();
-                        if (ntripConfig && now - lastCarrLog > 15_000) {
-                            const pvt = await this._pollUbx(0x01, 0x07, 500);
-                            if (pvt) {
-                                const f = parseNavPvtFixInfo(pvt);
-                                if (f) console.log(`[RTKSurvey] Fix: ${f.fixLabel}, carrier: ${f.carrLabel}`);
-                            }
-                            lastCarrLog = now;
+                        // Warn once if NTRIP is on but receiver still has no carrier solution
+                        if (ntripConfig && !noFixWarnSent && s.dur > 30 && carrLabel === 'None') {
+                            console.warn(
+                                '[RTKSurvey] ⚠ NTRIP has been streaming for >30 s but carrier solution is still "None". ' +
+                                'RTCM corrections may not be reaching the receiver. Check that RTCM3 input is enabled on USB.'
+                            );
+                            noFixWarnSent = true;
                         }
 
+                        const carrTag = ntripConfig ? ` | Carr: ${carrLabel}` : '';
                         console.log(
                             `[RTKSurvey] Dur: ${s.dur}s | Obs: ${s.obs} | SVs: ${numSvs} | ` +
-                            `Acc: ${s.meanAcc.toFixed(4)}m (Target: ${targetAccuracyM}m) | ` +
+                            `Acc: ${s.meanAcc.toFixed(4)}m (Target: ${targetAccuracyM}m)${carrTag} | ` +
                             `Active: ${s.active} | Valid: ${s.valid}`
                         );
-                        if (onStatus) onStatus({ ...s, numSvs });
+                        if (onStatus) onStatus({ ...s, numSvs, carrLabel });
                         if (s.valid) {
                             console.log(`[RTKSurvey] Survey-in complete! Final Accuracy: ${s.meanAcc.toFixed(4)}m`);
                             this._stopNtrip();
