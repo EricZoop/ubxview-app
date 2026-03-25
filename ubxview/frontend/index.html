@@ -453,11 +453,11 @@
     </div>
 
 <div id="com-reader" class="noselect">
-
-    <!--<div class="section-label">Data Reader</div>-->
-
     <div class="com-reader-row top-row">
-        <button id="select-port-button">Select Port</button>
+        <button id="select-port-button" style="justify-content: space-between;">
+            <span id="port-name">Select Port</span>
+            <span id="port-rate" style="color: #aaacaa; font-variant-numeric: tabular-nums; margin-left: 8px;"></span>
+        </button>
         <select id="baud-rate">
             <option>9600</option>
             <option>19200</option>
@@ -465,15 +465,14 @@
             <option>57600</option>
             <option selected>115200</option>
         </select>
-        <!-- RTK Survey-In button – disabled until a port is selected -->
         <button id="survey-button" disabled title="RTK Survey-In" style="margin-left: auto; padding: 0.5em 0.5em;">
             <img src="/assets/satellite.png" alt="Survey-In" width="16" height="16">
         </button>
     </div>
 
-    <div class="com-reader-row top-row">
-        <input type="text" id="url-input"
-               placeholder="http://###.###.###.###/api/v1/traffic" value="">
+    <div class="com-reader-row top-row url-wrapper" style="position: relative; flex: 1; display: flex;">
+        <input type="text" id="url-input" placeholder="http://###.###.###.###/api/v1/traffic" value="" style="width: 100%; padding-right: 65px;">
+        <span id="url-packets" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #aaacaa; pointer-events: none; font-size: 0.85em; font-variant-numeric: tabular-nums;"></span>
     </div>
 
     <div class="com-reader-row bottom-row">
@@ -481,7 +480,6 @@
         <button id="end-button" disabled>Stop</button>
         <span id="status-message">Disconnected</span>
     </div>
-
 </div>
 
 </body>

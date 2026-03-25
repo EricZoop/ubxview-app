@@ -3,6 +3,13 @@ import { WeatherRecorder } from './weatherapp.js';
 import { RTKSurvey, showNtripDialog } from './rtkSurvey.js';
 import { tauriFetch } from './utils.js';
 
+// Dictionary for translating USB Vendor/Product IDs to human-readable names
+const PORT_ALIASES = {
+    "5446:425": "U-blox GNSS",
+    "1027:24597": "FTDI Adapter",
+    // "VendorID:ProductID": "Your Custom Name"
+};
+
 class SerialRecorder {
     constructor() {
         // DOM Elements
@@ -13,6 +20,11 @@ class SerialRecorder {
         this.selectPortButton = document.getElementById('select-port-button');
         this.surveyButton     = document.getElementById('survey-button');
         this.urlInput         = document.getElementById('url-input');
+
+        this.portNameSpan     = document.getElementById('port-name');
+        this.portRateSpan     = document.getElementById('port-rate');
+        this.urlPacketsSpan   = document.getElementById('url-packets');
+
 
         this.weatherRecorder = new WeatherRecorder();
         this.weatherRecorder.requestLocation();
@@ -65,7 +77,7 @@ class SerialRecorder {
                 if (this.port && event.target === this.port) {
                     console.log('Active COM port physically disconnected.');
                     this.port = null;
-                    this.selectPortButton.textContent = 'Select Port';
+                    if (this.portNameSpan) this.portNameSpan.textContent = 'Select Port';
                     this.surveyButton.disabled = true;
                     if (this._isSurveying) this._abortSurvey();
                     if (this.isRecording)  this.endRecording();
@@ -88,7 +100,7 @@ class SerialRecorder {
     handleUnsupportedBrowser() {
         console.warn('Web Serial API not supported.');
         this.selectPortButton.disabled = true;
-        this.selectPortButton.textContent = 'Not Supported';
+        if (this.portNameSpan) this.portNameSpan.textContent = 'Not Supported';
         this.surveyButton.disabled = true;
     }
 
@@ -145,16 +157,27 @@ class SerialRecorder {
 
     // ─── Serial Port Methods ──────────────────────────────────────────
 
-    async selectPort() {
+async selectPort() {
         try {
             this.port = await navigator.serial.requestPort();
             const info = this.port.getInfo();
-            const portName = info.usbProductId
-                ? `COM ${info.usbVendorId || ''}:${info.usbProductId}`
-                : 'Unknown COM Port';
-            this.selectPortButton.textContent = portName;
+            
+            let portName = 'Unknown COM Port';
+            if (info.usbProductId) {
+                // Create the "VendorID:ProductID" string
+                const hwId = `${info.usbVendorId || ''}:${info.usbProductId}`;
+                
+                // Use the dictionary name if it exists, otherwise default to "COM XXXX:XXXX"
+                portName = PORT_ALIASES[hwId] || `COM ${hwId}`;
+            }
+            
+            // IMPORTANT: Only update the name span!
+            if (this.portNameSpan) {
+                this.portNameSpan.textContent = portName;
+            }
+            
             this.surveyButton.disabled = false;
-            console.log('Port selected.');
+            console.log(`Port selected: ${portName}`);
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error('Error selecting port:', error);
@@ -346,7 +369,7 @@ class SerialRecorder {
             } catch (error) {
                 console.error(`Serial open error: ${error.message}`);
                 this.port = null;
-                this.selectPortButton.textContent = 'Select Port';
+                if (this.portNameSpan) this.portNameSpan.textContent = 'Select Port';
                 this.surveyButton.disabled = true;
                 if (this.writableStream)        await this.writableStream.close();
                 if (this.trafficWritableStream) await this.trafficWritableStream.close();
@@ -439,6 +462,10 @@ class SerialRecorder {
         }
         this.urlInput.disabled     = false;
         this.urlInput.style.cursor = '';
+
+        // Clear side stats
+        if (this.portRateSpan) this.portRateSpan.textContent = '';
+        if (this.urlPacketsSpan) this.urlPacketsSpan.textContent = '';
     }
 
     // ─── Serial Read Loop ─────────────────────────────────────────────
@@ -511,14 +538,22 @@ class SerialRecorder {
         if (!this.rateInterval) return;
         const now = performance.now();
         const dur = (now - this.lastTime) / 1000;
+        
         if (dur > 0) {
-            const parts = [
-                this.formatBytesPerSecond(this.bytesReceived / dur),
-                this.formatFileSize(this.totalBytesWritten),
-            ];
-            if (this.urlActive) parts.push(`${this.trafficData.length} pkts`);
-            this.statusMessage.textContent = parts.join(' | ');
+            // 1. Update B/s in the far right of the Port Button
+            if (this.portRateSpan) {
+                this.portRateSpan.textContent = this.formatBytesPerSecond(this.bytesReceived / dur);
+            }
+            
+            // 2. Update Packets in the far right of the URL Input
+            if (this.urlActive && this.urlPacketsSpan) {
+                this.urlPacketsSpan.textContent = `${this.trafficData.length} pkts`;
+            }
+
+            // 3. Keep Total Size in the Status Message
+            this.statusMessage.textContent = this.formatFileSize(this.totalBytesWritten);
         }
+        
         this.lastTime      = now;
         this.bytesReceived = 0;
     }
