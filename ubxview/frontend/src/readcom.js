@@ -5,8 +5,8 @@ import { tauriFetch } from './utils.js';
 
 // Dictionary for translating USB Vendor/Product IDs to human-readable names
 const PORT_ALIASES = {
-    "5446:425": "U-blox GNSS",
-    "1027:24597": "FTDI Adapter",
+    "5446:425": "u-blox GNSS (COM 5446:425)",
+    "1027:24597": "Rover Receiver (COM 1027:24597)",
     // "VendorID:ProductID": "Your Custom Name"
 };
 
@@ -14,7 +14,7 @@ class SerialRecorder {
     constructor() {
         // DOM Elements
         this.startButton      = document.getElementById('start-button');
-        this.endButton        = document.getElementById('end-button');
+        this.startButtonLabel = document.getElementById('start-button-label'); // label span inside button
         this.statusMessage    = document.getElementById('status-message');
         this.baudRateSelect   = document.getElementById('baud-rate');
         this.selectPortButton = document.getElementById('select-port-button');
@@ -89,8 +89,14 @@ class SerialRecorder {
     }
 
     initEventListeners() {
-        this.startButton.addEventListener('click',      () => this.startRecording());
-        this.endButton.addEventListener('click',        () => this.endRecording());
+        // Single button toggles record / stop
+        this.startButton.addEventListener('click', () => {
+            if (this.isRecording) {
+                this.endRecording();
+            } else {
+                this.startRecording();
+            }
+        });
         this.selectPortButton.addEventListener('click', () => this.selectPort());
         this.surveyButton.addEventListener('click',     () => this._onSurveyClick());
         window.addEventListener('beforeunload', e       => this.handleBeforeUnload(e));
@@ -157,7 +163,7 @@ class SerialRecorder {
 
     // ─── Serial Port Methods ──────────────────────────────────────────
 
-async selectPort() {
+    async selectPort() {
         try {
             this.port = await navigator.serial.requestPort();
             const info = this.port.getInfo();
@@ -259,7 +265,7 @@ async selectPort() {
 
     _setSurveyUI(active) {
         this.surveyButton.classList.toggle('survey-active', active);
-        this.surveyButton.title    = active ? 'Abort Survey-In' : 'RTK BASE Survey-In';
+        this.surveyButton.title        = active ? 'Abort Survey-In' : 'RTK BASE Survey-In';
         this.startButton.disabled      = active;
         this.baudRateSelect.disabled   = active;
         this.selectPortButton.disabled = active;
@@ -383,8 +389,10 @@ async selectPort() {
         this.isRecording = true;
         console.log('Recording started.');
 
-        this.startButton.disabled      = true;
-        this.endButton.disabled        = false;
+        // ── Update button to recording state ──────────────────────────
+        this.startButton.classList.add('recording');
+        if (this.startButtonLabel) this.startButtonLabel.textContent = 'Recording...';
+
         this.baudRateSelect.disabled   = true;
         this.selectPortButton.disabled = true;
         this.surveyButton.disabled     = true;
@@ -453,8 +461,11 @@ async selectPort() {
     }
 
     resetUIToIdle() {
-        this.startButton.disabled    = false;
-        this.endButton.disabled      = true;
+        // ── Restore button to idle state ──────────────────────────────
+        this.startButton.classList.remove('recording');
+        if (this.startButtonLabel) this.startButtonLabel.textContent = 'Record';
+        this.startButton.disabled = false;
+
         this.baudRateSelect.disabled = false;
         if ('serial' in navigator) {
             this.selectPortButton.disabled = false;
@@ -464,7 +475,7 @@ async selectPort() {
         this.urlInput.style.cursor = '';
 
         // Clear side stats
-        if (this.portRateSpan) this.portRateSpan.textContent = '';
+        if (this.portRateSpan)  this.portRateSpan.textContent  = '';
         if (this.urlPacketsSpan) this.urlPacketsSpan.textContent = '';
     }
 

@@ -1039,7 +1039,7 @@ select:hover {
 #com-reader {
     bottom: 10px;
     left: 10px;
-    width: 400px;
+    width: 450px;
     height: auto;
 
     display: flex;
@@ -1124,7 +1124,7 @@ select:hover {
 #status-message {
     font-weight: 400;
     font-size: 0.9em;
-    color: #aaacaa;
+    color: #fcfcfc;
     font-variant-numeric: tabular-nums;
 }
 
@@ -1484,26 +1484,44 @@ input[type="number"].terrain-input::-webkit-outer-spin-button:hover {
     border-color: #444;
 }
 
-/* Red Record Button */
-#start-button {
-    background-color: #6a1e1e;
-    border-color: #8a2525;
-    color: #ffffff;
+/* Use a more specific selector to ensure it beats the general button rule */
+#com-reader #start-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
-#start-button:hover:not(:disabled) {
-    background-color: #6a1e1e;
-    border-color: #8a2525;
-    color: #ffffff;
+.rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: #ff1a1a;   /* bright neon red — default */
+    box-shadow: 0 0 5px #ff1a1a88;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-#start-button:active:not(:disabled) {
-    background-color: #330e0e;
-    border-color: #5a2020;
+/* Slightly darker on hover (mirrors the button's own hover) */
+#com-reader #start-button:hover:not(:disabled) .rec-dot {
+    background-color: #cc0000;
+    box-shadow: 0 0 5px #cc000088;
 }
 
-#start-button:disabled {
-    background-color: #2a1010;
-    border-color: #3a1515;
-    color: #883030;
+/* While recording: blink the dot red */
+#com-reader #start-button.recording .rec-dot {
+    background-color: #ff1a1a;
+    box-shadow: 0 0 5px #863600a6;
+    animation: rec-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes rec-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.15; }
+}
+
+/* Disabled dot */
+#com-reader #start-button:disabled .rec-dot {
+    background-color: #5a2020;
+    box-shadow: none;
+    animation: none;
 }

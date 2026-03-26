@@ -6,8 +6,8 @@
     <link rel="icon" href="./assets/dot-launch.ico" type="image/x-icon" />
 
 
-  <script type="module" crossorigin src="./assets/index-B2QjyWnE.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CQXgJcpt.css">
+  <script type="module" crossorigin src="./assets/index-B6vmCFxp.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BSwJDg6O.css">
 </head>
 
 <body>
@@ -39,7 +39,7 @@
 
             <button id="openFileBtn" class="custom-file">
                 <span id="fileLabel">
-                    .ubx, .txt, .csv, .ndjson, .crswap .xml
+                    .txt, .csv, .ndjson, .xml, .crswap
                 </span>
 
                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -69,7 +69,11 @@
 
             <!--<h2>Scene Visuals</h2>-->
 
-
+            <div style="font-weight: 500;" class="noselect">Canvas</div>
+            <div class="view-toggle">
+                <button class="view-option active" data-view="satellite">Satellite</button>
+                <button class="view-option" data-view="streetview">Streetview</button>
+            </div>
 
             <div style="font-weight: 500;" class="noselect">Map Opacity</div>
             <div class="slider-wrapper">
@@ -77,11 +81,7 @@
                 <div id="opacityTooltip" class="slider-tooltip">0.5</div>
             </div>
 
-            <div style="font-weight: 500;" class="noselect">Canvas</div>
-            <div class="view-toggle">
-                <button class="view-option active" data-view="satellite">Satellite</button>
-                <button class="view-option" data-view="streetview">Streetview</button>
-            </div>
+
 
             <script>
                 document.querySelectorAll('.view-option').forEach(button => {
@@ -105,7 +105,7 @@
 
 
 
-<div class="trail-controls">
+        <div class="trail-controls">
                 <div class="trail-section">
                     <label for="trail-preset">Plot Palette</label>
                     <select id="trail-preset" style="font-size: 11.56px; font-weight: 400;">
@@ -121,17 +121,17 @@
 
                     <div class="trail-group">
                         <label for="trail-head-color">Head</label>
-                        <input type="color" id="trail-head-color" class="color-picker" value="#FF0000">
+                        <input type="color" id="trail-head-color" class="color-picker" value="#00ccff">
                     </div>
 
                     <div class="trail-group">
                         <label for="trail-tail-color">Tail</label>
-                        <input type="color" id="trail-tail-color" class="color-picker" value="#FF0000">
+                        <input type="color" id="trail-tail-color" class="color-picker" value="#00ccff">
                     </div>
 
                     <div class="trail-group line-composite">
                         <label for="trail-line-color">Line</label>
-                        <input type="color" id="trail-line-color" class="color-picker" value="#FF0000">
+                        <input type="color" id="trail-line-color" class="color-picker" value="#00ccff">
                         <input type="checkbox" id="show-lines-toggle" class="trail-toggle"
                             style="transform: translateY(2px);" checked title="Toggle Lines">
                     </div>
@@ -337,11 +337,11 @@
     </div>
 
 <div id="com-reader" class="noselect">
-
-    <!--<div class="section-label">Data Reader</div>-->
-
     <div class="com-reader-row top-row">
-        <button id="select-port-button">Select Port</button>
+        <button id="select-port-button" style="justify-content: space-between;">
+            <span id="port-name">Select Port</span>
+            <span id="port-rate" style="color: #aaacaa; font-variant-numeric: tabular-nums; margin-left: 8px;"></span>
+        </button>
         <select id="baud-rate">
             <option>9600</option>
             <option>19200</option>
@@ -349,23 +349,23 @@
             <option>57600</option>
             <option selected>115200</option>
         </select>
-        <!-- RTK Survey-In button – disabled until a port is selected -->
         <button id="survey-button" disabled title="RTK Survey-In" style="margin-left: auto; padding: 0.5em 0.5em;">
             <img src="./assets/satellite.png" alt="Survey-In" width="16" height="16">
         </button>
     </div>
 
-    <div class="com-reader-row top-row">
-        <input type="text" id="url-input"
-               placeholder="http://###.###.###.###/api/v1/traffic" value="">
+    <div class="com-reader-row top-row url-wrapper" style="position: relative; flex: 1; display: flex;">
+        <input type="text" id="url-input" placeholder="http://###.###.###.###/api/v1/traffic" value="" style="width: 100%; padding-right: 65px;">
+        <span id="url-packets" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #6c6e6bdc; pointer-events: none; font-size: 0.85em; font-variant-numeric: tabular-nums;"></span>
     </div>
 
     <div class="com-reader-row bottom-row">
-        <button id="start-button">Record</button>
-        <button id="end-button" disabled>Stop</button>
+        <button id="start-button">
+            <span class="rec-dot"></span>
+            <span id="start-button-label">Record</span>
+        </button>
         <span id="status-message">Disconnected</span>
     </div>
-
 </div>
 
 </body>
